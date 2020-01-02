@@ -11,19 +11,16 @@ rem EnableDelayedExpansion to enable execution time parsing of variables.
 setlocal EnableDelayedExpansion
 
 set LLVM_PATH=C:\Program Files\LLVM\bin
-set MINGW_PATH=C:\Program Files\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64
-set MINGW_INCLUDE_PATH1=%MINGW_PATH%\include
-set MINGW_INCLUDE_PATH2=%MINGW_PATH%\x86_64-w64-mingw32\include
-set MINGW_LIB_PATH1=%MINGW_PATH%\lib
-set MINGW_LIB_PATH2=%MINGW_PATH%\x86_64-w64-mingw32\lib
+set MINGW_PATH=C:\Program Files\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\bin
 set BaseFilename=ellie
 
 rem
 rem
 rem
 
-set ELLIE_PATH=..\..\
-set PATH=%LLVM_PATH%;%PATH%
+set ELLIE_PATH=..\..
+rem WARNING: MINGW_PATH is required for Clang to find MingW headers/libs/etc.
+set PATH=%LLVM_PATH%;%MINGW_PATH%;%PATH%
 
 set DEPS_INCLUDE_PATH=%ELLIE_PATH%\deps\include
 set DEPS_LIB_PATH=%ELLIE_PATH%\deps\lib
@@ -90,8 +87,9 @@ rem Weverything can be annoying, but I prefer using it and disabling warnings th
 set CompilerWarningFlags=-Werror -Weverything -Wno-c++98-compat -Wno-used-but-marked-unused -Wno-missing-prototypes -Wno-unused-macros -Wno-old-style-cast -Wno-c++98-compat-pedantic -Wno-gnu-zero-variadic-macro-arguments -Wno-string-conversion -Wno-covered-switch-default -Wno-unused-parameter -Wno-exit-time-destructors -Wno-global-constructors -Wno-weak-vtables
 rem WARNING: \" is required around -D values to actually make them strings.
 rem NOTE: -isystem is used for SDL2 to avoid warnings/errors.
-set CommonCompilerFlags=-target x86_64-pc-windows-gnu -std=c++17 -mwindows %CompilerWarningFlags% -isystem%MINGW_INCLUDE_PATH1% -isystem%MINGW_INCLUDE_PATH2% -isystem%DEPS_INCLUDE_PATH% -isystem%DEPS_SRC_PATH% -isystem%DEPS_INCLUDE_PATH%\SDL2
-set CommonLinkerFlags=-L%DEPS_LIB_PATH% -lmingw32 -lSDL2main -lSDL2
+rem WARNING: Paths should be enclosed in quotes (") to avoid problems with files/folders with spaces in the name.
+set CommonCompilerFlags=-target x86_64-pc-windows-gnu -std=c++17 -mwindows %CompilerWarningFlags% -isystem"%DEPS_INCLUDE_PATH%" -isystem"%DEPS_SRC_PATH%" -isystem"%DEPS_INCLUDE_PATH%\SDL2"
+set CommonLinkerFlags=-L"%DEPS_LIB_PATH%" -lmingw32 -lSDL2main -lSDL2
 
 set CommonEXEFlags=%CommonCompilerFlags% %CommonLinkerFlags%
 set CommonDLLFlags=%CommonEXEFlags% -shared
