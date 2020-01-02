@@ -20,11 +20,11 @@ rem Release or Debug
 set BuildType="%1"
 if /I %BuildType%=="release" (
     echo Running release build.
-    start /WAIT ..\..\bin\win64\ellie.exe
+    start /WAIT ..\bin\win64\ellie.exe
 ) else (
     if /I %BuildType%=="debug" (
         echo Running debug build.
-        start /WAIT ..\..\bin\win64\ellie_debug.exe
+        start /WAIT ..\bin\win64\ellie_debug.exe
     ) else (
         echo ERROR: Build Type must be supplied in first parameter and be equal to release or debug.
         goto END
