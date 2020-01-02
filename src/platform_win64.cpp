@@ -490,13 +490,13 @@ int main(int argc, char *argv[])
         DWORD e = WindowsFormattedLastError(&msg, size);
         if (msg)
         {
-            gLog.fatal("Platform", "Failed to delete live game: %s", msg);
+            gLog.fatal("Platform", "Failed to get the current working directory: %s", msg);
             delete[] msg;
             msg = nullptr;
             size = 0;
         }
         else
-            gLog.fatal("Platform", "Failed to delete live game: GetLastError()=%l", e);
+            gLog.fatal("Platform", "Failed to get the current working directory: GetLastError()=%l", e);
 
         return 1;
     }
