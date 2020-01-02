@@ -138,12 +138,11 @@ public:
     virtual void trace(const char *system, const char *format, ...) = 0;
 };
 
-// TODO: Add an event manager / message bus for messaging between systems.
-
 #include <string>
 
 struct PlatformServices
 {
+    // TODO: Add an event manager / message bus for messaging between systems.
     // TODO: Memory allocator/pool for retained memory during game reloads.
     ILog *log;
     std::string programPath; // The folder that contains the executable.
