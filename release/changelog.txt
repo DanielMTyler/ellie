@@ -1,0 +1,5 @@
+==================================
+Copyright (C) 2020 Daniel M Tyler.
+  This file is part of Ellie.
+==================================
+

@@ -1,0 +1,10 @@
+==================================
+Copyright (C) 2020 Daniel M Tyler.
+  This file is part of Ellie.
+==================================
+
+* Use GLM & GLI later.
+* Reload game library when modified.
+* Add loop editing (record commands, replay them forever until stopped).
+* Log PC specs, OpenGL info, etc.
+* Telemetry/Performance tracking.
