@@ -11,78 +11,66 @@ rem EnableDelayedExpansion to enable execution time parsing of variables.
 setlocal EnableDelayedExpansion
 
 set LLVM_PATH=C:\Program Files\LLVM\bin
-set MINGW_PATH=
-set SDL2_PATH=D:\Daniel\Projects\ellie\deps\SDL2-2.0.10
-set SDL2_INCLUDE=%SDL2_PATH%\include
-set SDL2_LIB=%SDL2_PATH%\lib
-set ELLIE_PATH=D:\Daniel\Projects\ellie
-set PATH=%LLVM_PATH%;%MINGW_PATH%;%SDL2_PATH%;%PATH%
+set MINGW_PATH=C:\Program Files\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64
+set MINGW_INCLUDE_PATH1=%MINGW_PATH%\include
+set MINGW_INCLUDE_PATH2=%MINGW_PATH%\x86_64-w64-mingw32\include
+set MINGW_LIB_PATH1=%MINGW_PATH%\lib
+set MINGW_LIB_PATH2=%MINGW_PATH%\x86_64-w64-mingw32\lib
 set BaseFilename=ellie
 
 rem
 rem
 rem
 
-cd %ELLIE_PATH%\win64
+set ELLIE_PATH=..\..\
+set PATH=%LLVM_PATH%;%PATH%
 
-set BuildGameOnly=0
-set BuildGameOnlyStr="No"
-set _BuildGameOnlyArg=%2
-if "%_BuildGameOnlyArg%"=="game" (
-    set BuildGameOnly=1
-    set BuildGameOnlyStr="Yes"
+set DEPS_INCLUDE_PATH=%ELLIE_PATH%\deps\include
+set DEPS_LIB_PATH=%ELLIE_PATH%\deps\lib
+set DEPS_SRC_PATH=%ELLIE_PATH%\deps\src
+
+if not exist %ELLIE_PATH%\bin (
+    echo ERROR: "%ELLIE_PATH%\bin" directory doesn't exist.
+    goto USAGE
+)
+
+if not exist %ELLIE_PATH%\bin\win64 (
+    echo Making directory "%ELLIE_PATH%\bin\win64".
+    mkdir %ELLIE_PATH%\bin\win64
+)
+
+rem Use pushd to avoid changing the user's working directory.
+if exist %ELLIE_PATH%\bin\win64 (
+    pushd %ELLIE_PATH%\bin\win64
+) else (
+    echo ERROR: "%ELLIE_PATH%\bin\win64" directory doesn't exist.
+    goto END
 )
 
 set BuildTypeStr=""
 set BuildRelease=0
 set BuildDebug=0
 set BuildClean=0
-set _BuildType=0
-set _BuildTypeArg=%1
-if "%_BuildTypeArg%"=="release" set _BuildType=1
-if "%_BuildTypeArg%"=="debug" set _BuildType=2
-if "%_BuildTypeArg%"=="both" set _BuildType=3
-if "%_BuildTypeArg%"=="clean" set _BuildType=4
-if %_BuildType%==1 (
+set _BuildType="%1"
+if %_BuildType%=="release" (
     set BuildTypeStr="Release"
     set BuildRelease=1
 ) else (
-    if %_BuildType%==2 (
+    if %_BuildType%=="debug" (
         set BuildTypeStr="Debug"
         set BuildDebug=1
     ) else (
-        if %_BuildType%==3 (
-            set BuildTypeStr="Both"
-            set BuildRelease=1
-            set BuildDebug=1
+        if %_BuildType%=="clean" (
+            set BuildTypeStr="Clean"
+            set BuildClean=1
         ) else (
-            if %_BuildType%==4 (
-                set BuildTypeStr="Clean"
-                set BuildClean=1
-            ) else (
-                echo ERROR: Build Type wasn't supplied or is unknown.
-                goto USAGE
-            )
+            echo ERROR: Build Type wasn't supplied or is unknown.
+            goto USAGE
         )
     )
 )
-
 echo Build Type: %BuildTypeStr%
-echo Building Game Only: %BuildGameOnlyStr%
 echo Base Filename: %BaseFilename%
-
-rem Use pushd to avoid changing the user's working directory.
-if exist ..\bin\win64 (
-    pushd ..\bin\win64
-) else (
-    echo ERROR: "..\bin\win64" directory doesn't exist.
-    goto END
-)
-
-if not "%EllieShell%"=="1" (
-    echo ERROR: Must be run from the Ellie Shell for environment setup.
-    goto END
-)
 
 rem With our unity build, we only need two source files (EXE+DLL).
 set EXESource=..\..\src\platform_win64.cpp
@@ -98,17 +86,14 @@ if not exist "%DLLSource%" (
     goto END
 )
 
-rem NOTE: -isystem is used to avoid warnings/errors from SDL code.
-set SDLCompilerFlags=-isystemW:\dev\SDL2-2.0.9-mingw\x86_64-w64-mingw32\include\SDL2
-set SDLLinkerFlags=-LW:\dev\SDL2-2.0.9-mingw\x86_64-w64-mingw32\lib -lSDL2main -lSDL2
-
 rem Weverything can be annoying, but I prefer using it and disabling warnings that I don't care about.
 set CompilerWarningFlags=-Werror -Weverything -Wno-c++98-compat -Wno-used-but-marked-unused -Wno-missing-prototypes -Wno-unused-macros -Wno-old-style-cast -Wno-c++98-compat-pedantic -Wno-gnu-zero-variadic-macro-arguments -Wno-string-conversion -Wno-covered-switch-default -Wno-unused-parameter -Wno-exit-time-destructors -Wno-global-constructors -Wno-weak-vtables
 rem WARNING: \" is required around -D values to actually make them strings.
-set CommonCompilerFlags=-target x86_64-pc-windows-gnu -std=c++17 -mwindows %CompilerWarningFlags% -isystemW:\ellie\deps\include -isystemW:\ellie\deps\src
-set CommonLinkerFlags=-lmingw32
+rem NOTE: -isystem is used for SDL2 to avoid warnings/errors.
+set CommonCompilerFlags=-target x86_64-pc-windows-gnu -std=c++17 -mwindows %CompilerWarningFlags% -isystem%MINGW_INCLUDE_PATH1% -isystem%MINGW_INCLUDE_PATH2% -isystem%DEPS_INCLUDE_PATH% -isystem%DEPS_SRC_PATH% -isystem%DEPS_INCLUDE_PATH%\SDL2
+set CommonLinkerFlags=-L%DEPS_LIB_PATH% -lmingw32 -lSDL2main -lSDL2
 
-set CommonEXEFlags=%CommonCompilerFlags% %SDLCompilerFlags% %CommonLinkerFlags% %SDLLinkerFlags%
+set CommonEXEFlags=%CommonCompilerFlags% %CommonLinkerFlags%
 set CommonDLLFlags=%CommonEXEFlags% -shared
 
 rem WARNING: \" is required around -D values to actually make them strings.
@@ -116,11 +101,10 @@ set ReleaseBuildFlags=-O3 -DBUILD_RELEASE=1
 set ReleaseBaseFilename=%BaseFilename%
 set ReleaseBuildFlags=!ReleaseBuildFlags! -DGAME_FILENAME=\"!ReleaseBaseFilename!.dll\" -DPLATFORM_LOG_FILENAME=\"!ReleaseBaseFilename!.log\"
 if %BuildRelease%==1 (
-    if %BuildGameOnly%==0 (
-        rem NOTE: Linker flags must come after -o (and maybe source files), otherwise you'll get undefined references.
-        echo Building Release EXE
-        clang++ -o !ReleaseBaseFilename!.exe %EXESource% %CommonEXEFlags% !ReleaseBuildFlags!
-    )
+    rem NOTE: Linker flags must come after -o (and maybe source files), otherwise you'll get undefined references.
+    echo Building Release EXE
+    clang++ -o !ReleaseBaseFilename!.exe %EXESource% %CommonEXEFlags% !ReleaseBuildFlags!
+    
     echo Building Release DLL
     clang++ -o !ReleaseBaseFilename!.dll %DLLSource% %CommonDLLFlags% !ReleaseBuildFlags!
 )
@@ -130,11 +114,10 @@ set DebugBuildFlags=-g -DBUILD_DEBUG=1
 set DebugBaseFilename=%BaseFilename%_debug
 set DebugBuildFlags=!DebugBuildFlags! -DGAME_FILENAME=\"!DebugBaseFilename!.dll\" -DPLATFORM_LOG_FILENAME=\"!DebugBaseFilename!.log\"
 if %BuildDebug%==1 (
-    if %BuildGameOnly%==0 (
-        rem NOTE: Linker flags must come after -o (and maybe source files), otherwise you'll get undefined references.
-        echo Building Debug EXE
-        clang++ -o !DebugBaseFilename!.exe %EXESource% %CommonEXEFlags% !DebugBuildFlags!
-    )
+    rem NOTE: Linker flags must come after -o (and maybe source files), otherwise you'll get undefined references.
+    echo Building Debug EXE
+    clang++ -o !DebugBaseFilename!.exe %EXESource% %CommonEXEFlags% !DebugBuildFlags!
+    
     echo Building Debug DLL
     clang++ -o !DebugBaseFilename!.dll %DLLSource% %CommonDLLFlags% !DebugBuildFlags!
 )
