@@ -5,10 +5,8 @@
 # ==================================
 #
 
-# Temp files.
-*~
+# Ignore everything in this folder.
+*
 
-# Windows folder config.
-**/desktop.ini
-
-# bin and deps have their own .gitignore.
+# Except this file.
+!.gitignore

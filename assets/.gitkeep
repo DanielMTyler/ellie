@@ -4,11 +4,3 @@
 #   This file is part of Ellie.
 # ==================================
 #
-
-# Temp files.
-*~
-
-# Windows folder config.
-**/desktop.ini
-
-# bin and deps have their own .gitignore.
