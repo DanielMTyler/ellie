@@ -15,7 +15,7 @@ extern "C" GAME_ONINIT(OnInit)
     gLog = platformServices->log;
     gPlatformServices = platformServices;
     gLog->info("Game", "Game initializing.");
-#if BUILD_DEBUG
+#ifdef BUILD_DEBUG
     gLog->warn("Game", "Debug build.");
 #endif
     gLog->info("Game", "Game initialized.");

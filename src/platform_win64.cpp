@@ -451,7 +451,7 @@ int main(int argc, char *argv[])
     if (!gLog.init((exePath + "\\" + PLATFORM_LOG_FILENAME).c_str()))
         return 1;
 
-#if BUILD_DEBUG
+#ifdef BUILD_DEBUG
     gLog.warn("Platform", "Debug build.");
 #endif
 
