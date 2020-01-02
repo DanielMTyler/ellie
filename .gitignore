@@ -11,8 +11,14 @@
 # Windows folder config.
 **/desktop.ini
 
-# Keep bin and deps but nothing inside of them.
+# Keep bin, deps, deps/include, deps/lib, and deps/src but nothing inside of them.
 !bin
 bin/*
 !deps
 deps/*
+!deps/include
+deps/include/*
+!deps/lib
+deps/lib/*
+!deps/src
+deps/src/*
