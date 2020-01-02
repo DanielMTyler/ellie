@@ -17,22 +17,18 @@ if exist ..\..\release (
 )
 
 rem Release or Debug
-set BuildType=%1
-rem if /I doesn't allow for else statements.
-
+set BuildType="%1"
 if /I %BuildType%=="release" (
-    set BuildType=0
     echo Running release build.
     start /WAIT ..\..\bin\win64\ellie.exe
-)
-if /I %BuildType%=="debug" (
-    set BuildType=0
-    echo Running debug build.
-    start /WAIT ..\..\bin\win64\ellie_debug.exe
-)
-if %BuildType%==0 (
-    echo ERROR: Build Type must be supplied in first parameter and be equal to release or debug.
-    goto END
+) else (
+    if /I %BuildType%=="debug" (
+        echo Running debug build.
+        start /WAIT ..\..\bin\win64\ellie_debug.exe
+    ) else (
+        echo ERROR: Build Type must be supplied in first parameter and be equal to release or debug.
+        goto END
+    )
 )
 
 :END
