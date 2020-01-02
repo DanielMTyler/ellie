@@ -31,6 +31,23 @@ static Log gLog;
 static std::string gGameFullPath;
 static std::string gGameLiveFullPath;
 
+const char *BoolToStr(bool b)
+{
+    return (b ? "True" : "False");
+}
+
+const char *SDLGLProfileToStr(int p)
+{
+    if (p == SDL_GL_CONTEXT_PROFILE_CORE)
+        return "Core";
+    else if (p == SDL_GL_CONTEXT_PROFILE_COMPATIBILITY)
+        return "Compatibility";
+    else if (p == SDL_GL_CONTEXT_PROFILE_ES)
+        return "ES";
+    else
+        return "Unknown";
+}
+
 // Returns false on failure.
 bool SDLSetGLAttribs()
 {
@@ -40,7 +57,7 @@ bool SDLSetGLAttribs()
     int glProfile = SDL_GL_CONTEXT_PROFILE_CORE;
     int doubleBuffer = 1;
     bool failed = false;
-    // Require HW acceleration.
+    
     failed = SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, hwAccel) < 0 ? true : false;
     failed = SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, glMajor) < 0 ? true : false;
     failed = SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, glMinor) < 0 ? true : false;
@@ -53,7 +70,7 @@ bool SDLSetGLAttribs()
         return false;
     }
 
-    gLog.info("Platform", "Requested OpenGL support: HW accel=%i, v%i.%i %i profile, Double Buffered=%i.", hwAccel, glMajor, glMinor, glProfile, doubleBuffer);
+    gLog.info("Platform", "Requested OpenGL support: HW accel=%s, v%i.%i %s profile, Double Buffered=%s.", BoolToStr(hwAccel), glMajor, glMinor, SDLGLProfileToStr(glProfile), BoolToStr(doubleBuffer));
     return true;
 }
 
@@ -87,7 +104,7 @@ bool SDLCheckAndReportGLAttribs()
 
     if (failed)
     {
-        gLog.fatal("Platform", "OpenGL support doesn't match what was requested: HW accel=%i, v%i.%i %i profile, Double Buffered=%i.", hwAccel, glMajor, glMinor, glProfile, doubleBuffer);
+        gLog.fatal("Platform", "OpenGL support doesn't match what was requested: HW accel=%s, v%i.%i %s profile, Double Buffered=%s.", BoolToStr(hwAccel), glMajor, glMinor, SDLGLProfileToStr(glProfile), BoolToStr(doubleBuffer));
         return false;
     } else
     {
