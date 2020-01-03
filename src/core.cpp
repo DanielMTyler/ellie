@@ -5,11 +5,10 @@
     ==================================
 */
 
-// We're included by platform_XXX.cpp which already includes global.hpp.
-
-#include "SDL.h"
+#include "global.hpp"
 #include <glad/glad.h>
 #include <glad.c>
+#include <SDL.h>
 #include <iostream>
 #include <string>
 #include "log.cpp"
