@@ -42,18 +42,18 @@ extern "C" GAME_ONCLEANUP(OnCleanup)
 
 extern "C" GAME_ONINPUT(OnInput)
 {
-    // TODO
+    // @todo
     return true;
 }
 
 extern "C" GAME_ONLOGIC(OnLogic)
 {
-    // TODO
+    // @todo
     return true;
 }
 
 extern "C" GAME_ONRENDER(OnRender)
 {
-    // TODO
+    // @todo
     return true;
 }

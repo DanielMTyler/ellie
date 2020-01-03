@@ -32,7 +32,7 @@ private:
         // Ignore vsnprintf errors.
         if (vsnprintf(buffer, bufferSize, format, args))
         {
-            // TODO: Add a timestamp to logging operations.
+            // @todo Add a timestamp to logging operations.
             // Ignore fprintf errors.
             switch (type)
             {

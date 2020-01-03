@@ -12,13 +12,6 @@
 // Defines from compiler flags.
 //
 
-/*
-    WARNING: If something wasn't defined as an actual string, you'll get weird errors. You can fix the define or use:
-        #define str(s) #s
-        #define xstr(s) str(s)
-        xstr(DEFINED_STRING)
-*/
-
 #if !defined(BUILD_RELEASE) && !defined(BUILD_DEBUG)
     #error Build Type not defined or not supported.
 #endif
@@ -34,6 +27,8 @@
 //
 // OS & Compiler detection.
 //
+
+// @todo 32/64-bit detection?
 
 #if defined(_WIN32) || defined(_WIN64)
     #define OS_WINDOWS 1
@@ -62,7 +57,7 @@
 // Clang doesn't like "*(int*)0=0" in my ASSERT macro, so enable assert() in all build types and use it instead.
 #undef NDEBUG
 #include <cassert> // assert
-// NOTE: ASSERT() is always enabled and doesn't get logged.
+// ASSERT() is always enabled and doesn't get logged.
 #define ASSERT(X) assert((X))
 
 #define INVALID_CODE_PATH ASSERT(!"Invalid Code Path")
@@ -142,8 +137,8 @@ public:
 
 struct PlatformServices
 {
-    // TODO: Add an event manager / message bus for messaging between systems.
-    // TODO: Memory allocator/pool for retained memory during game reloads.
+    // @todo Add an event manager / message bus for messaging between systems.
+    // @todo Memory allocator/pool for retained memory during game reloads.
     ILog *log;
     std::string programPath; // The folder that contains the executable.
     std::string releasePath; // The "release" folder that the executable is expected to run from outside of development.
