@@ -3,8 +3,9 @@ Copyright (C) 2020 Daniel M Tyler.
   This file is part of Ellie.
 ==================================
 
-* Use GLM & GLI later.
+* Save config/preferences/etc to location specified by SDL_GetPrefPath.
 * Reload game library when modified.
 * Add loop editing (record commands, replay them forever until stopped).
+* Use GLM & GLI later.
 * Log PC specs, OpenGL info, etc.
 * Telemetry/Performance tracking.
