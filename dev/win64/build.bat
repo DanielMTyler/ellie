@@ -84,7 +84,7 @@ if not exist "%DLLSource%" (
 )
 
 rem Weverything can be annoying, but I prefer using it and disabling warnings that I don't care about.
-set CompilerWarningFlags=-Werror -Weverything -Wno-c++98-compat -Wno-used-but-marked-unused -Wno-missing-prototypes -Wno-unused-macros -Wno-old-style-cast -Wno-c++98-compat-pedantic -Wno-gnu-zero-variadic-macro-arguments -Wno-string-conversion -Wno-covered-switch-default -Wno-unused-parameter -Wno-exit-time-destructors -Wno-global-constructors -Wno-weak-vtables
+set CompilerWarningFlags=-Werror -Weverything -Wno-c++98-compat -Wno-used-but-marked-unused -Wno-missing-prototypes -Wno-unused-macros -Wno-old-style-cast -Wno-c++98-compat-pedantic -Wno-gnu-zero-variadic-macro-arguments -Wno-string-conversion -Wno-covered-switch-default -Wno-unused-parameter -Wno-exit-time-destructors -Wno-global-constructors -Wno-weak-vtables -Wno-padded
 rem WARNING: \" is required around -D values to actually make them strings.
 rem NOTE: -isystem is used for SDL2 to avoid warnings/errors.
 rem WARNING: Paths should be enclosed in quotes (") to avoid problems with files/folders with spaces in the name.

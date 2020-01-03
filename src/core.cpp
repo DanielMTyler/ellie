@@ -277,10 +277,10 @@ bool GameRetrieveFunctions(void *game, GameServices &gameServices)
 // Copy the game to a temp file for opening; this allows the original to be replaced for live reloading.
 bool GameCopyToTemp()
 {
-    std::string e;
-    if (!PlatformCopyFile(gGameFullPath, gGameLiveFullPath, false, e))
+    ResultBool r = PlatformCopyFile(gGameFullPath, gGameLiveFullPath, false);
+    if (!r.result)
     {
-        gLog.fatal("Core", "Failed to copy game to live file: %s", e.c_str());
+        gLog.fatal("Core", "Failed to copy game to live file: %s", r.error.c_str());
         return false;
     }
 
@@ -365,9 +365,9 @@ void GameCleanup(void *game, GameServices &gameServices)
     game = nullptr;
 
     // Check if file exists before trying to delete it to avoid a useless error message being logged.
-    std::string e;
-    if (!PlatformDeleteFile(gGameLiveFullPath, e))
-        gLog.fatal("Core", "Failed to delete live game: %s", e.c_str());
+    ResultBool r = PlatformDeleteFile(gGameLiveFullPath);
+    if (!r.result)
+        gLog.fatal("Core", "Failed to delete live game: %s", r.error.c_str());
 }
 
 // WARNING: SDL 2 requires this exact function signature, changing it will give "undefined reference to SDL_main" linker errors.
@@ -391,7 +391,6 @@ int main(int argc, char *argv[])
     gLog.warn("Core", "Debug build.");
 #endif
 
-    std::string platformError;
     PlatformServices platformServices;
     platformServices.log = &gLog;
     platformServices.programPath = exePath;
@@ -402,9 +401,10 @@ int main(int argc, char *argv[])
     gLog.info("Core", "Game Live fullpath: %s", gGameLiveFullPath.c_str());
 
     std::string cwd;
-    if (!PlatformGetCWD(cwd, platformError))
+    ResultBool r = PlatformGetCWD(cwd);
+    if (!r.result)
     {
-        gLog.fatal("Core", "Failed to get the current working directory: %s", platformError.c_str());
+        gLog.fatal("Core", "Failed to get the current working directory: %s", r.error.c_str());
         return 1;
     }
     // Prefer the CWD over programPath for releasePath, but verify the data folder exists in releasePath.
@@ -412,11 +412,13 @@ int main(int argc, char *argv[])
     // GetCurrentDirectoryA doesn't append a "\".
     platformServices.releasePath += "\\";
     platformServices.dataPath = platformServices.releasePath + "data\\";
-    if (!PlatformFolderExists(platformServices.dataPath, platformError))
+    r = PlatformFolderExists(platformServices.dataPath);
+    if (!r.result)
     {
         platformServices.releasePath = platformServices.programPath;
         platformServices.dataPath = platformServices.releasePath + "data\\";
-        if (!PlatformFolderExists(platformServices.dataPath, platformError))
+        r = PlatformFolderExists(platformServices.dataPath);
+        if (!r.result)
         {
             gLog.fatal("Core", "The data folder wasn't found in the current working directory (%s) or the executable directory (%s).", cwd.c_str(), platformServices.programPath.c_str());
             return 1;

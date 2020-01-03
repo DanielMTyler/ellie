@@ -5,8 +5,7 @@
     ==================================
 */
 
-#include "global.hpp"
-#include <string>
+#include "platform.hpp"
 /*
     WARNING: SDL.h must be included before windows.h or you'll get compile errors like this:
         In file included from ..\..\src\platform_win64.cpp:143:
@@ -47,43 +46,52 @@ DWORD FormattedLastError(std::string& msg)
 
 }; // namespace PlatformImpl.
 
-bool PlatformCopyFile(std::string src, std::string dst, bool failIfExists, std::string& error)
+ResultBool PlatformCopyFile(std::string src, std::string dst, bool failIfExists)
 {
+    ResultBool r;
+    
     if (!CopyFile(src.c_str(),dst.c_str(), failIfExists))
     {
         std::string msg;
         DWORD e = PlatformImpl::FormattedLastError(msg);
         if (!msg.empty())
-            error = "CopyFile failed: " + msg;
+            r.error = "CopyFile failed: " + msg;
         else
-            error = "CopyFile failed: GetLastError()=" + std::to_string(e);
+            r.error = "CopyFile failed: GetLastError()=" + std::to_string(e);
         
-        return false;
+        r.result = false;
+        return r;
     }
-
-    return true;
+    
+    r.result = true;
+    return r;
 }
 
-bool PlatformDeleteFile(std::string file, std::string& error)
+ResultBool PlatformDeleteFile(std::string file)
 {
+    ResultBool r;
+    
     if (!DeleteFile(file.c_str()))
     {
         std::string msg;
         DWORD e = PlatformImpl::FormattedLastError(msg);
         if (!msg.empty())
-            error = "DeleteFile failed: " + msg;
+            r.error = "DeleteFile failed: " + msg;
         else
-            error = "DeleteFile failed: GetLastError()=" + std::to_string(e);
+            r.error = "DeleteFile failed: GetLastError()=" + std::to_string(e);
         
-        return false;
+        r.result = false;
+        return r;
     }
     
-    return true;
+    r.result = true;
+    return r;
 }
 
-// Return false if file doesn't exist or if an error was occured.
-bool PlatformFileExists(std::string file, std::string& error)
+ResultBool PlatformFileExists(std::string file)
 {
+    ResultBool r;
+    
     if (GetFileAttributes(file.c_str()) == INVALID_FILE_ATTRIBUTES)
     {
         if (GetLastError() != ERROR_FILE_NOT_FOUND)
@@ -91,43 +99,50 @@ bool PlatformFileExists(std::string file, std::string& error)
             std::string msg;
             DWORD e = PlatformImpl::FormattedLastError(msg);
             if (!msg.empty())
-                error = "GetFileAttributes failed: " + msg;
+                r.error = "GetFileAttributes failed: " + msg;
             else
-                error = "GetFileAttributes failed: GetLastError()=" + std::to_string(e);
+                r.error = "GetFileAttributes failed: GetLastError()=" + std::to_string(e);
         }
         
-        return false;
+        r.result = false;
+        return r;
     }
     
-    return true;
+    r.result = true;
+    return r;
 }
 
-// Return false if folder doesn't exist or if an error occured.
-bool PlatformFolderExists(std::string folder, std::string& error)
+ResultBool PlatformFolderExists(std::string folder)
 {
+    ResultBool r;
+    
     DWORD a = GetFileAttributes(folder.c_str());
     if (a == INVALID_FILE_ATTRIBUTES)
     {
         std::string msg;
         DWORD e = PlatformImpl::FormattedLastError(msg);
         if (!msg.empty())
-            error = "GetFileAttributes failed: " + msg;
+            r.error = "GetFileAttributes failed: " + msg;
         else
-            error = "GetFileAttributes failed: GetLastError()=" + std::to_string(e);
+            r.error = "GetFileAttributes failed: GetLastError()=" + std::to_string(e);
         
-        return false;
+        r.result = false;
+        return r;
     }
     else if (a & FILE_ATTRIBUTE_DIRECTORY)
     {
-        return true;
+        r.result = true;
+        return r;
     }
     
-    return false;
+    r.result = false;
+    return r;
 }
 
-// Return false if an error occured.
-bool PlatformGetCWD(std::string& cwd, std::string& error)
+ResultBool PlatformGetCWD(std::string& cwd)
 {
+    ResultBool r;
+    
     // @todo Once Unicode is supported, paths can be 32,767 WCHARs long.
     const uint32 cwdBufSize = KIBIBYTES(1);
     char cwdBuf[cwdBufSize];
@@ -136,15 +151,17 @@ bool PlatformGetCWD(std::string& cwd, std::string& error)
         std::string msg;
         DWORD e = PlatformImpl::FormattedLastError(msg);
         if (!msg.empty())
-            error = "GetCurrentDirectory failed: " + msg;
+            r.error = "GetCurrentDirectory failed: " + msg;
         else
-            error = "GetCurrentDirectory failed: GetLastError()=" + std::to_string(e);
+            r.error = "GetCurrentDirectory failed: GetLastError()=" + std::to_string(e);
         
-        return false;
+        r.result = false;
+        return r;
     }
     
+    r.result = true;
     cwd = cwdBuf;
-    return true;
+    return r;
 }
 
 #include "core.cpp"

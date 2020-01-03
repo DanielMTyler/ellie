@@ -108,6 +108,14 @@ typedef std::size_t MemorySize;
     }
 #endif
 
+#include <string>
+
+struct ResultBool
+{
+    bool result;
+    std::string error;
+};
+
 //
 // Platform provided services
 //
@@ -132,8 +140,6 @@ public:
     virtual void debug(const char *system, const char *format, ...) = 0;
     virtual void trace(const char *system, const char *format, ...) = 0;
 };
-
-#include <string>
 
 struct PlatformServices
 {
