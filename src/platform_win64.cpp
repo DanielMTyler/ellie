@@ -143,10 +143,8 @@ ResultBool PlatformGetCWD(std::string& cwd)
 {
     ResultBool r;
     
-    // @todo Once Unicode is supported, paths can be 32,767 WCHARs long.
-    const uint32 cwdBufSize = KIBIBYTES(1);
-    char cwdBuf[cwdBufSize];
-    if (!GetCurrentDirectory(cwdBufSize, cwdBuf))
+    char cwdBuf[MAX_PATH];
+    if (!GetCurrentDirectory(MAX_PATH, cwdBuf))
     {
         std::string msg;
         DWORD e = PlatformImpl::FormattedLastError(msg);
@@ -159,8 +157,47 @@ ResultBool PlatformGetCWD(std::string& cwd)
         return r;
     }
     
-    r.result = true;
     cwd = cwdBuf;
+    r.result = true;
+    return r;
+}
+
+ResultBool PlatformCreateTempFile(std::string& file)
+{
+    ResultBool r;
+    
+    char tempPathBuf[MAX_PATH];
+    DWORD retDW = GetTempPath(MAX_PATH, tempPathBuf);
+    if (retDW > MAX_PATH || !retDW)
+    {
+        std::string msg;
+        DWORD e = PlatformImpl::FormattedLastError(msg);
+        if (!msg.empty())
+            r.error = "GetTempPath failed: " + msg;
+        else
+            r.error = "GetTempPath failed: GetLastError()=" + std::to_string(e);
+        
+        r.result = false;
+        return r;
+    }
+    
+    char tempFileNameBuf[MAX_PATH];
+    UINT retUI = GetTempFileName(tempPathBuf, PROJECT_NAME, 0, tempFileNameBuf);
+    if (!retUI)
+    {
+        std::string msg;
+        DWORD e = PlatformImpl::FormattedLastError(msg);
+        if (!msg.empty())
+            r.error = "GetTempFileName failed: " + msg;
+        else
+            r.error = "GetTempFileName failed: GetLastError()=" + std::to_string(e);
+        
+        r.result = false;
+        return r;
+    }
+    
+    file = tempFileNameBuf;
+    r.result = true;
     return r;
 }
 

@@ -367,7 +367,7 @@ void GameCleanup(void *game, GameServices &gameServices)
     // Check if file exists before trying to delete it to avoid a useless error message being logged.
     ResultBool r = PlatformDeleteFile(gGameLiveFullPath);
     if (!r.result)
-        gLog.fatal("Core", "Failed to delete live game: %s", r.error.c_str());
+        gLog.warn("Core", "Failed to delete live game: %s", r.error.c_str());
 }
 
 // WARNING: SDL 2 requires this exact function signature, changing it will give "undefined reference to SDL_main" linker errors.
@@ -397,11 +397,16 @@ int main(int argc, char *argv[])
     gLog.info("Core", "Program path: %s", platformServices.programPath.c_str());
     gGameFullPath = platformServices.programPath + GAME_FILENAME;
     gLog.info("Core", "Game fullpath: %s", gGameFullPath.c_str());
-    gGameLiveFullPath = platformServices.programPath + GAME_FILENAME + ".live";
+    ResultBool r = PlatformCreateTempFile(gGameLiveFullPath);
+    if (!r.result)
+    {
+        gLog.fatal("Core", "Failed to create temp live game file: %s", r.error.c_str());
+        return 1;
+    }
     gLog.info("Core", "Game Live fullpath: %s", gGameLiveFullPath.c_str());
 
     std::string cwd;
-    ResultBool r = PlatformGetCWD(cwd);
+    r = PlatformGetCWD(cwd);
     if (!r.result)
     {
         gLog.fatal("Core", "Failed to get the current working directory: %s", r.error.c_str());

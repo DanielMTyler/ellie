@@ -12,7 +12,8 @@ setlocal EnableDelayedExpansion
 
 set LLVM_PATH=C:\Program Files\LLVM\bin
 set MINGW_PATH=C:\Program Files\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\bin
-set BaseFilename=ellie
+set ProjectName=ellie
+set BaseFilename=%ProjectName%
 
 rem
 rem
@@ -88,7 +89,7 @@ set CompilerWarningFlags=-Werror -Weverything -Wno-c++98-compat -Wno-used-but-ma
 rem WARNING: \" is required around -D values to actually make them strings.
 rem NOTE: -isystem is used for SDL2 to avoid warnings/errors.
 rem WARNING: Paths should be enclosed in quotes (") to avoid problems with files/folders with spaces in the name.
-set CommonCompilerFlags=-target x86_64-pc-windows-gnu -std=c++17 -mwindows %CompilerWarningFlags% -isystem"%DEPS_INCLUDE_PATH%" -isystem"%DEPS_SRC_PATH%" -isystem"%DEPS_INCLUDE_PATH%\SDL2"
+set CommonCompilerFlags=-target x86_64-pc-windows-gnu -std=c++17 -mwindows %CompilerWarningFlags% -isystem"%DEPS_INCLUDE_PATH%" -isystem"%DEPS_SRC_PATH%" -isystem"%DEPS_INCLUDE_PATH%\SDL2" -DPROJECT_NAME=\"%ProjectName%\"
 set CommonLinkerFlags=-L"%DEPS_LIB_PATH%" -lmingw32 -lSDL2main -lSDL2
 
 set CommonEXEFlags=%CommonCompilerFlags% %CommonLinkerFlags%

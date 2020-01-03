@@ -18,3 +18,7 @@ ResultBool PlatformFileExists(std::string file);
 ResultBool PlatformFolderExists(std::string folder);
 
 ResultBool PlatformGetCWD(std::string& cwd);
+
+// Create a temp file in the proper location for the platform.
+// On success, file will be the full path to the temp file.
+ResultBool PlatformCreateTempFile(std::string& file);
