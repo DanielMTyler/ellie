@@ -1,0 +1,14 @@
+==================================
+Copyright (C) 2020 Daniel M Tyler.
+  This file is part of Ellie.
+==================================
+
+This project uses a Unity build, which just means that the compiler is told
+about a single CPP file which includes every CPP/HPP it needs to compile.
+
+Platform implementation is in src/platform_<platform>.cpp such as src/platform_win64.cpp.
+
+The application and game logic are split into a Core and the Game. The game
+is built as a shared library and the core copies it to a temp "live" file
+which is then loaded and used. This separation allows for live/hot reloading
+of the game logic while the game is running.
