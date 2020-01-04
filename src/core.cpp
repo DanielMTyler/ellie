@@ -394,13 +394,17 @@ int main(int argc, char *argv[])
     SDL_free(exePathBuf);
     exePathBuf = nullptr;
 
-    // I prefer the log sticking with the exe, but should it be in the CWD instead?
+    // @todo Save to SDL_GetPrefPath.
     if (!gLog.init((exePath + "\\" + PLATFORM_LOG_FILENAME).c_str()))
         return 1;
 
-#ifdef BUILD_DEBUG
-    gLog.warn("Core", "Debug build.");
-#endif
+    #if BUILD_RELEASE
+        gLog.info("Core", "Build: Release.");
+    #elif BUILD_DEBUG
+        gLog.info("Core", "Build: Debug.");
+    #else
+        #error Build type unknown.
+    #endif
 
     PlatformServices platformServices;
     platformServices.log = &gLog;
