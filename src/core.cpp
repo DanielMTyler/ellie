@@ -11,6 +11,7 @@
 #include <glad/glad.h>
 #include <glad.c>
 #include <SDL.h>
+#include <fstream>
 #include <iostream>
 #include <string>
 #include "log.cpp"
@@ -472,19 +473,21 @@ int main(int argc, char *argv[])
     game = GameReload(game, platformServices, gameServices);
     if (!game)
         return 1;
-
-
-
-    const char *vertexShaderStr = R"string(
-#version 330 core
-layout (location = 0) in vec3 aPos;
-
-void main()
-{
-    gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);
-})string";
+    
+    std::string vertexShaderStr;
+    std::ifstream inVert(platformServices.dataPath + "\\shaders\\default.vert", std::ios::in | std::ios::binary);
+    if (inVert)
+    {
+        vertexShaderStr = std::string((std::istreambuf_iterator<char>(inVert)), std::istreambuf_iterator<char>());
+    }
+    else
+    {
+        gLog.fatal("Core", "Failed to read %s\\shaders\\default.vert", platformServices.dataPath.c_str());
+        return 1;
+    }
     uint32 vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShaderID, 1, &vertexShaderStr, nullptr);
+    const char *vertexShaderStrBuf = vertexShaderStr.c_str();
+    glShaderSource(vertexShaderID, 1, &vertexShaderStrBuf, nullptr);
     glCompileShader(vertexShaderID);
     int success;
     const uint32 infoLogSize = KIBIBYTES(1);
@@ -496,17 +499,21 @@ void main()
         gLog.fatal("OpenGL", "Vertex Shader compiliation failed: %s", infoLog);
         return 1;
     }
-
-    const char *fragmentShaderStr = R"string(
-#version 330 core
-out vec4 FragColor;
-
-void main()
-{
-    FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);
-})string";
+    
+    std::string fragmentShaderStr;
+    std::ifstream inFrag(platformServices.dataPath + "\\shaders\\default.frag", std::ios::in | std::ios::binary);
+    if (inFrag)
+    {
+        fragmentShaderStr = std::string((std::istreambuf_iterator<char>(inFrag)), std::istreambuf_iterator<char>());
+    }
+    else
+    {
+        gLog.fatal("Core", "Failed to read %s\\shaders\\default.frag", platformServices.dataPath.c_str());
+        return 1;
+    }
     uint32 fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShaderID, 1, &fragmentShaderStr, nullptr);
+    const char *fragmentShaderStrBuf = fragmentShaderStr.c_str();
+    glShaderSource(fragmentShaderID, 1, &fragmentShaderStrBuf, nullptr);
     glCompileShader(fragmentShaderID);
     glGetShaderiv(fragmentShaderID, GL_COMPILE_STATUS, &success);
     if (!success)
