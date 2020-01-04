@@ -69,30 +69,41 @@ bool SDLCheckAndReportGLAttribs()
     int glProfile;
     int doubleBuffer;
     bool failed = false;
-
-    failed = SDL_GL_GetAttribute(SDL_GL_ACCELERATED_VISUAL, &hwAccel) < 0 ? true : false;
-    failed = SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &glMajor) < 0 ? true : false;
-    failed = SDL_GL_GetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, &glMinor) < 0 ? true : false;
-    failed = SDL_GL_GetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, &glProfile) < 0 ? true : false;
-    failed = SDL_GL_GetAttribute(SDL_GL_DOUBLEBUFFER, &doubleBuffer) < 0 ? true : false;
+    
+    if (SDL_GL_GetAttribute(SDL_GL_ACCELERATED_VISUAL, &hwAccel) < 0)
+        failed = true;
+    if (SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &glMajor) < 0)
+        failed = true;
+    if (SDL_GL_GetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, &glMinor) < 0)
+        failed = true;
+    if (SDL_GL_GetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, &glProfile) < 0)
+        failed = true;
+    if (SDL_GL_GetAttribute(SDL_GL_DOUBLEBUFFER, &doubleBuffer) < 0)
+        failed = true;
 
     if (failed)
     {
         gLog.fatal("Core", "Failed to get OpenGL attributes: %s", SDL_GetError());
         return false;
     }
-
-    failed = !hwAccel ? true : false;
-    failed = glMajor != 3 ? true : false;
-    failed = glMinor != 3 ? true : false;
-    failed = glProfile != SDL_GL_CONTEXT_PROFILE_CORE ? true : false;
-    failed = !doubleBuffer ? true : false;
+    
+    if (!hwAccel)
+        failed = true;
+    if (glMajor != 3)
+        failed = true;
+    if (glMinor != 3)
+        failed = true;
+    if (glProfile != SDL_GL_CONTEXT_PROFILE_CORE)
+        failed = true;
+    if (!doubleBuffer)
+        failed = true;
 
     if (failed)
     {
         gLog.fatal("Core", "OpenGL support doesn't match what was requested: HW accel=%s, v%i.%i %s profile, Double Buffered=%s.", BoolToStr(hwAccel), glMajor, glMinor, SDLGLProfileToStr(glProfile), BoolToStr(doubleBuffer));
         return false;
-    } else
+    }
+    else
     {
         gLog.info("Core", "OpenGL support matches what was requested.");
         return true;
