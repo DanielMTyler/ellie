@@ -302,7 +302,7 @@ bool GameCopyToTemp()
 }
 
 // Returns game via SDL_LoadObject or nullptr on error.
-void *GameInit(PlatformServices &platformServices, GameServices &gameServices)
+void *GameInit(CoreServices &coreServices, GameServices &gameServices)
 {
     if (!GameCopyToTemp())
     {
@@ -323,7 +323,7 @@ void *GameInit(PlatformServices &platformServices, GameServices &gameServices)
         return nullptr;
     }
 
-    if (!gameServices.onInit(&platformServices))
+    if (!gameServices.onInit(&coreServices))
     {
         ZERO_STRUCT(gameServices);
         SDL_UnloadObject(g);
@@ -335,7 +335,7 @@ void *GameInit(PlatformServices &platformServices, GameServices &gameServices)
 }
 
 // Returns game via SDL_LoadObject or nullptr on error.
-void *GameReload(void *oldGame, PlatformServices &platformServices, GameServices &gameServices)
+void *GameReload(void *oldGame, CoreServices &coreServices, GameServices &gameServices)
 {
     ASSERT(oldGame);
 
@@ -364,7 +364,7 @@ void *GameReload(void *oldGame, PlatformServices &platformServices, GameServices
         return nullptr;
     }
 
-    gameServices.onPostReload(&platformServices);
+    gameServices.onPostReload(&coreServices);
     return g;
 }
 
@@ -422,8 +422,8 @@ int main(int argc, char *argv[])
         #error Build type unknown.
     #endif
     
-    PlatformServices platformServices;
-    platformServices.log = &gLog;
+    CoreServices coreServices;
+    coreServices.log = &gLog;
     gLog.info("Core", "EXE path: %s", exePath.c_str());
     gGameFullPath = exePath + GAME_FILENAME;
     gLog.info("Core", "Game fullpath: %s", gGameFullPath.c_str());
@@ -469,11 +469,11 @@ int main(int argc, char *argv[])
         return 1;
 
     GameServices gameServices;
-    void *game = GameInit(platformServices, gameServices);
+    void *game = GameInit(coreServices, gameServices);
     if (!game)
         return 1;
 
-    game = GameReload(game, platformServices, gameServices);
+    game = GameReload(game, coreServices, gameServices);
     if (!game)
         return 1;
     

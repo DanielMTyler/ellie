@@ -122,7 +122,7 @@ const char *BoolToStr(bool b)
 }
 
 //
-// Platform provided services
+// Core provided services
 //
 
 class ILog
@@ -146,7 +146,7 @@ public:
     virtual void trace(const char *system, const char *format, ...) = 0;
 };
 
-struct PlatformServices
+struct CoreServices
 {
     // @todo Add an event manager / message bus for messaging between systems.
     // @todo Memory allocator/pool for retained memory during game reloads.
@@ -158,13 +158,13 @@ struct PlatformServices
 //
 
 // Returns false on failure.
-#define GAME_ONINIT(Name) bool Name(PlatformServices *platformServices)
+#define GAME_ONINIT(Name) bool Name(CoreServices *coreServices)
 typedef GAME_ONINIT(Game_OnInit);
 
 #define GAME_ONPRERELOAD(Name) void Name()
 typedef GAME_ONPRERELOAD(Game_OnPreReload);
 
-#define GAME_ONPOSTRELOAD(Name) void Name(PlatformServices *platformServices)
+#define GAME_ONPOSTRELOAD(Name) void Name(CoreServices *coreServices)
 typedef GAME_ONPOSTRELOAD(Game_OnPostReload);
 
 #define GAME_ONCLEANUP(Name) void Name()

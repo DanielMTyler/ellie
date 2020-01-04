@@ -8,12 +8,12 @@
 #include "global.hpp"
 
 static ILog *gLog = nullptr;
-static PlatformServices *gPlatformServices = nullptr;
+static CoreServices *gCoreServices = nullptr;
 
 extern "C" GAME_ONINIT(OnInit)
 {
-    gLog = platformServices->log;
-    gPlatformServices = platformServices;
+    gLog = coreServices->log;
+    gCoreServices = coreServices;
     gLog->info("Game", "Game initializing.");
     gLog->info("Game", "Game initialized.");
     return true;
@@ -26,8 +26,8 @@ extern "C" GAME_ONPRERELOAD(OnPreReload)
 
 extern "C" GAME_ONPOSTRELOAD(OnPostReload)
 {
-    gLog = platformServices->log;
-    gPlatformServices = platformServices;
+    gLog = coreServices->log;
+    gCoreServices = coreServices;
     gLog->info("Game", "Game reloaded.");
 }
 
