@@ -397,11 +397,11 @@ int main(int argc, char *argv[])
     SDL_free(exePathBuf);
     exePathBuf = nullptr;
     
-    PlatformServices platformServices;
+    std::string prefPath;
     char *sdlPrefPath = SDL_GetPrefPath("DanielMTyler", PROJECT_NAME);
     if (sdlPrefPath)
     {
-        platformServices.prefPath = sdlPrefPath;
+        prefPath = sdlPrefPath;
         SDL_free(sdlPrefPath);
         sdlPrefPath = nullptr;
     }
@@ -411,7 +411,7 @@ int main(int argc, char *argv[])
         return 1;
     }
     
-    if (!gLog.init((platformServices.prefPath + PLATFORM_LOG_FILENAME).c_str()))
+    if (!gLog.init((prefPath + PLATFORM_LOG_FILENAME).c_str()))
         return 1;
 
     #if BUILD_RELEASE
@@ -422,10 +422,10 @@ int main(int argc, char *argv[])
         #error Build type unknown.
     #endif
     
+    PlatformServices platformServices;
     platformServices.log = &gLog;
-    platformServices.programPath = exePath;
-    gLog.info("Core", "Program path: %s", platformServices.programPath.c_str());
-    gGameFullPath = platformServices.programPath + GAME_FILENAME;
+    gLog.info("Core", "EXE path: %s", exePath.c_str());
+    gGameFullPath = exePath + GAME_FILENAME;
     gLog.info("Core", "Game fullpath: %s", gGameFullPath.c_str());
     ResultBool r = PlatformCreateTempFile(gGameLiveFullPath);
     if (!r.result)
@@ -434,32 +434,35 @@ int main(int argc, char *argv[])
         return 1;
     }
     gLog.info("Core", "Game Live fullpath: %s", gGameLiveFullPath.c_str());
-
-    r = PlatformGetCWD(platformServices.cwdPath);
+    
+    std::string cwdPath;
+    r = PlatformGetCWD(cwdPath);
     if (!r.result)
     {
         gLog.fatal("Core", "Failed to get the current working directory: %s", r.error.c_str());
         return 1;
     }
     // Prefer the CWD over programPath for releasePath, but verify the data folder exists in releasePath.
-    platformServices.releasePath = platformServices.cwdPath;
-    platformServices.dataPath = platformServices.releasePath + "data\\";
-    r = PlatformFolderExists(platformServices.dataPath);
+    std::string releasePath = cwdPath;
+    std::string dataPath = releasePath + "data" + PlatformPathSeparator();
+    r = PlatformFolderExists(dataPath);
     if (!r.result)
     {
-        platformServices.releasePath = platformServices.programPath;
-        platformServices.dataPath = platformServices.releasePath + "data\\";
-        r = PlatformFolderExists(platformServices.dataPath);
+        releasePath = exePath;
+        dataPath = releasePath + "data" + PlatformPathSeparator();
+        r = PlatformFolderExists(dataPath);
         if (!r.result)
         {
-            gLog.fatal("Core", "The data folder wasn't found in the current working directory (%s) or the executable directory (%s).", platformServices.cwdPath.c_str(), platformServices.programPath.c_str());
+            gLog.fatal("Core", "The data folder wasn't found in the current working directory (%s) or the executable directory (%s).", cwdPath.c_str(), exePath.c_str());
             return 1;
         }
     }
-    gLog.info("Core", "Release path: %s", platformServices.releasePath.c_str());
-    gLog.info("Core", "Data path: %s", platformServices.dataPath.c_str());
-    gLog.info("Core", "User preferences path: %s", platformServices.prefPath.c_str());
-    gLog.info("Core", "CWD path: %s", platformServices.cwdPath.c_str());
+    std::string shadersPath = dataPath + "shaders" + PlatformPathSeparator();
+    gLog.info("Core", "Release path: %s", releasePath.c_str());
+    gLog.info("Core", "Data path: %s", dataPath.c_str());
+    gLog.info("Core", "Shaders path: %s", shadersPath.c_str());
+    gLog.info("Core", "User preferences path: %s", prefPath.c_str());
+    gLog.info("Core", "CWD path: %s", cwdPath.c_str());
 
     SDLWrapper sdl;
     if (!sdl.init())
@@ -475,14 +478,15 @@ int main(int argc, char *argv[])
         return 1;
     
     std::string vertexShaderStr;
-    std::ifstream inVert(platformServices.dataPath + "\\shaders\\default.vert", std::ios::in | std::ios::binary);
+    std::string vertexFilePath = shadersPath + "default.vert";
+    std::ifstream inVert(vertexFilePath, std::ios::in | std::ios::binary);
     if (inVert)
     {
         vertexShaderStr = std::string((std::istreambuf_iterator<char>(inVert)), std::istreambuf_iterator<char>());
     }
     else
     {
-        gLog.fatal("Core", "Failed to read %s\\shaders\\default.vert", platformServices.dataPath.c_str());
+        gLog.fatal("Core", "Failed to read %s", vertexFilePath.c_str());
         return 1;
     }
     uint32 vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
@@ -501,14 +505,15 @@ int main(int argc, char *argv[])
     }
     
     std::string fragmentShaderStr;
-    std::ifstream inFrag(platformServices.dataPath + "\\shaders\\default.frag", std::ios::in | std::ios::binary);
+    std::string fragmentFilePath = shadersPath + "default.frag";
+    std::ifstream inFrag(fragmentFilePath, std::ios::in | std::ios::binary);
     if (inFrag)
     {
         fragmentShaderStr = std::string((std::istreambuf_iterator<char>(inFrag)), std::istreambuf_iterator<char>());
     }
     else
     {
-        gLog.fatal("Core", "Failed to read %s\\shaders\\default.frag", platformServices.dataPath.c_str());
+        gLog.fatal("Core", "Failed to read %s", fragmentFilePath.c_str());
         return 1;
     }
     uint32 fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);

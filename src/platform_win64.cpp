@@ -202,4 +202,9 @@ ResultBool PlatformCreateTempFile(std::string& filePath)
     return r;
 }
 
+const char *PlatformPathSeparator()
+{
+    return "\\";
+}
+
 #include "core.cpp"

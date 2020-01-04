@@ -15,3 +15,4 @@ ResultBool PlatformFolderExists(std::string folder);
 // cwd will end with a path separator.
 ResultBool PlatformGetCWD(std::string& cwd);
 ResultBool PlatformCreateTempFile(std::string& filePath);
+const char *PlatformPathSeparator();
