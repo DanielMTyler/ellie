@@ -30,7 +30,7 @@ namespace PlatformImpl {
 DWORD FormattedLastError(std::string& msg)
 {
     DWORD e = GetLastError();
-    if (e == 0)
+    if (!e)
         return e;
 
     char *rawMsg = nullptr;
@@ -162,7 +162,7 @@ ResultBool PlatformGetCWD(std::string& cwd)
     return r;
 }
 
-ResultBool PlatformCreateTempFile(std::string& file)
+ResultBool PlatformCreateTempFile(std::string& filePath)
 {
     ResultBool r;
     
@@ -196,7 +196,7 @@ ResultBool PlatformCreateTempFile(std::string& file)
         return r;
     }
     
-    file = tempFileNameBuf;
+    filePath = tempFileNameBuf;
     r.result = true;
     return r;
 }
