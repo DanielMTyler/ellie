@@ -157,7 +157,8 @@ ResultBool PlatformGetCWD(std::string& cwd)
         return r;
     }
     
-    cwd = cwdBuf;
+    // GetCurrentDirectory doesn't add a path separator at the end.
+    cwd = cwdBuf + std::string("\\");
     r.result = true;
     return r;
 }

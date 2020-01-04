@@ -151,9 +151,11 @@ struct PlatformServices
     // @todo Add an event manager / message bus for messaging between systems.
     // @todo Memory allocator/pool for retained memory during game reloads.
     ILog *log;
-    std::string programPath; // The folder that contains the executable.
-    std::string releasePath; // The "release" folder that the executable is expected to run from outside of development.
-    std::string dataPath;    // The data folder.
+    std::string programPath; // Executable folder.
+    std::string releasePath; // release folder.
+    std::string dataPath;    // data folder.
+    std::string prefPath;    // User preferences folder.
+    std::string cwdPath;     // Current Working Directory.
 };
 
 //

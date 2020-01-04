@@ -395,9 +395,22 @@ int main(int argc, char *argv[])
     std::string exePath = exePathBuf;
     SDL_free(exePathBuf);
     exePathBuf = nullptr;
-
-    // @todo Save to SDL_GetPrefPath.
-    if (!gLog.init((exePath + "\\" + PLATFORM_LOG_FILENAME).c_str()))
+    
+    PlatformServices platformServices;
+    char *sdlPrefPath = SDL_GetPrefPath("DanielMTyler", PROJECT_NAME);
+    if (sdlPrefPath)
+    {
+        platformServices.prefPath = sdlPrefPath;
+        SDL_free(sdlPrefPath);
+        sdlPrefPath = nullptr;
+    }
+    else
+    {
+        std::cerr << "Failed to get user preferences path: " << SDL_GetError() << std::endl;
+        return 1;
+    }
+    
+    if (!gLog.init((platformServices.prefPath + PLATFORM_LOG_FILENAME).c_str()))
         return 1;
 
     #if BUILD_RELEASE
@@ -407,8 +420,7 @@ int main(int argc, char *argv[])
     #else
         #error Build type unknown.
     #endif
-
-    PlatformServices platformServices;
+    
     platformServices.log = &gLog;
     platformServices.programPath = exePath;
     gLog.info("Core", "Program path: %s", platformServices.programPath.c_str());
@@ -422,17 +434,14 @@ int main(int argc, char *argv[])
     }
     gLog.info("Core", "Game Live fullpath: %s", gGameLiveFullPath.c_str());
 
-    std::string cwd;
-    r = PlatformGetCWD(cwd);
+    r = PlatformGetCWD(platformServices.cwdPath);
     if (!r.result)
     {
         gLog.fatal("Core", "Failed to get the current working directory: %s", r.error.c_str());
         return 1;
     }
     // Prefer the CWD over programPath for releasePath, but verify the data folder exists in releasePath.
-    platformServices.releasePath = cwd;
-    // GetCurrentDirectoryA doesn't append a "\".
-    platformServices.releasePath += "\\";
+    platformServices.releasePath = platformServices.cwdPath;
     platformServices.dataPath = platformServices.releasePath + "data\\";
     r = PlatformFolderExists(platformServices.dataPath);
     if (!r.result)
@@ -442,12 +451,14 @@ int main(int argc, char *argv[])
         r = PlatformFolderExists(platformServices.dataPath);
         if (!r.result)
         {
-            gLog.fatal("Core", "The data folder wasn't found in the current working directory (%s) or the executable directory (%s).", cwd.c_str(), platformServices.programPath.c_str());
+            gLog.fatal("Core", "The data folder wasn't found in the current working directory (%s) or the executable directory (%s).", platformServices.cwdPath.c_str(), platformServices.programPath.c_str());
             return 1;
         }
     }
     gLog.info("Core", "Release path: %s", platformServices.releasePath.c_str());
     gLog.info("Core", "Data path: %s", platformServices.dataPath.c_str());
+    gLog.info("Core", "User preferences path: %s", platformServices.prefPath.c_str());
+    gLog.info("Core", "CWD path: %s", platformServices.cwdPath.c_str());
 
     SDLWrapper sdl;
     if (!sdl.init())
@@ -588,7 +599,7 @@ void main()
                             glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
                         else
                             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-                        gLog.info("Game", "Set wireframe to %i", wireframe);
+                        gLog.info("Game", "Set wireframe to %i.", wireframe);
                     }
                     break;
                 default:

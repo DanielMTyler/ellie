@@ -23,7 +23,8 @@ private:
     FILE *file = nullptr;
     static const uint32 bufferSize = KIBIBYTES(2);
     char buffer[bufferSize];
-
+    
+    // Do nothing if the log hasn't been initialized yet.
     void log(const char *system, const char *format, Type type, va_list args)
     {
         if (!file)
