@@ -5,6 +5,8 @@
     ==================================
 */
 
+// @cleanup
+
 #include "global.hpp"
 #include <glad/glad.h>
 #include <glad.c>
@@ -44,11 +46,16 @@ bool SDLSetGLAttribs()
     int doubleBuffer = 1;
     bool failed = false;
     
-    failed = SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, hwAccel) < 0 ? true : false;
-    failed = SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, glMajor) < 0 ? true : false;
-    failed = SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, glMinor) < 0 ? true : false;
-    failed = SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, glProfile) < 0 ? true : false;
-    failed = SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, doubleBuffer) < 0 ? true : false;
+    if (SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, hwAccel) < 0)
+        failed = true;
+    if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, glMajor) < 0)
+        failed = true;
+    if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, glMinor) < 0)
+        failed = true;
+    if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, glProfile) < 0)
+        failed = true;
+    if (SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, doubleBuffer) < 0)
+        failed = true;
 
     if (failed)
     {
