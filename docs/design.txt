@@ -12,3 +12,5 @@ The application and game logic are split into a Core and the Game. The game
 is built as a shared library and the core copies it to a temp "live" file
 which is then loaded and used. This separation allows for live/hot reloading
 of the game logic while the game is running.
+
+This project uses OpenGL for 3D Rendering.
