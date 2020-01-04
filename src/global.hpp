@@ -116,6 +116,11 @@ struct ResultBool
     std::string error;
 };
 
+const char *BoolToStr(bool b)
+{
+    return (b ? "True" : "False");
+}
+
 //
 // Platform provided services
 //

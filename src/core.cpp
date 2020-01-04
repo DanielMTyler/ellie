@@ -19,11 +19,6 @@ static Log gLog;
 static std::string gGameFullPath;
 static std::string gGameLiveFullPath;
 
-const char *BoolToStr(bool b)
-{
-    return (b ? "True" : "False");
-}
-
 const char *SDLGLProfileToStr(int p)
 {
     if (p == SDL_GL_CONTEXT_PROFILE_CORE)
@@ -56,7 +51,7 @@ bool SDLSetGLAttribs()
         failed = true;
     if (SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, doubleBuffer) < 0)
         failed = true;
-
+    
     if (failed)
     {
         gLog.fatal("Core", "Failed to set OpenGL attributes: %s", SDL_GetError());
