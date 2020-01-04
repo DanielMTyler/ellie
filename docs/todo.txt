@@ -3,6 +3,7 @@ Copyright (C) 2020 Daniel M Tyler.
   This file is part of Ellie.
 ==================================
 
+* Add input system.
 * Reload game library when modified.
 * Add loop editing (record commands, replay them forever until stopped).
 * Use GLM & GLI later.
