@@ -482,7 +482,7 @@ bool LoadShaderFromFile(std::string file, std::string& shader)
     return true;
 }
 
-bool CompileShaderFromStr(uint32 shaderID, std::string shader)
+bool CompileShaderFromStr(GLuint shaderID, std::string shader)
 {
     const char *shaderBuf = shader.c_str();
     glShaderSource(shaderID, 1, &shaderBuf, nullptr);
@@ -502,7 +502,7 @@ bool CompileShaderFromStr(uint32 shaderID, std::string shader)
     return true;
 }
 
-bool LoadAndCompileVertexShader(uint32& shaderID, std::string baseFileName)
+bool LoadAndCompileVertexShader(GLuint& shaderID, std::string baseFileName)
 {
     shaderID = glCreateShader(GL_VERTEX_SHADER);
     std::string fileName = baseFileName + ".vert";
@@ -514,7 +514,7 @@ bool LoadAndCompileVertexShader(uint32& shaderID, std::string baseFileName)
     return true;
 }
 
-bool LoadAndCompileFragmentShader(uint32& shaderID, std::string baseFileName)
+bool LoadAndCompileFragmentShader(GLuint& shaderID, std::string baseFileName)
 {
     shaderID = glCreateShader(GL_FRAGMENT_SHADER);
     std::string fileName = baseFileName + ".frag";
@@ -546,12 +546,12 @@ int main(int argc, char *argv[])
     if (!game)
         return 1;
     
-    uint32 vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
-    uint32 fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
+    GLuint vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
+    GLuint fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
     LoadAndCompileVertexShader(vertexShaderID, "default");
     LoadAndCompileFragmentShader(fragmentShaderID, "default");
     
-    uint32 shaderProgramID = glCreateProgram();
+    GLuint shaderProgramID = glCreateProgram();
     glAttachShader(shaderProgramID, vertexShaderID);
     glAttachShader(shaderProgramID, fragmentShaderID);
     glLinkProgram(shaderProgramID);
@@ -569,7 +569,7 @@ int main(int argc, char *argv[])
     glDeleteShader(fragmentShaderID);
 
 
-    uint32 vao;
+    GLuint vao;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
 
@@ -579,17 +579,17 @@ int main(int argc, char *argv[])
         -0.5f, -0.5f, 0.0f,  // bottom left
         -0.5f,  0.5f, 0.0f   // top left
     };
-    uint32 vbo;
+    GLuint vbo;
     // TODO: Error checking.
     glGenBuffers(1, &vbo);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-    uint32 indices[] = { // note that we start from 0!
+    GLuint indices[] = { // note that we start from 0!
         0, 1, 3,   // first triangle
         1, 2, 3    // second triangle
     };
-    uint32 ebo;
+    GLuint ebo;
     // TODO: Error checking.
     glGenBuffers(1, &ebo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
