@@ -122,16 +122,12 @@ if %BuildDebug%==1 (
 )
 
 if %BuildClean%==1 (
-    echo Deleting build files, logs, and live copy of game.
+    echo Deleting build files.
     if exist !ReleaseBaseFilename!.exe del !ReleaseBaseFilename!.exe
     if exist !ReleaseBaseFilename!.dll del !ReleaseBaseFilename!.dll
-    if exist !ReleaseBaseFilename!.dll.live del !ReleaseBaseFilename!.dll.live
-    if exist !ReleaseBaseFilename!.log del !ReleaseBaseFilename!.log
 
     if exist !DebugBaseFilename!.exe del !DebugBaseFilename!.exe
     if exist !DebugBaseFilename!.dll del !DebugBaseFilename!.dll
-    if exist !DebugBaseFilename!.dll.live del !DebugBaseFilename!.dll.live
-    if exist !DebugBaseFilename!.log del !DebugBaseFilename!.log
 )
 
 goto END

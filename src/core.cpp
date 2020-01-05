@@ -19,6 +19,8 @@
 static Log gLog;
 static std::string gGameFullPath;
 static std::string gGameLiveFullPath;
+static std::string gDataPath;
+static std::string gPrefPath;
 
 const char *SDLGLProfileToStr(int p)
 {
@@ -384,35 +386,33 @@ void GameCleanup(void *game, GameServices &gameServices)
         gLog.warn("Core", "Failed to delete live game: %s", r.error.c_str());
 }
 
-// WARNING: SDL 2 requires this exact function signature, changing it will give "undefined reference to SDL_main" linker errors.
-int main(int argc, char *argv[])
+bool CoreInit(CoreServices& coreServices)
 {
     char *exePathBuf = SDL_GetBasePath();
     if (!exePathBuf)
     {
         std::cerr << "Failed to get executable path: " << SDL_GetError() << std::endl;
-        return 1;
+        return false;
     }
     std::string exePath = exePathBuf;
     SDL_free(exePathBuf);
     exePathBuf = nullptr;
     
-    std::string prefPath;
     char *sdlPrefPath = SDL_GetPrefPath("DanielMTyler", PROJECT_NAME);
     if (sdlPrefPath)
     {
-        prefPath = sdlPrefPath;
+        gPrefPath = sdlPrefPath;
         SDL_free(sdlPrefPath);
         sdlPrefPath = nullptr;
     }
     else
     {
         std::cerr << "Failed to get user preferences path: " << SDL_GetError() << std::endl;
-        return 1;
+        return false;
     }
     
-    if (!gLog.init((prefPath + PLATFORM_LOG_FILENAME).c_str()))
-        return 1;
+    if (!gLog.init((gPrefPath + PLATFORM_LOG_FILENAME).c_str()))
+        return false;
 
     #if BUILD_RELEASE
         gLog.info("Core", "Build: Release.");
@@ -422,7 +422,6 @@ int main(int argc, char *argv[])
         #error Build type unknown.
     #endif
     
-    CoreServices coreServices;
     coreServices.log = &gLog;
     gLog.info("Core", "EXE path: %s", exePath.c_str());
     gGameFullPath = exePath + GAME_FILENAME;
@@ -431,7 +430,7 @@ int main(int argc, char *argv[])
     if (!r.result)
     {
         gLog.fatal("Core", "Failed to create temp live game file: %s", r.error.c_str());
-        return 1;
+        return false;
     }
     gLog.info("Core", "Game Live fullpath: %s", gGameLiveFullPath.c_str());
     
@@ -440,34 +439,104 @@ int main(int argc, char *argv[])
     if (!r.result)
     {
         gLog.fatal("Core", "Failed to get the current working directory: %s", r.error.c_str());
-        return 1;
+        return false;
     }
     // Prefer the CWD over programPath for releasePath, but verify the data folder exists in releasePath.
     std::string releasePath = cwdPath;
-    std::string dataPath = releasePath + "data" + PlatformPathSeparator();
-    r = PlatformFolderExists(dataPath);
+    gDataPath = releasePath + "data" + PLATFORM_PATH_SEPARATOR;
+    r = PlatformFolderExists(gDataPath);
     if (!r.result)
     {
         releasePath = exePath;
-        dataPath = releasePath + "data" + PlatformPathSeparator();
-        r = PlatformFolderExists(dataPath);
+        gDataPath = releasePath + "data" + PLATFORM_PATH_SEPARATOR;
+        r = PlatformFolderExists(gDataPath);
         if (!r.result)
         {
             gLog.fatal("Core", "The data folder wasn't found in the current working directory (%s) or the executable directory (%s).", cwdPath.c_str(), exePath.c_str());
-            return 1;
+            return false;
         }
     }
-    std::string shadersPath = dataPath + "shaders" + PlatformPathSeparator();
     gLog.info("Core", "Release path: %s", releasePath.c_str());
-    gLog.info("Core", "Data path: %s", dataPath.c_str());
-    gLog.info("Core", "Shaders path: %s", shadersPath.c_str());
-    gLog.info("Core", "User preferences path: %s", prefPath.c_str());
+    gLog.info("Core", "Data path: %s", gDataPath.c_str());
+    gLog.info("Core", "User preferences path: %s", gPrefPath.c_str());
     gLog.info("Core", "CWD path: %s", cwdPath.c_str());
+    
+    return true;
+}
 
+bool LoadShaderFromFile(std::string file, std::string& shader)
+{
+    std::string filePath = gDataPath + "shaders" + PLATFORM_PATH_SEPARATOR + file;
+    std::ifstream in(filePath, std::ios::in | std::ios::binary);
+    if (in)
+    {
+        shader = std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+        gLog.info("Core", "Loaded shader: %s.", filePath.c_str());
+    }
+    else
+    {
+        gLog.fatal("Core", "Failed to load shader: %s.", filePath.c_str());
+        return false;
+    }
+    
+    return true;
+}
+
+bool CompileShaderFromStr(uint32 shaderID, std::string shader)
+{
+    const char *shaderBuf = shader.c_str();
+    glShaderSource(shaderID, 1, &shaderBuf, nullptr);
+    glCompileShader(shaderID);
+    const uint32 infoLogSize = KIBIBYTES(1);
+    char infoLog[infoLogSize];
+    int success;
+    glGetShaderiv(shaderID, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(shaderID, infoLogSize, nullptr, infoLog);
+        gLog.fatal("OpenGL", "Failed to compile shader: %s.", infoLog);
+        return false;
+    }
+    
+    gLog.info("OpenGL", "Compiled shader: %u.", shaderID);
+    return true;
+}
+
+bool LoadAndCompileVertexShader(uint32& shaderID, std::string baseFileName)
+{
+    shaderID = glCreateShader(GL_VERTEX_SHADER);
+    std::string fileName = baseFileName + ".vert";
+    std::string shader;
+    if (!LoadShaderFromFile(fileName, shader))
+        return false;
+    if (!CompileShaderFromStr(shaderID, shader))
+        return false;
+    return true;
+}
+
+bool LoadAndCompileFragmentShader(uint32& shaderID, std::string baseFileName)
+{
+    shaderID = glCreateShader(GL_FRAGMENT_SHADER);
+    std::string fileName = baseFileName + ".frag";
+    std::string shader;
+    if (!LoadShaderFromFile(fileName, shader))
+        return false;
+    if (!CompileShaderFromStr(shaderID, shader))
+        return false;
+    return true;
+}
+
+// WARNING: SDL 2 requires this exact function signature, changing it will give "undefined reference to SDL_main" linker errors.
+int main(int argc, char *argv[])
+{
+    CoreServices coreServices;
+    if (!CoreInit(coreServices))
+        return 1;
+    
     SDLWrapper sdl;
     if (!sdl.init())
-        return 1;
-
+        return false;
+    
     GameServices gameServices;
     void *game = GameInit(coreServices, gameServices);
     if (!game)
@@ -477,61 +546,18 @@ int main(int argc, char *argv[])
     if (!game)
         return 1;
     
-    std::string vertexShaderStr;
-    std::string vertexFilePath = shadersPath + "default.vert";
-    std::ifstream inVert(vertexFilePath, std::ios::in | std::ios::binary);
-    if (inVert)
-    {
-        vertexShaderStr = std::string((std::istreambuf_iterator<char>(inVert)), std::istreambuf_iterator<char>());
-    }
-    else
-    {
-        gLog.fatal("Core", "Failed to read %s", vertexFilePath.c_str());
-        return 1;
-    }
     uint32 vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
-    const char *vertexShaderStrBuf = vertexShaderStr.c_str();
-    glShaderSource(vertexShaderID, 1, &vertexShaderStrBuf, nullptr);
-    glCompileShader(vertexShaderID);
-    int success;
-    const uint32 infoLogSize = KIBIBYTES(1);
-    char infoLog[infoLogSize];
-    glGetShaderiv(vertexShaderID, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(vertexShaderID, infoLogSize, nullptr, infoLog);
-        gLog.fatal("OpenGL", "Vertex Shader compiliation failed: %s", infoLog);
-        return 1;
-    }
-    
-    std::string fragmentShaderStr;
-    std::string fragmentFilePath = shadersPath + "default.frag";
-    std::ifstream inFrag(fragmentFilePath, std::ios::in | std::ios::binary);
-    if (inFrag)
-    {
-        fragmentShaderStr = std::string((std::istreambuf_iterator<char>(inFrag)), std::istreambuf_iterator<char>());
-    }
-    else
-    {
-        gLog.fatal("Core", "Failed to read %s", fragmentFilePath.c_str());
-        return 1;
-    }
     uint32 fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
-    const char *fragmentShaderStrBuf = fragmentShaderStr.c_str();
-    glShaderSource(fragmentShaderID, 1, &fragmentShaderStrBuf, nullptr);
-    glCompileShader(fragmentShaderID);
-    glGetShaderiv(fragmentShaderID, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(fragmentShaderID, infoLogSize, nullptr, infoLog);
-        gLog.fatal("OpenGL", "Fragment Shader compiliation failed: %s", infoLog);
-        return 1;
-    }
-
+    LoadAndCompileVertexShader(vertexShaderID, "default");
+    LoadAndCompileFragmentShader(fragmentShaderID, "default");
+    
     uint32 shaderProgramID = glCreateProgram();
     glAttachShader(shaderProgramID, vertexShaderID);
     glAttachShader(shaderProgramID, fragmentShaderID);
     glLinkProgram(shaderProgramID);
+    const uint32 infoLogSize = KIBIBYTES(1);
+    char infoLog[infoLogSize];
+    int success;
     glGetProgramiv(shaderProgramID, GL_LINK_STATUS, &success);
     if (!success)
     {
@@ -578,10 +604,6 @@ int main(int argc, char *argv[])
     bool quit = false;
     while (!quit)
     {
-        //
-        // Input
-        //
-
         while (SDL_PollEvent(&event))
         {
             switch (event.type)
@@ -621,18 +643,10 @@ int main(int argc, char *argv[])
 
         if (!gameServices.onInput())
             break;
-
-        //
-        // Logic
-        //
-
+        
         if (!gameServices.onLogic())
             break;
-
-        //
-        // Render
-        //
-
+        
         if (!gameServices.onRender())
             break;
 
