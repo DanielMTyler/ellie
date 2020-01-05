@@ -526,52 +526,48 @@ bool LoadAndCompileFragmentShader(GLuint& shaderID, std::string baseFileName)
     return true;
 }
 
-// WARNING: SDL 2 requires this exact function signature, changing it will give "undefined reference to SDL_main" linker errors.
-int main(int argc, char *argv[])
-{
-    CoreServices coreServices;
-    if (!CoreInit(coreServices))
-        return 1;
-    
-    SDLWrapper sdl;
-    if (!sdl.init())
-        return false;
-    
-    GameServices gameServices;
-    void *game = GameInit(coreServices, gameServices);
-    if (!game)
-        return 1;
+/*
+    TESTING
+ */
 
-    game = GameReload(game, coreServices, gameServices);
-    if (!game)
-        return 1;
+struct TestData
+{
+    SDLWrapper *sdl = nullptr;
+    GLuint shaderProgramID;
+    GLuint vao;
+    bool wireframe = false;
+};
+
+static TestData testData;
+
+bool TestInit(SDLWrapper& sdl)
+{
+    testData.sdl = &sdl;
     
     GLuint vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
     GLuint fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
     LoadAndCompileVertexShader(vertexShaderID, "default");
     LoadAndCompileFragmentShader(fragmentShaderID, "default");
     
-    GLuint shaderProgramID = glCreateProgram();
-    glAttachShader(shaderProgramID, vertexShaderID);
-    glAttachShader(shaderProgramID, fragmentShaderID);
-    glLinkProgram(shaderProgramID);
+    testData.shaderProgramID = glCreateProgram();
+    glAttachShader(testData.shaderProgramID, vertexShaderID);
+    glAttachShader(testData.shaderProgramID, fragmentShaderID);
+    glLinkProgram(testData.shaderProgramID);
     const uint32 infoLogSize = KIBIBYTES(1);
     char infoLog[infoLogSize];
     int success;
-    glGetProgramiv(shaderProgramID, GL_LINK_STATUS, &success);
+    glGetProgramiv(testData.shaderProgramID, GL_LINK_STATUS, &success);
     if (!success)
     {
-        glGetProgramInfoLog(shaderProgramID, infoLogSize, nullptr, infoLog);
-        gLog.fatal("OpenGL", "Shader Program linking failed: %s", infoLog);
+        glGetProgramInfoLog(testData.shaderProgramID, infoLogSize, nullptr, infoLog);
+        gLog.fatal("Test", "Shader Program linking failed: %s", infoLog);
         return 1;
     }
     glDeleteShader(vertexShaderID);
     glDeleteShader(fragmentShaderID);
-
-
-    GLuint vao;
-    glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
+    
+    glGenVertexArrays(1, &testData.vao);
+    glBindVertexArray(testData.vao);
 
     float vertices[] = {
          0.5f,  0.5f, 0.0f,  // top right
@@ -594,12 +590,92 @@ int main(int argc, char *argv[])
     glGenBuffers(1, &ebo);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
+    
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
     glEnableVertexAttribArray(0);
+    
+    return true;
+}
 
+void TestCleanup()
+{
+}
 
+bool TestOnEvent(SDL_Event& e)
+{
+    switch (e.type)
+    {
+        case SDL_KEYDOWN:
+            if (e.key.keysym.sym == SDLK_ESCAPE)
+            {
+                return false;
+            }
+            else if (e.key.keysym.sym == SDLK_w)
+            {
+                testData.wireframe = !testData.wireframe;
+                if (testData.wireframe)
+                    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+                else
+                    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+                gLog.info("Test", "Set wireframe to %i.", testData.wireframe);
+            }
+            break;
+        default:
+            break;
+    }
+    
+    return true;
+}
 
+bool TestOnInput()
+{
+    return true;
+}
+
+bool TestOnLogic()
+{
+    return true;
+}
+
+bool TestOnRender()
+{
+    // TODO: Check for errors.
+    glClear(GL_COLOR_BUFFER_BIT);
+    glUseProgram(testData.shaderProgramID);
+    glBindVertexArray(testData.vao);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+    glBindVertexArray(0);
+    SDL_GL_SwapWindow(testData.sdl->window);
+    SDL_Delay(1);
+    return true;
+}
+/*
+    TESTING
+ */
+ 
+// WARNING: SDL 2 requires this exact function signature, changing it will give "undefined reference to SDL_main" linker errors.
+int main(int argc, char *argv[])
+{
+    CoreServices coreServices;
+    if (!CoreInit(coreServices))
+        return 1;
+    
+    SDLWrapper sdl;
+    if (!sdl.init())
+        return false;
+    
+    GameServices gameServices;
+    void *game = GameInit(coreServices, gameServices);
+    if (!game)
+        return 1;
+
+    game = GameReload(game, coreServices, gameServices);
+    if (!game)
+        return 1;
+    
+    if (!TestInit(sdl))
+        return 1;
+    
     SDL_Event event;
     bool quit = false;
     while (!quit)
@@ -615,54 +691,31 @@ int main(int argc, char *argv[])
                     // SDL_WINDOWEVENT_SIZE_CHANGED = Any size change.
                     // SDL_WINDOWEVENT_RESIZED = Additional event to indicate the size change was due to an external event such as the user or window manager.
                     if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED)
-                    {
                         SDLUpdateViewport(event.window.data1, event.window.data2);
-                    }
-                    break;
-                case SDL_KEYDOWN:
-                    if (event.key.keysym.sym == SDLK_ESCAPE)
-                    {
-                        quit = true;
-                        break;
-                    }
-                    else if (event.key.keysym.sym == SDLK_w)
-                    {
-                        static bool wireframe = false;
-                        wireframe = !wireframe;
-                        if (wireframe)
-                            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-                        else
-                            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-                        gLog.info("Game", "Set wireframe to %i.", wireframe);
-                    }
                     break;
                 default:
                     break;
             }
+            
+            if (!quit && !TestOnEvent(event))
+            {
+                quit = true;
+                break;
+            }
         }
 
-        if (!gameServices.onInput())
+        if (quit)
             break;
-        
-        if (!gameServices.onLogic())
+        if (!gameServices.onInput() || !TestOnInput())
             break;
-        
-        if (!gameServices.onRender())
+        if (!gameServices.onLogic() || !TestOnLogic())
             break;
-
-        // TODO: Check for errors.
-        glClear(GL_COLOR_BUFFER_BIT);
-        glUseProgram(shaderProgramID);
-        glBindVertexArray(vao);
-#if 0
-        glDrawArrays(GL_TRIANGLES, 0, 3);
-#endif
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-        glBindVertexArray(0);
-        SDL_GL_SwapWindow(sdl.window);
-        SDL_Delay(1);
+        if (!gameServices.onRender() || !TestOnRender())
+            break;
     }
-
+    
+    TestCleanup();
     GameCleanup(game, gameServices);
+    // @todo Should there be OGL/SDL cleanup here?
     return 0;
 }
