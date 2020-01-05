@@ -62,10 +62,6 @@
 
 #define INVALID_CODE_PATH ASSERT(!"Invalid Code Path")
 
-#define KILOBYTES(v) ((v) * 1000LL)
-#define MEGABYTES(v) (KILOBYTES(v) * 1000LL)
-#define GIGABYTES(v) (MEGABYTES(v) * 1000LL)
-
 #define KIBIBYTES(v) ((v) * 1024LL)
 #define MEBIBYTES(v) (KIBIBYTES(v) * 1024LL)
 #define GIBIBYTES(v) (MEBIBYTES(v) * 1024LL)
