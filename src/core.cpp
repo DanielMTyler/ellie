@@ -15,6 +15,7 @@
 #include <iostream>
 #include <string>
 #include "log.cpp"
+#include "services.hpp"
 
 static Log gLog;
 static std::string gGameFullPath;
@@ -231,57 +232,57 @@ bool GameRetrieveFunctions(void* game, GameServices& gameServices)
 {
     ASSERT(game);
 
-    gameServices.onInit = (Game_OnInit*)SDL_LoadFunction(game, "OnInit");
-    if (!gameServices.onInit)
+    gameServices.init = (GameInitCB*)SDL_LoadFunction(game, "GameInit");
+    if (!gameServices.init)
     {
-        gLog.fatal("Core", "Failed to retrieve OnInit function from game: %s", SDL_GetError());
+        gLog.fatal("Core", "Failed to retrieve GameInit function from game: %s", SDL_GetError());
         return false;
     }
 
-    gameServices.onPreReload = (Game_OnPreReload*)SDL_LoadFunction(game, "OnPreReload");
-    if (!gameServices.onPreReload)
+    gameServices.preReload = (GamePreReloadCB*)SDL_LoadFunction(game, "GamePreReload");
+    if (!gameServices.preReload)
     {
-        gLog.fatal("Core", "Failed to retrieve OnPreReload function from game: %s", SDL_GetError());
+        gLog.fatal("Core", "Failed to retrieve GamePreReload function from game: %s", SDL_GetError());
         ZERO_STRUCT(gameServices);
         return false;
     }
 
-    gameServices.onPostReload = (Game_OnPostReload*)SDL_LoadFunction(game, "OnPostReload");
-    if (!gameServices.onPostReload)
+    gameServices.postReload = (GamePostReloadCB*)SDL_LoadFunction(game, "GamePostReload");
+    if (!gameServices.postReload)
     {
-        gLog.fatal("Core", "Failed to retrieve OnPostReload function from game: %s", SDL_GetError());
+        gLog.fatal("Core", "Failed to retrieve GamePostReload function from game: %s", SDL_GetError());
         ZERO_STRUCT(gameServices);
         return false;
     }
 
-    gameServices.onCleanup = (Game_OnCleanup*)SDL_LoadFunction(game, "OnCleanup");
-    if (!gameServices.onCleanup)
+    gameServices.cleanup = (GameCleanupCB*)SDL_LoadFunction(game, "GameCleanup");
+    if (!gameServices.cleanup)
     {
-        gLog.fatal("Core", "Failed to retrieve OnCleanup function from game: %s", SDL_GetError());
+        gLog.fatal("Core", "Failed to retrieve GameCleanup function from game: %s", SDL_GetError());
         ZERO_STRUCT(gameServices);
         return false;
     }
 
-    gameServices.onInput = (Game_OnInput*)SDL_LoadFunction(game, "OnInput");
-    if (!gameServices.onInput)
+    gameServices.input = (GameInputCB*)SDL_LoadFunction(game, "GameInput");
+    if (!gameServices.input)
     {
-        gLog.fatal("Core", "Failed to retrieve OnInput function from game: %s", SDL_GetError());
+        gLog.fatal("Core", "Failed to retrieve GameInput function from game: %s", SDL_GetError());
         ZERO_STRUCT(gameServices);
         return false;
     }
 
-    gameServices.onLogic = (Game_OnLogic*)SDL_LoadFunction(game, "OnLogic");
-    if (!gameServices.onLogic)
+    gameServices.logic = (GameLogicCB*)SDL_LoadFunction(game, "GameLogic");
+    if (!gameServices.logic)
     {
-        gLog.fatal("Core", "Failed to retrieve OnLogic function from game: %s", SDL_GetError());
+        gLog.fatal("Core", "Failed to retrieve GameLogic function from game: %s", SDL_GetError());
         ZERO_STRUCT(gameServices);
         return false;
     }
 
-    gameServices.onRender = (Game_OnRender*)SDL_LoadFunction(game, "OnRender");
-    if (!gameServices.onRender)
+    gameServices.render = (GameRenderCB*)SDL_LoadFunction(game, "GameRender");
+    if (!gameServices.render)
     {
-        gLog.fatal("Core", "Failed to retrieve OnRender function from game: %s", SDL_GetError());
+        gLog.fatal("Core", "Failed to retrieve GameRender function from game: %s", SDL_GetError());
         ZERO_STRUCT(gameServices);
         return false;
     }
@@ -325,7 +326,7 @@ void* GameInit(CoreServices& coreServices, GameServices& gameServices)
         return nullptr;
     }
 
-    if (!gameServices.onInit(&coreServices))
+    if (!gameServices.init(&coreServices))
     {
         ZERO_STRUCT(gameServices);
         SDL_UnloadObject(g);
@@ -341,7 +342,7 @@ void* GameReload(void* oldGame, CoreServices& coreServices, GameServices& gameSe
 {
     ASSERT(oldGame);
 
-    gameServices.onPreReload();
+    gameServices.preReload();
     ZERO_STRUCT(gameServices);
 
     SDL_UnloadObject(oldGame);
@@ -366,7 +367,7 @@ void* GameReload(void* oldGame, CoreServices& coreServices, GameServices& gameSe
         return nullptr;
     }
 
-    gameServices.onPostReload(&coreServices);
+    gameServices.postReload(&coreServices);
     return g;
 }
 
@@ -374,7 +375,7 @@ void GameCleanup(void* game, GameServices& gameServices)
 {
     ASSERT(game);
 
-    gameServices.onCleanup();
+    gameServices.cleanup();
 
     ZERO_STRUCT(gameServices);
     SDL_UnloadObject(game);
@@ -601,7 +602,7 @@ void TestCleanup()
 {
 }
 
-bool TestOnEvent(SDL_Event& e)
+bool TestEvent(SDL_Event& e, float dt)
 {
     switch (e.type)
     {
@@ -627,17 +628,17 @@ bool TestOnEvent(SDL_Event& e)
     return true;
 }
 
-bool TestOnInput()
+bool TestInput(float dt)
 {
     return true;
 }
 
-bool TestOnLogic()
+bool TestLogic(float dt)
 {
     return true;
 }
 
-bool TestOnRender()
+bool TestRender(float dt)
 {
     // TODO: Check for errors.
     glClear(GL_COLOR_BUFFER_BIT);
@@ -678,6 +679,8 @@ int main(int argc, char* argv[])
     
     SDL_Event event;
     bool quit = false;
+    // @todo Implement.
+    float dt = 0.0f;
     while (!quit)
     {
         while (SDL_PollEvent(&event))
@@ -697,7 +700,7 @@ int main(int argc, char* argv[])
                     break;
             }
             
-            if (!quit && !TestOnEvent(event))
+            if (!quit && !TestEvent(event, dt))
             {
                 quit = true;
                 break;
@@ -706,11 +709,11 @@ int main(int argc, char* argv[])
 
         if (quit)
             break;
-        if (!gameServices.onInput() || !TestOnInput())
+        if (!gameServices.input(dt) || !TestInput(dt))
             break;
-        if (!gameServices.onLogic() || !TestOnLogic())
+        if (!gameServices.logic(dt) || !TestLogic(dt))
             break;
-        if (!gameServices.onRender() || !TestOnRender())
+        if (!gameServices.render(dt) || !TestRender(dt))
             break;
     }
     

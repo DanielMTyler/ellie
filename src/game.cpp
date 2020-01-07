@@ -6,11 +6,12 @@
 */
 
 #include "global.hpp"
+#include "services.hpp"
 
 static ILog* gLog = nullptr;
 static CoreServices* gCoreServices = nullptr;
 
-extern "C" GAME_ONINIT(OnInit)
+extern "C" GAME_INIT
 {
     gLog = coreServices->log;
     gCoreServices = coreServices;
@@ -19,38 +20,37 @@ extern "C" GAME_ONINIT(OnInit)
     return true;
 }
 
-extern "C" GAME_ONPRERELOAD(OnPreReload)
+extern "C" GAME_PRERELOAD
 {
     gLog->info("Game", "Game reloading.");
+    return true;
 }
 
-extern "C" GAME_ONPOSTRELOAD(OnPostReload)
+extern "C" GAME_POSTRELOAD
 {
     gLog = coreServices->log;
     gCoreServices = coreServices;
     gLog->info("Game", "Game reloaded.");
+    return true;
 }
 
-extern "C" GAME_ONCLEANUP(OnCleanup)
+extern "C" GAME_CLEANUP
 {
     gLog->info("Game", "Game cleaning up.");
     gLog->info("Game", "Game cleaned up.");
 }
 
-extern "C" GAME_ONINPUT(OnInput)
+extern "C" GAME_INPUT
 {
-    // @todo
     return true;
 }
 
-extern "C" GAME_ONLOGIC(OnLogic)
+extern "C" GAME_LOGIC
 {
-    // @todo
     return true;
 }
 
-extern "C" GAME_ONRENDER(OnRender)
+extern "C" GAME_RENDER
 {
-    // @todo
     return true;
 }

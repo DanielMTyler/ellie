@@ -58,7 +58,7 @@
     #error Unknown Compiler.
 #endif
 
-#if defined(COMPILER_CLANG || COMPILER_GCC || COMPILER_MINGW)
+#if defined(COMPILER_CLANG) || defined(COMPILER_GCC) || defined(COMPILER_MINGW)
     #if defined(__i386__)
         #define ARCH_X86
     #elif defined(__x86_64__)
@@ -135,10 +135,6 @@ const char* BoolToStr(bool b)
     return (b ? "True" : "False");
 }
 
-//
-// Core provided services
-//
-
 class ILog
 {
 public:
@@ -149,53 +145,6 @@ public:
     virtual void info (const char* system, const char* format, ...) = 0;
     virtual void debug(const char* system, const char* format, ...) = 0;
     virtual void trace(const char* system, const char* format, ...) = 0;
-};
-
-struct CoreServices
-{
-    // @todo Add an event manager / message bus for messaging between systems.
-    // @todo Memory allocator/pool for retained memory during game reloads.
-    ILog* log;
-};
-
-//
-// Game provided services
-//
-
-// Returns false on failure.
-#define GAME_ONINIT(Name) bool Name(CoreServices *coreServices)
-typedef GAME_ONINIT(Game_OnInit);
-
-#define GAME_ONPRERELOAD(Name) void Name()
-typedef GAME_ONPRERELOAD(Game_OnPreReload);
-
-#define GAME_ONPOSTRELOAD(Name) void Name(CoreServices *coreServices)
-typedef GAME_ONPOSTRELOAD(Game_OnPostReload);
-
-#define GAME_ONCLEANUP(Name) void Name()
-typedef GAME_ONCLEANUP(Game_OnCleanup);
-
-// Returns false on failure.
-#define GAME_ONINPUT(Name) bool Name()
-typedef GAME_ONINPUT(Game_OnInput);
-
-// Returns false on failure.
-#define GAME_ONLOGIC(Name) bool Name()
-typedef GAME_ONLOGIC(Game_OnLogic);
-
-// Returns false on failure.
-#define GAME_ONRENDER(Name) bool Name()
-typedef GAME_ONRENDER(Game_OnRender);
-
-struct GameServices
-{
-    Game_OnInit*       onInit;
-    Game_OnPreReload*  onPreReload;
-    Game_OnPostReload* onPostReload;
-    Game_OnCleanup*    onCleanup;
-    Game_OnInput*      onInput;
-    Game_OnLogic*      onLogic;
-    Game_OnRender*     onRender;
 };
 
 #endif
