@@ -137,7 +137,7 @@ const char* BoolToStr(bool b)
 
 const char* OnOffToStr(bool b)
 {
-    return (b ? "On" : "False");
+    return (b ? "On" : "Off");
 }
 
 class ILog

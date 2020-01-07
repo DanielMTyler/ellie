@@ -19,7 +19,7 @@
 
 // @cleanup
 #include <map>
-#include <new>
+#include <cstdlib>
 class Memory : public IMemory
 {
 private:
@@ -29,11 +29,7 @@ public:
     virtual ~Memory() override
     {
         for(auto it = m.begin(); it != m.end(); it++)
-        {
-            std::cout<<typeid(it).name()<<std::endl;
-            //delete(it->second);
-            it->second = nullptr;
-        }
+            std::free(it->second);
         m.clear();
     }
     
@@ -42,9 +38,11 @@ public:
         ASSERT(!name.empty());
         ASSERT(size > 0);
         ASSERT(m.find(name) == m.end());
-        void* p = new(std::nothrow) char[size];
-        m[name] = p;
+        void* p = std::malloc(size);
+        if(!p)
+            return nullptr;
         std::memset(p, 0, size);
+        m[name] = p;
         return p;
     }
     
@@ -53,6 +51,7 @@ public:
         ASSERT(!name.empty());
         auto it = m.find(name);
         ASSERT(it != m.end());
+        std::free(it->second);
         m.erase(it);
     }
     
