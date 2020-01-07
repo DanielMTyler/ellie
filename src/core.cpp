@@ -22,7 +22,7 @@ static std::string gGameLiveFullPath;
 static std::string gDataPath;
 static std::string gPrefPath;
 
-const char *SDLGLProfileToStr(int p)
+const char* SDLGLProfileToStr(int p)
 {
     if (p == SDL_GL_CONTEXT_PROFILE_CORE)
         return "Core";
@@ -125,8 +125,8 @@ void SDLUpdateViewport(int width, int height)
 class SDLWrapper
 {
 public:
-    SDL_Window *window = nullptr;
-    // I'm just a void *.
+    SDL_Window* window = nullptr;
+    // I'm just a void*.
     SDL_GLContext glContext = nullptr;
 
     ~SDLWrapper()
@@ -165,10 +165,10 @@ public:
         if (!SDLSetGLAttribs())
             return false;
 
-        const bool SCREEN_FULLSCREEN = false;
-        const uint32 SCREEN_WIDTH = 800;
+        const bool   SCREEN_FULLSCREEN = false;
+        const uint32 SCREEN_WIDTH  = 800;
         const uint32 SCREEN_HEIGHT = 600;
-        const char *SCREEN_TITLE = "Ellie";
+        const char*  SCREEN_TITLE  = "Ellie";
 
         if (SCREEN_FULLSCREEN)
         {
@@ -227,18 +227,18 @@ public:
     }
 };
 
-bool GameRetrieveFunctions(void *game, GameServices &gameServices)
+bool GameRetrieveFunctions(void* game, GameServices& gameServices)
 {
     ASSERT(game);
 
-    gameServices.onInit = (Game_OnInit *)SDL_LoadFunction(game, "OnInit");
+    gameServices.onInit = (Game_OnInit*)SDL_LoadFunction(game, "OnInit");
     if (!gameServices.onInit)
     {
         gLog.fatal("Core", "Failed to retrieve OnInit function from game: %s", SDL_GetError());
         return false;
     }
 
-    gameServices.onPreReload = (Game_OnPreReload *)SDL_LoadFunction(game, "OnPreReload");
+    gameServices.onPreReload = (Game_OnPreReload*)SDL_LoadFunction(game, "OnPreReload");
     if (!gameServices.onPreReload)
     {
         gLog.fatal("Core", "Failed to retrieve OnPreReload function from game: %s", SDL_GetError());
@@ -246,7 +246,7 @@ bool GameRetrieveFunctions(void *game, GameServices &gameServices)
         return false;
     }
 
-    gameServices.onPostReload = (Game_OnPostReload *)SDL_LoadFunction(game, "OnPostReload");
+    gameServices.onPostReload = (Game_OnPostReload*)SDL_LoadFunction(game, "OnPostReload");
     if (!gameServices.onPostReload)
     {
         gLog.fatal("Core", "Failed to retrieve OnPostReload function from game: %s", SDL_GetError());
@@ -254,7 +254,7 @@ bool GameRetrieveFunctions(void *game, GameServices &gameServices)
         return false;
     }
 
-    gameServices.onCleanup = (Game_OnCleanup *)SDL_LoadFunction(game, "OnCleanup");
+    gameServices.onCleanup = (Game_OnCleanup*)SDL_LoadFunction(game, "OnCleanup");
     if (!gameServices.onCleanup)
     {
         gLog.fatal("Core", "Failed to retrieve OnCleanup function from game: %s", SDL_GetError());
@@ -262,7 +262,7 @@ bool GameRetrieveFunctions(void *game, GameServices &gameServices)
         return false;
     }
 
-    gameServices.onInput = (Game_OnInput *)SDL_LoadFunction(game, "OnInput");
+    gameServices.onInput = (Game_OnInput*)SDL_LoadFunction(game, "OnInput");
     if (!gameServices.onInput)
     {
         gLog.fatal("Core", "Failed to retrieve OnInput function from game: %s", SDL_GetError());
@@ -270,7 +270,7 @@ bool GameRetrieveFunctions(void *game, GameServices &gameServices)
         return false;
     }
 
-    gameServices.onLogic = (Game_OnLogic *)SDL_LoadFunction(game, "OnLogic");
+    gameServices.onLogic = (Game_OnLogic*)SDL_LoadFunction(game, "OnLogic");
     if (!gameServices.onLogic)
     {
         gLog.fatal("Core", "Failed to retrieve OnLogic function from game: %s", SDL_GetError());
@@ -278,7 +278,7 @@ bool GameRetrieveFunctions(void *game, GameServices &gameServices)
         return false;
     }
 
-    gameServices.onRender = (Game_OnRender *)SDL_LoadFunction(game, "OnRender");
+    gameServices.onRender = (Game_OnRender*)SDL_LoadFunction(game, "OnRender");
     if (!gameServices.onRender)
     {
         gLog.fatal("Core", "Failed to retrieve OnRender function from game: %s", SDL_GetError());
@@ -304,14 +304,14 @@ bool GameCopyToTemp()
 }
 
 // Returns game via SDL_LoadObject or nullptr on error.
-void *GameInit(CoreServices &coreServices, GameServices &gameServices)
+void* GameInit(CoreServices& coreServices, GameServices& gameServices)
 {
     if (!GameCopyToTemp())
     {
         return nullptr;
     }
 
-    void *g = SDL_LoadObject(gGameLiveFullPath.c_str());
+    void* g = SDL_LoadObject(gGameLiveFullPath.c_str());
     if (!g)
     {
         gLog.fatal("Core", "Failed to load game: %s", SDL_GetError());
@@ -337,7 +337,7 @@ void *GameInit(CoreServices &coreServices, GameServices &gameServices)
 }
 
 // Returns game via SDL_LoadObject or nullptr on error.
-void *GameReload(void *oldGame, CoreServices &coreServices, GameServices &gameServices)
+void* GameReload(void* oldGame, CoreServices& coreServices, GameServices& gameServices)
 {
     ASSERT(oldGame);
 
@@ -352,7 +352,7 @@ void *GameReload(void *oldGame, CoreServices &coreServices, GameServices &gameSe
         return nullptr;
     }
 
-    void *g = SDL_LoadObject(gGameLiveFullPath.c_str());
+    void* g = SDL_LoadObject(gGameLiveFullPath.c_str());
     if (!g)
     {
         gLog.fatal("Core", "Failed to load game: %s", SDL_GetError());
@@ -370,7 +370,7 @@ void *GameReload(void *oldGame, CoreServices &coreServices, GameServices &gameSe
     return g;
 }
 
-void GameCleanup(void *game, GameServices &gameServices)
+void GameCleanup(void* game, GameServices& gameServices)
 {
     ASSERT(game);
 
@@ -388,7 +388,7 @@ void GameCleanup(void *game, GameServices &gameServices)
 
 bool CoreInit(CoreServices& coreServices)
 {
-    char *exePathBuf = SDL_GetBasePath();
+    char* exePathBuf = SDL_GetBasePath();
     if (!exePathBuf)
     {
         std::cerr << "Failed to get executable path: " << SDL_GetError() << std::endl;
@@ -398,7 +398,7 @@ bool CoreInit(CoreServices& coreServices)
     SDL_free(exePathBuf);
     exePathBuf = nullptr;
     
-    char *sdlPrefPath = SDL_GetPrefPath("DanielMTyler", PROJECT_NAME);
+    char* sdlPrefPath = SDL_GetPrefPath("DanielMTyler", PROJECT_NAME);
     if (sdlPrefPath)
     {
         gPrefPath = sdlPrefPath;
@@ -484,7 +484,7 @@ bool LoadShaderFromFile(std::string file, std::string& shader)
 
 bool CompileShaderFromStr(GLuint shaderID, std::string shader)
 {
-    const char *shaderBuf = shader.c_str();
+    const char* shaderBuf = shader.c_str();
     glShaderSource(shaderID, 1, &shaderBuf, nullptr);
     glCompileShader(shaderID);
     const uint32 infoLogSize = KIBIBYTES(1);
@@ -532,7 +532,7 @@ bool LoadAndCompileFragmentShader(GLuint& shaderID, std::string baseFileName)
 
 struct TestData
 {
-    SDLWrapper *sdl = nullptr;
+    SDLWrapper* sdl = nullptr;
     GLuint shaderProgramID;
     GLuint vao;
     bool wireframe = false;
@@ -544,7 +544,7 @@ bool TestInit(SDLWrapper& sdl)
 {
     testData.sdl = &sdl;
     
-    GLuint vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
+    GLuint   vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
     GLuint fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
     LoadAndCompileVertexShader(vertexShaderID, "default");
     LoadAndCompileFragmentShader(fragmentShaderID, "default");
@@ -654,7 +654,7 @@ bool TestOnRender()
  */
  
 // WARNING: SDL 2 requires this exact function signature, changing it will give "undefined reference to SDL_main" linker errors.
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     CoreServices coreServices;
     if (!CoreInit(coreServices))
@@ -665,7 +665,7 @@ int main(int argc, char *argv[])
         return false;
     
     GameServices gameServices;
-    void *game = GameInit(coreServices, gameServices);
+    void* game = GameInit(coreServices, gameServices);
     if (!game)
         return 1;
 

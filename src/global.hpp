@@ -9,6 +9,16 @@
 #define GLOBAL_HPP
 
 //
+// Includes.
+//
+
+#include <cassert> // assert()
+#include <cstddef> // (u)int(8/16/32/64)_t
+#include <cstdint> // size_t
+#include <cstring> // std::memset
+#include <string>  // std::string
+
+//
 // Defines from compiler flags.
 //
 
@@ -25,17 +35,15 @@
 #endif
 
 //
-// OS & Compiler detection.
+// OS, Compiler, and CPU Architecture detection.
 //
-
-// @todo 32/64-bit detection?
 
 #if defined(_WIN32) || defined(_WIN64)
     #define OS_WINDOWS 1
 #elif defined(__linux__)
     #define OS_LINUX 1
 #else
-    #error OS is unknown.
+    #error Unknown OS.
 #endif
 
 #if defined(__clang__)
@@ -45,9 +53,29 @@
 #elif defined(__MINGW32__) || defined(__MINGW64__)
     #define COMPILER_MINGW 1
 #elif defined(_MSC_VER)
-    #define COMPILER_VISUAL_STUDIO
+    #define COMPILER_VISUAL_C
 #else
-    #error Compiler is unknown.
+    #error Unknown Compiler.
+#endif
+
+#if defined(COMPILER_CLANG || COMPILER_GCC || COMPILER_MINGW)
+    #if defined(__i386__)
+        #define ARCH_X86
+    #elif defined(__x86_64__)
+        #define ARCH_X64
+    #else
+        #error Unknown CPU Architecture.
+    #endif
+#elif defined(COMPILER_VISUAL_C)
+    #if defined(_M_IX86)
+        #define ARCH_X86
+    #elif defined(_M_X64)
+        #define ARCH_X64
+    #else
+        #error Unknown CPU Architecture.
+    #endif
+#else
+    #error Unknown Compiler.
 #endif
 
 //
@@ -56,7 +84,6 @@
 
 // Clang doesn't like "*(int*)0=0" in my ASSERT macro, so enable assert() in all build types and use it instead.
 #undef NDEBUG
-#include <cassert> // assert
 // ASSERT() is always enabled and doesn't get logged.
 #define ASSERT(X) assert((X))
 
@@ -68,15 +95,11 @@
 
 #define ARRAY_COUNT(a) (sizeof(a) / sizeof((a)[0]))
 
-#include <cstring> // std::memset
 #define ZERO_STRUCT(s) std::memset(&(s), 0, sizeof((s)))
 
 //
 // Types
 //
-
-#include <cstddef> // (u)int(8/16/32/64)_t
-#include <cstdint> // size_t
 
 typedef std::int8_t int8;
 typedef std::int16_t int16;
@@ -94,17 +117,12 @@ typedef double real64;
 typedef std::size_t MemoryIndex;
 typedef std::size_t MemorySize;
 
-// Might need this later.
-#if 0
-    uint32 CheckedUInt64ToUInt32(uint64 value)
-    {
-        ASSERT(value <= 0xFFFFFFFF);
-        uint32 result = (uint32)value;
-        return result;
-    }
-#endif
-
-#include <string>
+uint32 CheckedUInt64ToUInt32(uint64 v)
+{
+    ASSERT(v <= 0xFFFFFFFF);
+    uint32 r = (uint32)v;
+    return r;
+}
 
 struct ResultBool
 {
@@ -112,7 +130,7 @@ struct ResultBool
     std::string error;
 };
 
-const char *BoolToStr(bool b)
+const char* BoolToStr(bool b)
 {
     return (b ? "True" : "False");
 }
@@ -125,28 +143,19 @@ class ILog
 {
 public:
     virtual ~ILog() {}
-
-    /*
-          Highest priority to lowest:
-          - fatal
-          - warn
-          - info
-          - debug
-          - trace
-    */
-
-    virtual void fatal(const char *system, const char *format, ...) = 0;
-    virtual void warn(const char *system, const char *format, ...) = 0;
-    virtual void info(const char *system, const char *format, ...) = 0;
-    virtual void debug(const char *system, const char *format, ...) = 0;
-    virtual void trace(const char *system, const char *format, ...) = 0;
+    
+    virtual void fatal(const char* system, const char* format, ...) = 0;
+    virtual void warn (const char* system, const char* format, ...) = 0;
+    virtual void info (const char* system, const char* format, ...) = 0;
+    virtual void debug(const char* system, const char* format, ...) = 0;
+    virtual void trace(const char* system, const char* format, ...) = 0;
 };
 
 struct CoreServices
 {
     // @todo Add an event manager / message bus for messaging between systems.
     // @todo Memory allocator/pool for retained memory during game reloads.
-    ILog *log;
+    ILog* log;
 };
 
 //
@@ -180,13 +189,13 @@ typedef GAME_ONRENDER(Game_OnRender);
 
 struct GameServices
 {
-    Game_OnInit *onInit;
-    Game_OnPreReload *onPreReload;
-    Game_OnPostReload *onPostReload;
-    Game_OnCleanup *onCleanup;
-    Game_OnInput *onInput;
-    Game_OnLogic *onLogic;
-    Game_OnRender *onRender;
+    Game_OnInit*       onInit;
+    Game_OnPreReload*  onPreReload;
+    Game_OnPostReload* onPostReload;
+    Game_OnCleanup*    onCleanup;
+    Game_OnInput*      onInput;
+    Game_OnLogic*      onLogic;
+    Game_OnRender*     onRender;
 };
 
 #endif

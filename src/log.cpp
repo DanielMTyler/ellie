@@ -20,12 +20,12 @@ private:
         trace
     };
 
-    FILE *file = nullptr;
+    FILE* file = nullptr;
     static const uint32 bufferSize = KIBIBYTES(2);
     char buffer[bufferSize];
     
     // Do nothing if the log hasn't been initialized yet.
-    void log(const char *system, const char *format, Type type, va_list args)
+    void log(const char* system, const char* format, Type type, va_list args)
     {
         if (!file)
             return;
@@ -72,7 +72,7 @@ public:
         }
     }
 
-    bool init(const char *filename)
+    bool init(const char* filename)
     {
         ASSERT(!file);
         ASSERT(filename);
@@ -84,7 +84,7 @@ public:
             return false;
     }
 
-    virtual void fatal(const char *system, const char *format, ...) override
+    virtual void fatal(const char* system, const char* format, ...) override
     {
         va_list args;
         va_start(args, format);
@@ -92,7 +92,7 @@ public:
         va_end(args);
     }
 
-    virtual void warn(const char *system, const char *format, ...) override
+    virtual void warn(const char* system, const char* format, ...) override
     {
         va_list args;
         va_start(args, format);
@@ -100,7 +100,7 @@ public:
         va_end(args);
     }
 
-    virtual void info(const char *system, const char *format, ...) override
+    virtual void info(const char* system, const char* format, ...) override
     {
         va_list args;
         va_start(args, format);
@@ -108,7 +108,7 @@ public:
         va_end(args);
     }
 
-    virtual void debug(const char *system, const char *format, ...) override
+    virtual void debug(const char* system, const char* format, ...) override
     {
         va_list args;
         va_start(args, format);
@@ -116,7 +116,7 @@ public:
         va_end(args);
     }
 
-    virtual void trace(const char *system, const char *format, ...) override
+    virtual void trace(const char* system, const char* format, ...) override
     {
         va_list args;
         va_start(args, format);

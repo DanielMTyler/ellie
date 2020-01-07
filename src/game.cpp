@@ -7,8 +7,8 @@
 
 #include "global.hpp"
 
-static ILog *gLog = nullptr;
-static CoreServices *gCoreServices = nullptr;
+static ILog* gLog = nullptr;
+static CoreServices* gCoreServices = nullptr;
 
 extern "C" GAME_ONINIT(OnInit)
 {
