@@ -14,11 +14,18 @@
 // Core services.
 //
 
+#define CORE_SETWIREFRAME void CoreSetWireframe(bool on)
+typedef void CoreSetWireframeCB(bool on);
+
+#define CORE_CLEAR void CoreClear(uint32 mask)
+typedef void CoreClearCB(uint32 mask);
+
 struct CoreServices
 {
-    // @todo Add an event manager / message bus for messaging between systems.
-    // @todo Memory allocator/pool for retained memory during game reloads.
     ILog* log;
+    IMemory* memory;
+    CoreSetWireframeCB* SetWireframe;
+    CoreClearCB* Clear;
 };
 
 //
@@ -37,6 +44,11 @@ typedef bool GamePostReloadCB(CoreServices* coreServices);
 #define GAME_CLEANUP void GameCleanup()
 typedef void GameCleanupCB();
 
+// @todo This probably shouldn't be accessible to Game.
+#include <SDL.h>
+#define GAME_EVENT bool GameEvent(SDL_Event& e, float dt)
+typedef bool GameEventCB(SDL_Event& e, float dt);
+
 #define GAME_INPUT bool GameInput(float dt)
 typedef bool GameInputCB(float dt);
 
@@ -52,6 +64,7 @@ struct GameServices
     GamePreReloadCB*  preReload;
     GamePostReloadCB* postReload;
     GameCleanupCB*    cleanup;
+    GameEventCB*      event;
     GameInputCB*      input;
     GameLogicCB*      logic;
     GameRenderCB*     render;
