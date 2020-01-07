@@ -5,6 +5,7 @@
     ==================================
 */
 
+#include "global.hpp"
 #include <cstdarg>
 #include <cstdio>
 
