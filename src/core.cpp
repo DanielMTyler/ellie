@@ -11,17 +11,55 @@
 #include <glad/glad.h>
 #include <glad.c>
 #include <SDL.h>
-#include <fstream>
+#include <cstdio>
 #include <iostream>
 #include <string>
 #include "log.cpp"
 #include "services.hpp"
 
 static Log gLog;
-static std::string gGameFullPath;
-static std::string gGameLiveFullPath;
+static std::string gGamePath;
+static std::string gGameLivePath;
 static std::string gDataPath;
 static std::string gPrefPath;
+
+// Return empty string if no errors.
+std::string GetGLErrors()
+{
+    GLenum e;
+    std::string r;
+    while ((e = glGetError()) != GL_NO_ERROR)
+    {
+        if (!r.empty())
+            r += ", ";
+        
+        switch (e)
+        {
+            case GL_INVALID_ENUM:                  r += "GL_INVALID_ENUM"; break;
+            case GL_INVALID_VALUE:                 r += "GL_INVALID_VALUE"; break;
+            case GL_INVALID_OPERATION:             r += "GL_INVALID_OPERATION"; break;
+            case GL_OUT_OF_MEMORY:                 r += "GL_OUT_OF_MEMORY"; break;
+            case GL_INVALID_FRAMEBUFFER_OPERATION: r += "GL_INVALID_FRAMEBUFFER_OPERATION"; break;
+            default:
+                const uint32 BUFSIZE = 11; // Should be 7, but could be 11 max due to uint32.
+                char buf[BUFSIZE];
+                if (!std::snprintf(buf, BUFSIZE, "0x%.4X", e))
+                    r += std::to_string(e);
+                else
+                    r += buf;
+                break;
+        }
+    }
+    
+    return r;
+}
+
+void ClearGLErrors()
+{
+    while (glGetError() != GL_NO_ERROR) {}
+}
+
+#include "core_shader.cpp"
 
 const char* SDLGLProfileToStr(int p)
 {
@@ -221,9 +259,6 @@ public:
         // TODO: Check for errors.
         SDL_GL_SetSwapInterval(1);
         SDLUpdateViewport(SCREEN_WIDTH, SCREEN_HEIGHT);
-        
-        // TODO: Check for errors.
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         return true;
     }
 };
@@ -294,7 +329,7 @@ bool GameRetrieveFunctions(void* game, GameServices& gameServices)
 // Copy the game to a temp file for opening; this allows the original to be replaced for live reloading.
 bool GameCopyToTemp()
 {
-    ResultBool r = PlatformCopyFile(gGameFullPath, gGameLiveFullPath, false);
+    ResultBool r = PlatformCopyFile(gGamePath, gGameLivePath, false);
     if (!r.result)
     {
         gLog.fatal("Core", "Failed to copy game to live file: %s", r.error.c_str());
@@ -312,7 +347,7 @@ void* GameInit(CoreServices& coreServices, GameServices& gameServices)
         return nullptr;
     }
 
-    void* g = SDL_LoadObject(gGameLiveFullPath.c_str());
+    void* g = SDL_LoadObject(gGameLivePath.c_str());
     if (!g)
     {
         gLog.fatal("Core", "Failed to load game: %s", SDL_GetError());
@@ -353,7 +388,7 @@ void* GameReload(void* oldGame, CoreServices& coreServices, GameServices& gameSe
         return nullptr;
     }
 
-    void* g = SDL_LoadObject(gGameLiveFullPath.c_str());
+    void* g = SDL_LoadObject(gGameLivePath.c_str());
     if (!g)
     {
         gLog.fatal("Core", "Failed to load game: %s", SDL_GetError());
@@ -382,71 +417,9 @@ void GameCleanup(void* game, GameServices& gameServices)
     game = nullptr;
 
     // Check if file exists before trying to delete it to avoid a useless error message being logged.
-    ResultBool r = PlatformDeleteFile(gGameLiveFullPath);
+    ResultBool r = PlatformDeleteFile(gGameLivePath);
     if (!r.result)
         gLog.warn("Core", "Failed to delete live game: %s", r.error.c_str());
-}
-
-bool LoadShaderFromFile(std::string file, std::string& shader)
-{
-    std::string filePath = gDataPath + "shaders" + PLATFORM_PATH_SEPARATOR + file;
-    std::ifstream in(filePath, std::ios::in | std::ios::binary);
-    if (in)
-    {
-        shader = std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-        gLog.info("Core", "Loaded shader: %s.", filePath.c_str());
-    }
-    else
-    {
-        gLog.fatal("Core", "Failed to load shader: %s.", filePath.c_str());
-        return false;
-    }
-    
-    return true;
-}
-
-bool CompileShaderFromStr(GLuint shaderID, std::string shader)
-{
-    const char* shaderBuf = shader.c_str();
-    glShaderSource(shaderID, 1, &shaderBuf, nullptr);
-    glCompileShader(shaderID);
-    const uint32 infoLogSize = KIBIBYTES(1);
-    char infoLog[infoLogSize];
-    int success;
-    glGetShaderiv(shaderID, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(shaderID, infoLogSize, nullptr, infoLog);
-        gLog.fatal("OpenGL", "Failed to compile shader: %s.", infoLog);
-        return false;
-    }
-    
-    gLog.info("OpenGL", "Compiled shader: %u.", shaderID);
-    return true;
-}
-
-bool LoadAndCompileVertexShader(GLuint& shaderID, std::string baseFileName)
-{
-    shaderID = glCreateShader(GL_VERTEX_SHADER);
-    std::string fileName = baseFileName + ".vert";
-    std::string shader;
-    if (!LoadShaderFromFile(fileName, shader))
-        return false;
-    if (!CompileShaderFromStr(shaderID, shader))
-        return false;
-    return true;
-}
-
-bool LoadAndCompileFragmentShader(GLuint& shaderID, std::string baseFileName)
-{
-    shaderID = glCreateShader(GL_FRAGMENT_SHADER);
-    std::string fileName = baseFileName + ".frag";
-    std::string shader;
-    if (!LoadShaderFromFile(fileName, shader))
-        return false;
-    if (!CompileShaderFromStr(shaderID, shader))
-        return false;
-    return true;
 }
 
 struct TestData
@@ -459,30 +432,65 @@ static TestData testData;
 
 bool TestInit()
 {
-    GLuint   vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
-    GLuint fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
-    LoadAndCompileVertexShader(vertexShaderID, "default");
-    LoadAndCompileFragmentShader(fragmentShaderID, "default");
+    std::string e; // GL Errors.
+    
+    Shader vertexShader;
+    Shader fragmentShader;
+    if (!LoadVertexShader(vertexShader, "default"))
+        return false;
+    if (!LoadFragmentShader(fragmentShader, "default"))
+        return false;
     
     testData.shaderProgramID = glCreateProgram();
-    glAttachShader(testData.shaderProgramID, vertexShaderID);
-    glAttachShader(testData.shaderProgramID, fragmentShaderID);
+    if (!testData.shaderProgramID)
+    {
+        gLog.fatal("OpenGL", "Failed to create shader program: %s.", GetGLErrors().c_str());
+        return false;
+    }
+    glAttachShader(testData.shaderProgramID, vertexShader.id);
+    if (!(e = GetGLErrors()).empty())
+    {
+        gLog.fatal("OpenGL", "Failed to attach vertex shader to shader program: %s.", e.c_str());
+        return false;
+    }
+    glAttachShader(testData.shaderProgramID, fragmentShader.id);
+    if (!(e = GetGLErrors()).empty())
+    {
+        gLog.fatal("OpenGL", "Failed to attach fragment shader to shader program: %s.", e.c_str());
+        return false;
+    }
     glLinkProgram(testData.shaderProgramID);
-    const uint32 infoLogSize = KIBIBYTES(1);
-    char infoLog[infoLogSize];
-    int success;
+    if (!(e = GetGLErrors()).empty())
+    {
+        gLog.fatal("OpenGL", "Failed to link shader program: %s.", e.c_str());
+        return false;
+    }
+    const uint32 INFOLOGSIZE = KIBIBYTES(1);
+    char infoLog[INFOLOGSIZE];
+    int success = GL_FALSE; // If glGetShaderiv were to fail for some reason, success will == this value.
     glGetProgramiv(testData.shaderProgramID, GL_LINK_STATUS, &success);
     if (!success)
     {
-        glGetProgramInfoLog(testData.shaderProgramID, infoLogSize, nullptr, infoLog);
-        gLog.fatal("Test", "Shader Program linking failed: %s", infoLog);
+        glGetProgramInfoLog(testData.shaderProgramID, INFOLOGSIZE, nullptr, infoLog);
+        gLog.fatal("OpenGL", "Failed to link shader program: %s.", infoLog);
         return false;
     }
-    glDeleteShader(vertexShaderID);
-    glDeleteShader(fragmentShaderID);
+    glDeleteShader(vertexShader.id);
+    glDeleteShader(fragmentShader.id);
+    ClearGLErrors(); // Ignore errors from glDeleteShader.
     
     glGenVertexArrays(1, &testData.vao);
+    if (!(e = GetGLErrors()).empty())
+    {
+        gLog.fatal("OpenGL", "Failed to generate VAO: %s.", e.c_str());
+        return false;
+    }
     glBindVertexArray(testData.vao);
+    if (!(e = GetGLErrors()).empty())
+    {
+        gLog.fatal("OpenGL", "Failed to bind VAO: %s.", e.c_str());
+        return false;
+    }
 
     float vertices[] = {
          0.5f,  0.5f, 0.0f,  // top right
@@ -493,33 +501,98 @@ bool TestInit()
     GLuint vbo;
     // TODO: Error checking.
     glGenBuffers(1, &vbo);
+    if (!(e = GetGLErrors()).empty())
+    {
+        gLog.fatal("OpenGL", "Failed to generate VBO: %s.", e.c_str());
+        return false;
+    }
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    if (!(e = GetGLErrors()).empty())
+    {
+        gLog.fatal("OpenGL", "Failed to bind VBO: %s.", e.c_str());
+        return false;
+    }
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    if (!(e = GetGLErrors()).empty())
+    {
+        gLog.fatal("OpenGL", "Failed to send VBO data to GPU: %s.", e.c_str());
+        return false;
+    }
 
     GLuint indices[] = { // note that we start from 0!
         0, 1, 3,   // first triangle
         1, 2, 3    // second triangle
     };
     GLuint ebo;
-    // TODO: Error checking.
     glGenBuffers(1, &ebo);
+    if (!(e = GetGLErrors()).empty())
+    {
+        gLog.fatal("OpenGL", "Failed to generate EBO: %s.", e.c_str());
+        return false;
+    }
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    if (!(e = GetGLErrors()).empty())
+    {
+        gLog.fatal("OpenGL", "Failed to bind EBO: %s.", e.c_str());
+        return false;
+    }
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    if (!(e = GetGLErrors()).empty())
+    {
+        gLog.fatal("OpenGL", "Failed to send EBO data to GPU: %s.", e.c_str());
+        return false;
+    }
     
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
+    if (!(e = GetGLErrors()).empty())
+    {
+        gLog.fatal("OpenGL", "Failed to pass variable to shader: %s.", e.c_str());
+        return false;
+    }
     glEnableVertexAttribArray(0);
+    if (!(e = GetGLErrors()).empty())
+    {
+        gLog.fatal("OpenGL", "Failed to enable passing of variable to shader: %s.", e.c_str());
+        return false;
+    }
     
     return true;
 }
 
 bool TestRender(float dt)
 {
-    // @todo Check for errors.
+    std::string e; // GL Errors.
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+    if (!(e = GetGLErrors()).empty())
+    {
+        gLog.fatal("OpenGL", "Failed to clear color buffer: %s.", e.c_str());
+        return false;
+    }
     glUseProgram(testData.shaderProgramID);
+    if (!(e = GetGLErrors()).empty())
+    {
+        gLog.fatal("OpenGL", "Failed to activate shader program: %s.", e.c_str());
+        return false;
+    }
     glBindVertexArray(testData.vao);
+    if (!(e = GetGLErrors()).empty())
+    {
+        gLog.fatal("OpenGL", "Failed to bind VAO: %s.", e.c_str());
+        return false;
+    }
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+    if (!(e = GetGLErrors()).empty())
+    {
+        gLog.fatal("OpenGL", "Failed to draw elements: %s.", e.c_str());
+        return false;
+    }
     glBindVertexArray(0);
+    if (!(e = GetGLErrors()).empty())
+    {
+        gLog.fatal("OpenGL", "Failed to unbind VAO: %s.", e.c_str());
+        return false;
+    }
     return true;
 }
 
@@ -546,11 +619,18 @@ bool TestEvent(SDL_Event& e, float dt)
             else if (e.key.keysym.sym == SDLK_w)
             {
                 wireframe = !wireframe;
-                // @todo Error checking.
                 if (wireframe)
                     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
                 else
                     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+                
+                std::string error = GetGLErrors();
+                if (!error.empty())
+                {
+                    gLog.fatal("OpenGL", "Failed to set polygon mode: %s.", error.c_str());
+                    return false;
+                }
+                
                 gLog.info("Test", "Set wireframe to %s.", OnOffToStr(wireframe));
             }
             
@@ -604,15 +684,15 @@ bool CoreInit(CoreServices& coreServices)
     
     coreServices.log = &gLog;
     gLog.info("Core", "EXE path: %s", exePath.c_str());
-    gGameFullPath = exePath + GAME_FILENAME;
-    gLog.info("Core", "Game fullpath: %s", gGameFullPath.c_str());
-    ResultBool r = PlatformCreateTempFile(gGameLiveFullPath);
+    gGamePath = exePath + GAME_FILENAME;
+    gLog.info("Core", "Game fullpath: %s", gGamePath.c_str());
+    ResultBool r = PlatformCreateTempFile(gGameLivePath);
     if (!r.result)
     {
         gLog.fatal("Core", "Failed to create temp live game file: %s", r.error.c_str());
         return false;
     }
-    gLog.info("Core", "Game Live fullpath: %s", gGameLiveFullPath.c_str());
+    gLog.info("Core", "Game Live fullpath: %s", gGameLivePath.c_str());
     
     std::string cwdPath;
     r = PlatformGetCWD(cwdPath);
@@ -640,10 +720,6 @@ bool CoreInit(CoreServices& coreServices)
     gLog.info("Core", "Data path: %s", gDataPath.c_str());
     gLog.info("Core", "User preferences path: %s", gPrefPath.c_str());
     gLog.info("Core", "CWD path: %s", cwdPath.c_str());
-    
-    if (!TestInit())
-        return false;
-    
     return true;
 }
 
@@ -658,6 +734,9 @@ int main(int argc, char* argv[])
     if (!sdl.init())
         return false;
     
+    if (!TestInit())
+        return false;
+    
     GameServices gameServices;
     void* game = GameInit(coreServices, gameServices);
     if (!game)
@@ -669,10 +748,15 @@ int main(int argc, char* argv[])
     
     SDL_Event event;
     bool quit = false;
-    // @todo Implement.
+    uint64 dtNow = SDL_GetPerformanceCounter();
+    uint64 dtLast = 0;
     float dt = 0.0f;
     while (!quit)
     {
+        dtLast = dtNow;
+        dtNow = SDL_GetPerformanceCounter();
+        dt = (float)(dtNow - dtLast) * 1000.0f / (float)SDL_GetPerformanceFrequency();
+        
         while (SDL_PollEvent(&event))
         {
             switch (event.type)

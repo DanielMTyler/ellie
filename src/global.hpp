@@ -16,6 +16,7 @@
 #include <cstddef> // (u)int(8/16/32/64)_t
 #include <cstdint> // size_t
 #include <cstring> // std::memset
+#include <fstream> // std::ifstream
 #include <string>  // std::string
 
 //
@@ -98,7 +99,7 @@
 #define ZERO_STRUCT(s) std::memset(&(s), 0, sizeof((s)))
 
 //
-// Types
+// Types.
 //
 
 typedef std::int8_t int8;
@@ -117,28 +118,11 @@ typedef double real64;
 typedef std::size_t MemoryIndex;
 typedef std::size_t MemorySize;
 
-uint32 CheckedUInt64ToUInt32(uint64 v)
-{
-    ASSERT(v <= 0xFFFFFFFF);
-    uint32 r = (uint32)v;
-    return r;
-}
-
 struct ResultBool
 {
     bool result;
     std::string error;
 };
-
-const char* BoolToStr(bool b)
-{
-    return (b ? "True" : "False");
-}
-
-const char* OnOffToStr(bool b)
-{
-    return (b ? "On" : "Off");
-}
 
 class ILog
 {
@@ -151,5 +135,39 @@ public:
     virtual void debug(const char* system, const char* format, ...) = 0;
     virtual void trace(const char* system, const char* format, ...) = 0;
 };
+
+//
+// Functions.
+//
+
+uint32 CheckedUInt64ToUInt32(uint64 v)
+{
+    ASSERT(v <= 0xFFFFFFFF);
+    uint32 r = (uint32)v;
+    return r;
+}
+
+const char* BoolToStr(bool b)
+{
+    return (b ? "True" : "False");
+}
+
+const char* OnOffToStr(bool b)
+{
+    return (b ? "On" : "Off");
+}
+
+// @todo This shouldn't throw exceptions.
+// @todo Use ResultBool return with a useful error message.
+bool ReadFileToStr(std::string file, std::string& contents)
+{
+    std::ifstream in(file, std::ios::in | std::ios::binary);
+    if (in)
+        contents = std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    else
+        return false;
+    
+    return true;
+}
 
 #endif
