@@ -14,40 +14,26 @@
 // Core services.
 //
 
-#define CORE_SETWIREFRAME void CoreSetWireframe(bool on)
-typedef void CoreSetWireframeCB(bool on);
-
-#define CORE_CLEAR void CoreClear(uint32 mask)
-typedef void CoreClearCB(uint32 mask);
-
 struct CoreServices
 {
     ILog* log;
-    IMemory* memory;
-    CoreSetWireframeCB* SetWireframe;
-    CoreClearCB* Clear;
 };
 
 //
 // Game services.
 //
 
-#define GAME_INIT bool GameInit(CoreServices* coreServices)
-typedef bool GameInitCB(CoreServices* coreServices);
+#define GAME_INIT bool GameInit(CoreServices* services)
+typedef bool GameInitCB(CoreServices* services);
 
 #define GAME_PRERELOAD bool GamePreReload()
 typedef bool GamePreReloadCB();
 
-#define GAME_POSTRELOAD bool GamePostReload(CoreServices* coreServices)
-typedef bool GamePostReloadCB(CoreServices* coreServices);
+#define GAME_POSTRELOAD bool GamePostReload(CoreServices* services)
+typedef bool GamePostReloadCB(CoreServices* services);
 
 #define GAME_CLEANUP void GameCleanup()
 typedef void GameCleanupCB();
-
-// @todo This probably shouldn't be accessible to Game.
-#include <SDL.h>
-#define GAME_EVENT bool GameEvent(SDL_Event& e, float dt)
-typedef bool GameEventCB(SDL_Event& e, float dt);
 
 #define GAME_INPUT bool GameInput(float dt)
 typedef bool GameInputCB(float dt);
@@ -64,7 +50,6 @@ struct GameServices
     GamePreReloadCB*  preReload;
     GamePostReloadCB* postReload;
     GameCleanupCB*    cleanup;
-    GameEventCB*      event;
     GameInputCB*      input;
     GameLogicCB*      logic;
     GameRenderCB*     render;

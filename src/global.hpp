@@ -152,15 +152,4 @@ public:
     virtual void trace(const char* system, const char* format, ...) = 0;
 };
 
-// @cleanup
-class IMemory
-{
-public:
-    virtual ~IMemory() {}
-    
-    virtual void* allocate(std::string name, MemorySize size) = 0;
-    virtual void  release(std::string name) = 0;
-    virtual void* get(std::string name) = 0;
-};
-
 #endif

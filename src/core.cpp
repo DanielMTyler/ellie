@@ -17,55 +17,7 @@
 #include "log.cpp"
 #include "services.hpp"
 
-// @cleanup
-#include <map>
-#include <cstdlib>
-class Memory : public IMemory
-{
-private:
-    std::map<std::string, void*> m;
-
-public:
-    virtual ~Memory() override
-    {
-        for(auto it = m.begin(); it != m.end(); it++)
-            std::free(it->second);
-        m.clear();
-    }
-    
-    virtual void* allocate(std::string name, MemorySize size) override
-    {
-        ASSERT(!name.empty());
-        ASSERT(size > 0);
-        ASSERT(m.find(name) == m.end());
-        void* p = std::malloc(size);
-        if(!p)
-            return nullptr;
-        std::memset(p, 0, size);
-        m[name] = p;
-        return p;
-    }
-    
-    virtual void release(std::string name) override
-    {
-        ASSERT(!name.empty());
-        auto it = m.find(name);
-        ASSERT(it != m.end());
-        std::free(it->second);
-        m.erase(it);
-    }
-    
-    virtual void* get(std::string name) override
-    {
-        ASSERT(!name.empty());
-        auto it = m.find(name);
-        ASSERT(it != m.end());
-        return it->second;
-    }
-};
-
 static Log gLog;
-static Memory gMemory;
 static std::string gGameFullPath;
 static std::string gGameLiveFullPath;
 static std::string gDataPath;
@@ -311,14 +263,6 @@ bool GameRetrieveFunctions(void* game, GameServices& gameServices)
         return false;
     }
     
-    gameServices.event = (GameEventCB*)SDL_LoadFunction(game, "GameEvent");
-    if (!gameServices.event)
-    {
-        gLog.fatal("Core", "Failed to retrieve GameEvent function from game: %s", SDL_GetError());
-        ZERO_STRUCT(gameServices);
-        return false;
-    }
-    
     gameServices.input = (GameInputCB*)SDL_LoadFunction(game, "GameInput");
     if (!gameServices.input)
     {
@@ -443,25 +387,187 @@ void GameCleanup(void* game, GameServices& gameServices)
         gLog.warn("Core", "Failed to delete live game: %s", r.error.c_str());
 }
 
-CORE_SETWIREFRAME
+bool LoadShaderFromFile(std::string file, std::string& shader)
 {
-    // @todo Error checking.
-    if (on)
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    std::string filePath = gDataPath + "shaders" + PLATFORM_PATH_SEPARATOR + file;
+    std::ifstream in(filePath, std::ios::in | std::ios::binary);
+    if (in)
+    {
+        shader = std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+        gLog.info("Core", "Loaded shader: %s.", filePath.c_str());
+    }
     else
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    {
+        gLog.fatal("Core", "Failed to load shader: %s.", filePath.c_str());
+        return false;
+    }
+    
+    return true;
 }
 
-CORE_CLEAR
+bool CompileShaderFromStr(GLuint shaderID, std::string shader)
 {
-    glClear(mask);
+    const char* shaderBuf = shader.c_str();
+    glShaderSource(shaderID, 1, &shaderBuf, nullptr);
+    glCompileShader(shaderID);
+    const uint32 infoLogSize = KIBIBYTES(1);
+    char infoLog[infoLogSize];
+    int success;
+    glGetShaderiv(shaderID, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(shaderID, infoLogSize, nullptr, infoLog);
+        gLog.fatal("OpenGL", "Failed to compile shader: %s.", infoLog);
+        return false;
+    }
+    
+    gLog.info("OpenGL", "Compiled shader: %u.", shaderID);
+    return true;
+}
+
+bool LoadAndCompileVertexShader(GLuint& shaderID, std::string baseFileName)
+{
+    shaderID = glCreateShader(GL_VERTEX_SHADER);
+    std::string fileName = baseFileName + ".vert";
+    std::string shader;
+    if (!LoadShaderFromFile(fileName, shader))
+        return false;
+    if (!CompileShaderFromStr(shaderID, shader))
+        return false;
+    return true;
+}
+
+bool LoadAndCompileFragmentShader(GLuint& shaderID, std::string baseFileName)
+{
+    shaderID = glCreateShader(GL_FRAGMENT_SHADER);
+    std::string fileName = baseFileName + ".frag";
+    std::string shader;
+    if (!LoadShaderFromFile(fileName, shader))
+        return false;
+    if (!CompileShaderFromStr(shaderID, shader))
+        return false;
+    return true;
+}
+
+struct TestData
+{
+    GLuint shaderProgramID;
+    GLuint vao;
+};
+
+static TestData testData;
+
+bool TestInit()
+{
+    GLuint   vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
+    GLuint fragmentShaderID = glCreateShader(GL_FRAGMENT_SHADER);
+    LoadAndCompileVertexShader(vertexShaderID, "default");
+    LoadAndCompileFragmentShader(fragmentShaderID, "default");
+    
+    testData.shaderProgramID = glCreateProgram();
+    glAttachShader(testData.shaderProgramID, vertexShaderID);
+    glAttachShader(testData.shaderProgramID, fragmentShaderID);
+    glLinkProgram(testData.shaderProgramID);
+    const uint32 infoLogSize = KIBIBYTES(1);
+    char infoLog[infoLogSize];
+    int success;
+    glGetProgramiv(testData.shaderProgramID, GL_LINK_STATUS, &success);
+    if (!success)
+    {
+        glGetProgramInfoLog(testData.shaderProgramID, infoLogSize, nullptr, infoLog);
+        gLog.fatal("Test", "Shader Program linking failed: %s", infoLog);
+        return false;
+    }
+    glDeleteShader(vertexShaderID);
+    glDeleteShader(fragmentShaderID);
+    
+    glGenVertexArrays(1, &testData.vao);
+    glBindVertexArray(testData.vao);
+
+    float vertices[] = {
+         0.5f,  0.5f, 0.0f,  // top right
+         0.5f, -0.5f, 0.0f,  // bottom right
+        -0.5f, -0.5f, 0.0f,  // bottom left
+        -0.5f,  0.5f, 0.0f   // top left
+    };
+    GLuint vbo;
+    // TODO: Error checking.
+    glGenBuffers(1, &vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    GLuint indices[] = { // note that we start from 0!
+        0, 1, 3,   // first triangle
+        1, 2, 3    // second triangle
+    };
+    GLuint ebo;
+    // TODO: Error checking.
+    glGenBuffers(1, &ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
+    glEnableVertexAttribArray(0);
+    
+    return true;
+}
+
+bool TestRender(float dt)
+{
+    // @todo Check for errors.
+    glClear(GL_COLOR_BUFFER_BIT);
+    glUseProgram(testData.shaderProgramID);
+    glBindVertexArray(testData.vao);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+    glBindVertexArray(0);
+    return true;
+}
+
+bool TestLogic(float dt)
+{
+    return true;
+}
+
+bool TestInput(float dt)
+{
+    return true;
+}
+
+bool TestEvent(SDL_Event& e, float dt)
+{
+    static bool wireframe = false;
+    switch (e.type)
+    {
+        case SDL_KEYDOWN:
+            if (e.key.keysym.sym == SDLK_ESCAPE)
+            {
+                return false;
+            }
+            else if (e.key.keysym.sym == SDLK_w)
+            {
+                wireframe = !wireframe;
+                // @todo Error checking.
+                if (wireframe)
+                    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+                else
+                    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+                gLog.info("Test", "Set wireframe to %s.", OnOffToStr(wireframe));
+            }
+            
+            break;
+        default:
+            break;
+    }
+    
+    return true;
+}
+
+void TestCleanup()
+{
 }
 
 bool CoreInit(CoreServices& coreServices)
 {
-    coreServices.memory = &gMemory;
-    coreServices.SetWireframe = &CoreSetWireframe;
-    coreServices.Clear = &CoreClear;
     char* exePathBuf = SDL_GetBasePath();
     if (!exePathBuf)
     {
@@ -535,68 +641,9 @@ bool CoreInit(CoreServices& coreServices)
     gLog.info("Core", "User preferences path: %s", gPrefPath.c_str());
     gLog.info("Core", "CWD path: %s", cwdPath.c_str());
     
-    return true;
-}
-
-bool LoadShaderFromFile(std::string file, std::string& shader)
-{
-    std::string filePath = gDataPath + "shaders" + PLATFORM_PATH_SEPARATOR + file;
-    std::ifstream in(filePath, std::ios::in | std::ios::binary);
-    if (in)
-    {
-        shader = std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-        gLog.info("Core", "Loaded shader: %s.", filePath.c_str());
-    }
-    else
-    {
-        gLog.fatal("Core", "Failed to load shader: %s.", filePath.c_str());
+    if (!TestInit())
         return false;
-    }
     
-    return true;
-}
-
-bool CompileShaderFromStr(GLuint shaderID, std::string shader)
-{
-    const char* shaderBuf = shader.c_str();
-    glShaderSource(shaderID, 1, &shaderBuf, nullptr);
-    glCompileShader(shaderID);
-    const uint32 infoLogSize = KIBIBYTES(1);
-    char infoLog[infoLogSize];
-    int success;
-    glGetShaderiv(shaderID, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(shaderID, infoLogSize, nullptr, infoLog);
-        gLog.fatal("OpenGL", "Failed to compile shader: %s.", infoLog);
-        return false;
-    }
-    
-    gLog.info("OpenGL", "Compiled shader: %u.", shaderID);
-    return true;
-}
-
-bool LoadAndCompileVertexShader(GLuint& shaderID, std::string baseFileName)
-{
-    shaderID = glCreateShader(GL_VERTEX_SHADER);
-    std::string fileName = baseFileName + ".vert";
-    std::string shader;
-    if (!LoadShaderFromFile(fileName, shader))
-        return false;
-    if (!CompileShaderFromStr(shaderID, shader))
-        return false;
-    return true;
-}
-
-bool LoadAndCompileFragmentShader(GLuint& shaderID, std::string baseFileName)
-{
-    shaderID = glCreateShader(GL_FRAGMENT_SHADER);
-    std::string fileName = baseFileName + ".frag";
-    std::string shader;
-    if (!LoadShaderFromFile(fileName, shader))
-        return false;
-    if (!CompileShaderFromStr(shaderID, shader))
-        return false;
     return true;
 }
 
@@ -643,7 +690,7 @@ int main(int argc, char* argv[])
                     break;
             }
             
-            if (!quit && !gameServices.event(event, dt))
+            if (!quit && !TestEvent(event, dt))
             {
                 quit = true;
                 break;
@@ -652,11 +699,11 @@ int main(int argc, char* argv[])
 
         if (quit)
             break;
-        if (!gameServices.input(dt))
+        if (!gameServices.input(dt) || !TestInput(dt))
             break;
-        if (!gameServices.logic(dt))
+        if (!gameServices.logic(dt) || !TestLogic(dt))
             break;
-        if (!gameServices.render(dt))
+        if (!gameServices.render(dt) || !TestRender(dt))
             break;
         
         SDL_GL_SwapWindow(sdl.window);
@@ -664,6 +711,7 @@ int main(int argc, char* argv[])
     }
     
     GameCleanup(game, gameServices);
+    TestCleanup();
     // @todo Should there be OGL/SDL cleanup here?
     return 0;
 }
