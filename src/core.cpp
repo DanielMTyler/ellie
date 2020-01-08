@@ -17,46 +17,44 @@
 #include "log.cpp"
 #include "services.hpp"
 
+#define OPENGL_DEBUG 1
+
+#ifdef OPENGL_DEBUG
+    #define GLCHECK(Call) \
+        Call; \
+        GLCheckImpl(__FILE__, __LINE__)
+#else
+    #define GLCHECK(Call)
+#endif
+
 static Log gLog;
 static std::string gGamePath;
 static std::string gGameLivePath;
 static std::string gDataPath;
 static std::string gPrefPath;
 
-// Return empty string if no errors.
-std::string GetGLErrors()
+void GLCheckImpl(const char* file, uint32 line)
 {
     GLenum e;
-    std::string r;
     while ((e = glGetError()) != GL_NO_ERROR)
     {
-        if (!r.empty())
-            r += ", ";
-        
         switch (e)
         {
-            case GL_INVALID_ENUM:                  r += "GL_INVALID_ENUM"; break;
-            case GL_INVALID_VALUE:                 r += "GL_INVALID_VALUE"; break;
-            case GL_INVALID_OPERATION:             r += "GL_INVALID_OPERATION"; break;
-            case GL_OUT_OF_MEMORY:                 r += "GL_OUT_OF_MEMORY"; break;
-            case GL_INVALID_FRAMEBUFFER_OPERATION: r += "GL_INVALID_FRAMEBUFFER_OPERATION"; break;
+            case GL_INVALID_ENUM:                  gLog.debug("OpenGL", "GL_INVALID_ENUM"); break;
+            case GL_INVALID_VALUE:                 gLog.debug("OpenGL", "GL_INVALID_VALUE"); break;
+            case GL_INVALID_OPERATION:             gLog.debug("OpenGL", "GL_INVALID_OPERATION"); break;
+            case GL_OUT_OF_MEMORY:                 gLog.debug("OpenGL", "GL_OUT_OF_MEMORY"); break;
+            case GL_INVALID_FRAMEBUFFER_OPERATION: gLog.debug("OpenGL", "GL_INVALID_FRAMEBUFFER_OPERATION"); break;
             default:
                 const uint32 BUFSIZE = 11; // Should be 7, but could be 11 max due to uint32.
                 char buf[BUFSIZE];
                 if (!std::snprintf(buf, BUFSIZE, "0x%.4X", e))
-                    r += std::to_string(e);
+                    gLog.debug("OpenGL", "%i", e);
                 else
-                    r += buf;
+                    gLog.debug("OpenGL", "%s", buf);
                 break;
         }
     }
-    
-    return r;
-}
-
-void ClearGLErrors()
-{
-    while (glGetError() != GL_NO_ERROR) {}
 }
 
 #include "core_shader.cpp"
@@ -441,57 +439,28 @@ bool TestInit()
     if (!LoadFragmentShader(fragmentShader, "default"))
         return false;
     
-    testData.shaderProgramID = glCreateProgram();
+    GLCHECK(testData.shaderProgramID = glCreateProgram());
     if (!testData.shaderProgramID)
-    {
-        gLog.fatal("OpenGL", "Failed to create shader program: %s.", GetGLErrors().c_str());
         return false;
-    }
-    glAttachShader(testData.shaderProgramID, vertexShader.id);
-    if (!(e = GetGLErrors()).empty())
-    {
-        gLog.fatal("OpenGL", "Failed to attach vertex shader to shader program: %s.", e.c_str());
-        return false;
-    }
-    glAttachShader(testData.shaderProgramID, fragmentShader.id);
-    if (!(e = GetGLErrors()).empty())
-    {
-        gLog.fatal("OpenGL", "Failed to attach fragment shader to shader program: %s.", e.c_str());
-        return false;
-    }
-    glLinkProgram(testData.shaderProgramID);
-    if (!(e = GetGLErrors()).empty())
-    {
-        gLog.fatal("OpenGL", "Failed to link shader program: %s.", e.c_str());
-        return false;
-    }
+    GLCHECK(glAttachShader(testData.shaderProgramID, vertexShader.id));
+    GLCHECK(glAttachShader(testData.shaderProgramID, fragmentShader.id));
+    GLCHECK(glLinkProgram(testData.shaderProgramID));
     const uint32 INFOLOGSIZE = KIBIBYTES(1);
     char infoLog[INFOLOGSIZE];
     int success = GL_FALSE; // If glGetShaderiv were to fail for some reason, success will == this value.
-    glGetProgramiv(testData.shaderProgramID, GL_LINK_STATUS, &success);
+    GLCHECK(glGetProgramiv(testData.shaderProgramID, GL_LINK_STATUS, &success));
     if (!success)
     {
         glGetProgramInfoLog(testData.shaderProgramID, INFOLOGSIZE, nullptr, infoLog);
         gLog.fatal("OpenGL", "Failed to link shader program: %s.", infoLog);
         return false;
     }
-    glDeleteShader(vertexShader.id);
-    glDeleteShader(fragmentShader.id);
-    ClearGLErrors(); // Ignore errors from glDeleteShader.
+    GLCHECK(glDeleteShader(vertexShader.id));
+    GLCHECK(glDeleteShader(fragmentShader.id));
     
-    glGenVertexArrays(1, &testData.vao);
-    if (!(e = GetGLErrors()).empty())
-    {
-        gLog.fatal("OpenGL", "Failed to generate VAO: %s.", e.c_str());
-        return false;
-    }
-    glBindVertexArray(testData.vao);
-    if (!(e = GetGLErrors()).empty())
-    {
-        gLog.fatal("OpenGL", "Failed to bind VAO: %s.", e.c_str());
-        return false;
-    }
-
+    GLCHECK(glGenVertexArrays(1, &testData.vao));
+    GLCHECK(glBindVertexArray(testData.vao));
+    
     float vertices[] = {
          0.5f,  0.5f, 0.0f,  // top right
          0.5f, -0.5f, 0.0f,  // bottom right
@@ -500,61 +469,20 @@ bool TestInit()
     };
     GLuint vbo;
     // TODO: Error checking.
-    glGenBuffers(1, &vbo);
-    if (!(e = GetGLErrors()).empty())
-    {
-        gLog.fatal("OpenGL", "Failed to generate VBO: %s.", e.c_str());
-        return false;
-    }
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    if (!(e = GetGLErrors()).empty())
-    {
-        gLog.fatal("OpenGL", "Failed to bind VBO: %s.", e.c_str());
-        return false;
-    }
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    if (!(e = GetGLErrors()).empty())
-    {
-        gLog.fatal("OpenGL", "Failed to send VBO data to GPU: %s.", e.c_str());
-        return false;
-    }
+    GLCHECK(glGenBuffers(1, &vbo));
+    GLCHECK(glBindBuffer(GL_ARRAY_BUFFER, vbo));
+    GLCHECK(glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW));
 
     GLuint indices[] = { // note that we start from 0!
         0, 1, 3,   // first triangle
         1, 2, 3    // second triangle
     };
     GLuint ebo;
-    glGenBuffers(1, &ebo);
-    if (!(e = GetGLErrors()).empty())
-    {
-        gLog.fatal("OpenGL", "Failed to generate EBO: %s.", e.c_str());
-        return false;
-    }
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    if (!(e = GetGLErrors()).empty())
-    {
-        gLog.fatal("OpenGL", "Failed to bind EBO: %s.", e.c_str());
-        return false;
-    }
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-    if (!(e = GetGLErrors()).empty())
-    {
-        gLog.fatal("OpenGL", "Failed to send EBO data to GPU: %s.", e.c_str());
-        return false;
-    }
-    
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr);
-    if (!(e = GetGLErrors()).empty())
-    {
-        gLog.fatal("OpenGL", "Failed to pass variable to shader: %s.", e.c_str());
-        return false;
-    }
-    glEnableVertexAttribArray(0);
-    if (!(e = GetGLErrors()).empty())
-    {
-        gLog.fatal("OpenGL", "Failed to enable passing of variable to shader: %s.", e.c_str());
-        return false;
-    }
+    GLCHECK(glGenBuffers(1, &ebo));
+    GLCHECK(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo));
+    GLCHECK(glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW));
+    GLCHECK(glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), nullptr));
+    GLCHECK(glEnableVertexAttribArray(0));
     
     return true;
 }
@@ -562,37 +490,12 @@ bool TestInit()
 bool TestRender(float dt)
 {
     std::string e; // GL Errors.
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-    if (!(e = GetGLErrors()).empty())
-    {
-        gLog.fatal("OpenGL", "Failed to clear color buffer: %s.", e.c_str());
-        return false;
-    }
-    glUseProgram(testData.shaderProgramID);
-    if (!(e = GetGLErrors()).empty())
-    {
-        gLog.fatal("OpenGL", "Failed to activate shader program: %s.", e.c_str());
-        return false;
-    }
-    glBindVertexArray(testData.vao);
-    if (!(e = GetGLErrors()).empty())
-    {
-        gLog.fatal("OpenGL", "Failed to bind VAO: %s.", e.c_str());
-        return false;
-    }
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
-    if (!(e = GetGLErrors()).empty())
-    {
-        gLog.fatal("OpenGL", "Failed to draw elements: %s.", e.c_str());
-        return false;
-    }
-    glBindVertexArray(0);
-    if (!(e = GetGLErrors()).empty())
-    {
-        gLog.fatal("OpenGL", "Failed to unbind VAO: %s.", e.c_str());
-        return false;
-    }
+    GLCHECK(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
+    GLCHECK(glClear(GL_COLOR_BUFFER_BIT));
+    GLCHECK(glUseProgram(testData.shaderProgramID));
+    GLCHECK(glBindVertexArray(testData.vao));
+    GLCHECK(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr));
+    GLCHECK(glBindVertexArray(0));
     return true;
 }
 
@@ -620,15 +523,12 @@ bool TestEvent(SDL_Event& e, float dt)
             {
                 wireframe = !wireframe;
                 if (wireframe)
-                    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-                else
-                    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-                
-                std::string error = GetGLErrors();
-                if (!error.empty())
                 {
-                    gLog.fatal("OpenGL", "Failed to set polygon mode: %s.", error.c_str());
-                    return false;
+                    GLCHECK(glPolygonMode(GL_FRONT_AND_BACK, GL_LINE));
+                }
+                else
+                {
+                    GLCHECK(glPolygonMode(GL_FRONT_AND_BACK, GL_FILL));
                 }
                 
                 gLog.info("Test", "Set wireframe to %s.", OnOffToStr(wireframe));

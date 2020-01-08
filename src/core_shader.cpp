@@ -53,17 +53,17 @@ namespace CoreShaderImpl
             return false;
         }
         const char* textBuf = text.c_str();
-        glShaderSource(shader.id, 1, &textBuf, nullptr);
-        glCompileShader(shader.id);
+        GLCHECK(glShaderSource(shader.id, 1, &textBuf, nullptr));
+        GLCHECK(glCompileShader(shader.id));
         
-        const uint32 infoLogSize = KIBIBYTES(1);
-        char infoLog[infoLogSize];
+        const uint32 INFOLOGSIZE = KIBIBYTES(1);
+        char infoLog[INFOLOGSIZE];
         int success = GL_FALSE; // If glGetShaderiv were to fail for some reason, success will == this value.
-        glGetShaderiv(shader.id, GL_COMPILE_STATUS, &success);
+        GLCHECK(glGetShaderiv(shader.id, GL_COMPILE_STATUS, &success));
         if (!success)
         {
-            glGetShaderInfoLog(shader.id, infoLogSize, nullptr, infoLog);
-            gLog.fatal("OpenGL", "Failed to compile shader (%s): %s.", shader.file.c_str(), GetGLErrors().c_str());
+            GLCHECK(glGetShaderInfoLog(shader.id, INFOLOGSIZE, nullptr, infoLog));
+            gLog.fatal("OpenGL", "Failed to compile shader (%s): %s.", shader.file.c_str(), infoLog);
             return false;
         }
         
