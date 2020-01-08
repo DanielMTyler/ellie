@@ -8,6 +8,7 @@ Copyright (C) 2020 Daniel M Tyler.
 * Memory Allocator.
 * ECS.
 * Reload game library when modified.
+* OpenGL Debug Context.
 * Loop editing (record commands, replay them forever until stopped).
 * Memory Usage/Free/Total tracking.
 * Log PC specs, OpenGL info, etc.
