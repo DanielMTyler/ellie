@@ -20,7 +20,7 @@ private:
         debug,
         trace
     };
-
+    
     FILE* file = nullptr;
     static const uint32 bufferSize = KIBIBYTES(2);
     char buffer[bufferSize];
@@ -30,7 +30,7 @@ private:
     {
         if (!file)
             return;
-
+        
         // Ignore vsnprintf errors.
         if (vsnprintf(buffer, bufferSize, format, args))
         {
@@ -57,12 +57,12 @@ private:
                     INVALID_CODE_PATH;
                     break;
             }
-
+            
             // Flush in case of crashes.
             fflush(file);
         }
     }
-
+    
 public:
     virtual ~Log() override
     {
@@ -72,53 +72,63 @@ public:
             file = nullptr;
         }
     }
-
+    
     bool init(const char* filename)
     {
         ASSERT(!file);
         ASSERT(filename);
-
+        
         file = fopen(filename, "wb");
         if (file)
             return true;
         else
             return false;
     }
-
+    
     virtual void fatal(const char* system, const char* format, ...) override
     {
+        ASSERT(system);
+        ASSERT(format);
         va_list args;
         va_start(args, format);
         log(system, format, Type::fatal, args);
         va_end(args);
     }
-
+    
     virtual void warn(const char* system, const char* format, ...) override
     {
+        ASSERT(system);
+        ASSERT(format);
         va_list args;
         va_start(args, format);
         log(system, format, Type::warn, args);
         va_end(args);
     }
-
+    
     virtual void info(const char* system, const char* format, ...) override
     {
+        ASSERT(system);
+        ASSERT(format);
         va_list args;
         va_start(args, format);
         log(system, format, Type::info, args);
         va_end(args);
     }
-
+    
     virtual void debug(const char* system, const char* format, ...) override
     {
+        ASSERT(system);
+        ASSERT(format);
         va_list args;
         va_start(args, format);
         log(system, format, Type::debug, args);
         va_end(args);
     }
-
+    
     virtual void trace(const char* system, const char* format, ...) override
     {
+        ASSERT(system);
+        ASSERT(format);
         va_list args;
         va_start(args, format);
         log(system, format, Type::trace, args);
