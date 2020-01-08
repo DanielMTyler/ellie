@@ -3,9 +3,13 @@ Copyright (C) 2020 Daniel M Tyler.
   This file is part of Ellie.
 ==================================
 
-* Add input system.
+* Input system.
+* Options, e.g., Q3 console options.
+* Memory Allocator.
+* ECS.
 * Reload game library when modified.
-* Add loop editing (record commands, replay them forever until stopped).
-* Use GLM & GLI later.
+* Loop editing (record commands, replay them forever until stopped).
+* Memory Usage/Free/Total tracking.
 * Log PC specs, OpenGL info, etc.
-* Telemetry/Performance tracking.
+* Performance tracking.
+* Telemetry tracking.
