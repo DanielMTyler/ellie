@@ -8,5 +8,3 @@ This project uses a Unity build, which just means that the compiler is told abou
 Platform implementation is in src/platform_<platform>.cpp such as src/platform_win64.cpp.
 
 The application and game logic are split into a Core and the Game. The game is built as a shared library and the core copies it to a temp "live" file which is then loaded and used. This separation allows for live/hot reloading of the game logic while the game is running. The downside to this split is that most/all OpenGL/SDL calls must be from the Core, which makes prototyping slower during development.
-
-This project uses OpenGL/GLSL and SDL.
