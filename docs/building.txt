@@ -19,6 +19,7 @@ Compiler:
         Mingw-w64 v8.1.0-x86_64-posix-seh-rev0: 
 
 Dependencies:
+    Dear IMGUI [ae1e361] (Git Submodule): Immediate Mode Graphical User interface.
     GLAD: OpenGL Loader/Generator web service (see GLAD Options below).
     GLM [13724cf] (Git Submodule): OpenGL Mathmatics.
     fmt [cd0b3f96] (Git Submodule): Formatting library.
