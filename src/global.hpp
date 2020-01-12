@@ -5,39 +5,18 @@
     ==================================
 */
 
-#ifndef GLOBAL_HPP
-#define GLOBAL_HPP
+#ifndef GLOBAL_HPP_INCLUDED
+#define GLOBAL_HPP_INCLUDED
 
-//
-// Includes.
-//
-
-#include <cassert> // assert()
-#include <cstddef> // (u)int(8/16/32/64)_t
-#include <cstdint> // size_t
-#include <cstring> // std::memset
-#include <fstream> // std::ifstream
-#include <string>  // std::string
-
-//
-// Defines from compiler flags.
-//
-
-#if !defined(BUILD_RELEASE) && !defined(BUILD_DEBUG)
-    #error Build Type not defined or not supported.
+// These are used for the user preferences folder, log filename, and game shared library filename.
+#ifndef ORGANIZATION
+    #error ORGANIZATION isn't defined.
+#endif
+#ifndef PROJECT_NAME
+    #error PROJECT_NAME isn't defined.
 #endif
 
-#ifndef GAME_FILENAME
-    #error GAME_FILENAME not defined.
-#endif
 
-#ifndef PLATFORM_LOG_FILENAME
-    #error PLATFORM_LOG_FILENAME not defined.
-#endif
-
-//
-// OS, Compiler, and CPU Architecture detection.
-//
 
 #if defined(_WIN32) || defined(_WIN64)
     #define OS_WINDOWS 1
@@ -79,16 +58,53 @@
     #error Unknown Compiler.
 #endif
 
-//
-// Macros and defines.
-//
 
-// Clang doesn't like "*(int*)0=0" in my ASSERT macro, so enable assert() in all build types and use it instead.
-#undef NDEBUG
-// ASSERT() is always enabled and doesn't get logged.
-#define ASSERT(X) assert((X))
 
-#define INVALID_CODE_PATH ASSERT(!"Invalid Code Path")
+// Ensure that assert() works in all builds.
+#ifdef NDEBUG
+    #undef NDEBUG
+    #include <cassert> // assert()
+    #define NDEBUG
+#else
+    #include <cassert> // assert()
+#endif
+
+#include <cstddef> // (u)int(8/16/32/64)_t
+#include <cstdint> // size_t
+#include <cstring> // std::memset
+#include <fstream> // std::ifstream
+#include <string>  // std::string
+
+/*
+    WARNING: SDL.h must be included before windows.h or you'll get compile errors like this:
+        In file included from ..\..\src\platform_win64.cpp:143:
+        In file included from ..\..\src/core.cpp:10:
+        In file included from ..\..\deps\include\SDL2\SDL.h:38:
+        In file included from ..\..\deps\include\SDL2/SDL_cpuinfo.h:59:
+        In file included from C:\Program Files\LLVM\lib\clang\10.0.0\include\intrin.h:12:
+        In file included from C:\Program Files\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\x86_64-w64-mingw32\include\intrin.h:41:
+        C:\Program Files\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\x86_64-w64-mingw32\include\psdk_inc/intrin-impl.h:1781:18: error: redefinition of '__builtin_ia32_xgetbv' as different kind of symbol
+        unsigned __int64 _xgetbv(unsigned int);
+ */
+// spdlog and glad both include windows.h and caused the problem above, so just include SDL here now.
+#include <SDL.h>
+
+#ifndef NDEBUG
+    #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
+#else
+    #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_INFO
+#endif
+#include <spdlog/spdlog.h>
+
+
+
+#define ALWAYS_ASSERT(X) assert((X))
+
+#ifndef NDEBUG
+    #define DEBUG_ASSERT(X) ALWAYS_ASSERT(X)
+#else
+    #define DEBUG_ASSERT(X)
+#endif
 
 #define KIBIBYTES(v) ((v) * 1024LL)
 #define MEBIBYTES(v) (KIBIBYTES(v) * 1024LL)
@@ -96,11 +112,9 @@
 
 #define ARRAY_COUNT(a) (sizeof(a) / sizeof((a)[0]))
 
-#define ZERO_STRUCT(s) std::memset(&(s), 0, sizeof((s)))
+#define ZERO_STRUCT(s) std::memset(&(s), 0, sizeof(s))
 
-//
-// Types.
-//
+
 
 typedef std::int8_t int8;
 typedef std::int16_t int16;
@@ -124,25 +138,11 @@ struct ResultBool
     std::string error;
 };
 
-class ILog
-{
-public:
-    virtual ~ILog() {}
-    
-    virtual void fatal(const char* system, const char* format, ...) = 0;
-    virtual void warn (const char* system, const char* format, ...) = 0;
-    virtual void info (const char* system, const char* format, ...) = 0;
-    virtual void debug(const char* system, const char* format, ...) = 0;
-    virtual void trace(const char* system, const char* format, ...) = 0;
-};
 
-//
-// Functions.
-//
 
 uint32 CheckedUInt64ToUInt32(uint64 v)
 {
-    ASSERT(v <= 0xFFFFFFFF);
+    DEBUG_ASSERT(v <= 0xFFFFFFFF);
     uint32 r = (uint32)v;
     return r;
 }
@@ -159,6 +159,7 @@ const char* OnOffToStr(bool b)
 
 // @todo This shouldn't throw exceptions.
 // @todo Use ResultBool return with a useful error message.
+// @todo Use SDL_RWops?
 bool ReadFileToStr(std::string file, std::string& contents)
 {
     std::ifstream in(file, std::ios::in | std::ios::binary);

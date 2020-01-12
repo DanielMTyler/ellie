@@ -5,10 +5,10 @@
     ==================================
 */
 
-// I should only be included by core.cpp.
+// @cleanup
 
-#ifndef CORE_SHADER_HPP
-#define CORE_SHADER_HPP
+#ifndef RENDERER_OPENGL_HPP_INCLUDED
+#define RENDERER_OPENGL_HPP_INCLUDED
 
 struct Shader
 {
@@ -27,7 +27,7 @@ namespace CoreShaderImpl
 {
     bool LoadAndCompileShader(Shader& shader, std::string baseFilename, Shader::Type type)
     {
-        ASSERT(!baseFilename.empty());
+        DEBUG_ASSERT(!baseFilename.empty());
         
         ResultBool r;
         r.result = true;
@@ -49,7 +49,7 @@ namespace CoreShaderImpl
         std::string text;
         if (!ReadFileToStr(shader.file.c_str(), text))
         {
-            gLog.fatal("OpenGL", "Failed to read shader: %s.", shader.file.c_str());
+            SPDLOG_LOGGER_CRITICAL(gLogger, "Failed to read shader: {}.", shader.file);
             return false;
         }
         const char* textBuf = text.c_str();
@@ -63,7 +63,7 @@ namespace CoreShaderImpl
         if (!success)
         {
             GLCHECK(glGetShaderInfoLog(shader.id, INFOLOGSIZE, nullptr, infoLog));
-            gLog.fatal("OpenGL", "Failed to compile shader (%s): %s.", shader.file.c_str(), infoLog);
+            SPDLOG_LOGGER_CRITICAL(gLogger, "Failed to compile shader ({}): {}.", shader.file, infoLog);
             return false;
         }
         
@@ -73,7 +73,7 @@ namespace CoreShaderImpl
 
 bool LoadVertexShader(Shader& shader, std::string name)
 {
-    ASSERT(!name.empty());
+    DEBUG_ASSERT(!name.empty());
     if (!CoreShaderImpl::LoadAndCompileShader(shader, name, Shader::Type::VERTEX))
         return false;
     return true;
@@ -81,7 +81,7 @@ bool LoadVertexShader(Shader& shader, std::string name)
 
 bool LoadFragmentShader(Shader& shader, std::string name)
 {
-    ASSERT(!name.empty());
+    DEBUG_ASSERT(!name.empty());
     if (!CoreShaderImpl::LoadAndCompileShader(shader, name, Shader::Type::FRAGMENT))
         return false;
     return true;

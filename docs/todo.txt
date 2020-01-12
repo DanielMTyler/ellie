@@ -3,10 +3,13 @@ Copyright (C) 2020 Daniel M Tyler.
   This file is part of Ellie.
 ==================================
 
+* Memory Allocator/Pool.
+* Event/Messaging System.
+
 * Input system.
-* Options, e.g., Q3 console options.
-* Memory Allocator.
-* ECS.
+* Options, e.g., Q3/CSS console.
+
+* Entity Component System.
 * Reload game library when modified.
 * OpenGL Debug Context.
 * Loop editing (record commands, replay them forever until stopped).

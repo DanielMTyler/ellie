@@ -8,49 +8,43 @@
 #include "global.hpp"
 #include "services.hpp"
 
-static ILog* gLog = nullptr;
+static std::shared_ptr<spdlog::logger> gLogger;
 static CoreServices* gServices = nullptr;
 
 extern "C" GAME_INIT
 {
-    gLog = services->log;
+    DEBUG_ASSERT(services);
+    DEBUG_ASSERT(services->logger);
     gServices = services;
-    gLog->info("Game", "Game initializing.");
-    gLog->info("Game", "Game initialized.");
+    gLogger = services->logger;
+    spdlog::register_logger(gLogger);
+    spdlog::set_default_logger(gLogger);
+    SPDLOG_LOGGER_INFO(gLogger, "Game initializing.");
+    SPDLOG_LOGGER_INFO(gLogger, "Game initialized.");
     return true;
 }
 
 extern "C" GAME_PRERELOAD
 {
-    gLog->info("Game", "Game reloading.");
+    SPDLOG_LOGGER_INFO(gLogger, "Game reloading.");
     return true;
 }
 
 extern "C" GAME_POSTRELOAD
 {
-    gLog = services->log;
+    DEBUG_ASSERT(services);
+    DEBUG_ASSERT(services->logger);
     gServices = services;
-    gLog->info("Game", "Game reloaded.");
+    gLogger = services->logger;
+    spdlog::register_logger(gLogger);
+    spdlog::set_default_logger(gLogger);
+    SPDLOG_LOGGER_INFO(gLogger, "Game reloaded.");
     return true;
 }
 
 extern "C" GAME_CLEANUP
 {
-    gLog->info("Game", "Game cleaning up.");
-    gLog->info("Game", "Game cleaned up.");
-}
-
-extern "C" GAME_INPUT
-{
-    return true;
-}
-
-extern "C" GAME_LOGIC
-{
-    return true;
-}
-
-extern "C" GAME_RENDER
-{
-    return true;
+    SPDLOG_LOGGER_INFO(gLogger, "Game cleaning up.");
+    SPDLOG_LOGGER_INFO(gLogger, "Game cleaned up.");
+    gLogger.reset();
 }

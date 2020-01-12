@@ -5,23 +5,15 @@
     ==================================
 */
 
+// @todo Unicode support, at least for paths > MAX_PATH.
+
+#define PLATFORM_PATH_SEPARATOR "\\"
+#define PLATFORM_SHARED_LIBRARY_PREFIX ""
+#define PLATFORM_SHARED_LIBRARY_EXT ".dll"
+
 #include "platform.hpp"
-/*
-    WARNING: SDL.h must be included before windows.h or you'll get compile errors like this:
-        In file included from ..\..\src\platform_win64.cpp:143:
-        In file included from ..\..\src/core.cpp:10:
-        In file included from ..\..\deps\include\SDL2\SDL.h:38:
-        In file included from ..\..\deps\include\SDL2/SDL_cpuinfo.h:59:
-        In file included from C:\Program Files\LLVM\lib\clang\10.0.0\include\intrin.h:12:
-        In file included from C:\Program Files\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\x86_64-w64-mingw32\include\intrin.h:41:
-        C:\Program Files\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\x86_64-w64-mingw32\include\psdk_inc/intrin-impl.h:1781:18: error: redefinition of '__builtin_ia32_xgetbv' as different kind of symbol
-        unsigned __int64 _xgetbv(unsigned int);
- */
-#include <SDL.h>
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
-
-// @todo Support Unicode, at least for paths > MAX_PATH.
 
 namespace PlatformImpl {
 
@@ -45,6 +37,8 @@ DWORD FormattedLastError(std::string& msg)
 }
 
 }; // namespace PlatformImpl.
+
+
 
 ResultBool PlatformCopyFile(std::string src, std::string dst, bool failIfExists)
 {
@@ -157,8 +151,9 @@ ResultBool PlatformGetCWD(std::string& cwd)
         return r;
     }
     
+    cwd = cwdBuf;
     // GetCurrentDirectory doesn't add a path separator at the end.
-    cwd = cwdBuf + std::string("\\");
+    cwd += PLATFORM_PATH_SEPARATOR;
     r.result = true;
     return r;
 }
@@ -201,7 +196,5 @@ ResultBool PlatformCreateTempFile(std::string& filePath)
     r.result = true;
     return r;
 }
-
-#define PLATFORM_PATH_SEPARATOR "\\"
 
 #include "core.cpp"

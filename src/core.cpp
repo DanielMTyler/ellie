@@ -9,12 +9,12 @@
 
 #include "global.hpp"
 #include <glad/glad.h>
-#include <glad.c>
 #include <SDL.h>
 #include <cstdio>
 #include <iostream>
 #include <string>
-#include "log.cpp"
+#include <memory> // make_shared, shared_ptr
+#include <vector>
 #include "services.hpp"
 
 #define OPENGL_DEBUG 1
@@ -27,37 +27,39 @@
     #define GLCHECK(Call)
 #endif
 
-static Log gLog;
+static std::shared_ptr<spdlog::logger> gLogger;
 static std::string gGamePath;
 static std::string gGameLivePath;
 static std::string gDataPath;
 static std::string gPrefPath;
 
-void GLCheckImpl(const char* file, uint32 line)
+void GLCheckImpl(const char* /*file*/, uint32 /*line*/)
 {
     GLenum e;
     while ((e = glGetError()) != GL_NO_ERROR)
     {
         switch (e)
         {
-            case GL_INVALID_ENUM:                  gLog.debug("OpenGL", "GL_INVALID_ENUM"); break;
-            case GL_INVALID_VALUE:                 gLog.debug("OpenGL", "GL_INVALID_VALUE"); break;
-            case GL_INVALID_OPERATION:             gLog.debug("OpenGL", "GL_INVALID_OPERATION"); break;
-            case GL_OUT_OF_MEMORY:                 gLog.debug("OpenGL", "GL_OUT_OF_MEMORY"); break;
-            case GL_INVALID_FRAMEBUFFER_OPERATION: gLog.debug("OpenGL", "GL_INVALID_FRAMEBUFFER_OPERATION"); break;
+            case GL_INVALID_ENUM:                  // @todo gLog.debug("OpenGL", "GL_INVALID_ENUM"); break;
+            case GL_INVALID_VALUE:                 // @todo gLog.debug("OpenGL", "GL_INVALID_VALUE"); break;
+            case GL_INVALID_OPERATION:             // @todo gLog.debug("OpenGL", "GL_INVALID_OPERATION"); break;
+            case GL_OUT_OF_MEMORY:                 // @todo gLog.debug("OpenGL", "GL_OUT_OF_MEMORY"); break;
+            case GL_INVALID_FRAMEBUFFER_OPERATION: // @todo gLog.debug("OpenGL", "GL_INVALID_FRAMEBUFFER_OPERATION"); break;
             default:
                 const uint32 BUFSIZE = 11; // Should be 7, but could be 11 max due to uint32.
                 char buf[BUFSIZE];
                 if (!std::snprintf(buf, BUFSIZE, "0x%.4X", e))
-                    gLog.debug("OpenGL", "%i", e);
+                    // @todo gLog.debug("OpenGL", "%i", e);
+                    ;
                 else
-                    gLog.debug("OpenGL", "%s", buf);
+                    // @todo gLog.debug("OpenGL", "%s", buf);
+                    ;
                 break;
         }
     }
 }
 
-#include "core_shader.cpp"
+#include "renderer_opengl.cpp"
 
 const char* SDLGLProfileToStr(int p)
 {
@@ -94,11 +96,11 @@ bool SDLSetGLAttribs()
     
     if (failed)
     {
-        gLog.fatal("Core", "Failed to set OpenGL attributes: %s", SDL_GetError());
+        // @todo gLog.fatal("Core", "Failed to set OpenGL attributes: %s", SDL_GetError());
         return false;
     }
 
-    gLog.info("Core", "Requested OpenGL support: HW accel=%s, v%i.%i %s profile, Double Buffered=%s.", BoolToStr(hwAccel), glMajor, glMinor, SDLGLProfileToStr(glProfile), BoolToStr(doubleBuffer));
+    // @todo gLog.info("Core", "Requested OpenGL support: HW accel=%s, v%i.%i %s profile, Double Buffered=%s.", BoolToStr(hwAccel), glMajor, glMinor, SDLGLProfileToStr(glProfile), BoolToStr(doubleBuffer));
     return true;
 }
 
@@ -125,7 +127,7 @@ bool SDLCheckAndReportGLAttribs()
 
     if (failed)
     {
-        gLog.fatal("Core", "Failed to get OpenGL attributes: %s", SDL_GetError());
+        // @todo gLog.fatal("Core", "Failed to get OpenGL attributes: %s", SDL_GetError());
         return false;
     }
     
@@ -142,12 +144,12 @@ bool SDLCheckAndReportGLAttribs()
 
     if (failed)
     {
-        gLog.fatal("Core", "OpenGL support doesn't match what was requested: HW accel=%s, v%i.%i %s profile, Double Buffered=%s.", BoolToStr(hwAccel), glMajor, glMinor, SDLGLProfileToStr(glProfile), BoolToStr(doubleBuffer));
+        // @todo gLog.fatal("Core", "OpenGL support doesn't match what was requested: HW accel=%s, v%i.%i %s profile, Double Buffered=%s.", BoolToStr(hwAccel), glMajor, glMinor, SDLGLProfileToStr(glProfile), BoolToStr(doubleBuffer));
         return false;
     }
     else
     {
-        gLog.info("Core", "OpenGL support matches what was requested.");
+        // @todo gLog.info("Core", "OpenGL support matches what was requested.");
         return true;
     }
 }
@@ -156,7 +158,7 @@ void SDLUpdateViewport(int width, int height)
 {
     // TODO: Error checking.
     glViewport(0, 0, width, height);
-    gLog.info("Core", "Set OpenGL viewport to %ix%i.", width, height);
+    // @todo gLog.info("Core", "Set OpenGL viewport to %ix%i.", width, height);
 }
 
 class SDLWrapper
@@ -184,18 +186,18 @@ public:
     bool init()
     {
         // TODO: This whole function needs to be reworked and logging added.
-        ASSERT(!window);
+        DEBUG_ASSERT(!window);
 
         // TODO: Revisit this once OpenGL is up and running.
         if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
         {
-            gLog.fatal("Core", "Failed to initialize SDL: %s", SDL_GetError());
+            // @todo gLog.fatal("Core", "Failed to initialize SDL: %s", SDL_GetError());
             return false;
         }
 
         if (SDL_GL_LoadLibrary(nullptr) < 0)
         {
-            gLog.fatal("Core", "Failed to load OpenGL library: %s", SDL_GetError());
+            // @todo gLog.fatal("Core", "Failed to load OpenGL library: %s", SDL_GetError());
             return false;
         }
 
@@ -227,31 +229,31 @@ public:
         }
         if (!window)
         {
-            gLog.fatal("Core", "Failed to create window: %s", SDL_GetError());
+            // @todo gLog.fatal("Core", "Failed to create window: %s", SDL_GetError());
             return false;
         }
 
         glContext = SDL_GL_CreateContext(window);
         if (!glContext)
         {
-            gLog.fatal("Core", "Failed to create OpenGL Context: %s", SDL_GetError());
+            // @todo gLog.fatal("Core", "Failed to create OpenGL Context: %s", SDL_GetError());
             return false;
         }
 
-        gLog.info("Core", "OpenGL loaded.");
+        // @todo gLog.info("Core", "OpenGL loaded.");
 
         if (!SDLCheckAndReportGLAttribs())
         {
             return false;
         }
 
-        gLog.info("Core", "Loading OpenGL extensions via GLAD.");
+        // @todo gLog.info("Core", "Loading OpenGL extensions via GLAD.");
         if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress))
         {
-            gLog.fatal("Core", "Failed to load OpenGL extensions via GLAD: %s", SDL_GetError());
+            // @todo gLog.fatal("Core", "Failed to load OpenGL extensions via GLAD: %s", SDL_GetError());
             return false;
         }
-        gLog.info("Core", "Loaded OpenGL v%u.%u extensions.", GLVersion.major, GLVersion.minor);
+        // @todo gLog.info("Core", "Loaded OpenGL v%u.%u extensions.", GLVersion.major, GLVersion.minor);
         
         // Vsync
         // TODO: Check for errors.
@@ -263,19 +265,19 @@ public:
 
 bool GameRetrieveFunctions(void* game, GameServices& gameServices)
 {
-    ASSERT(game);
+    DEBUG_ASSERT(game);
     
     gameServices.init = (GameInitCB*)SDL_LoadFunction(game, "GameInit");
     if (!gameServices.init)
     {
-        gLog.fatal("Core", "Failed to retrieve GameInit function from game: %s", SDL_GetError());
+        // @todo gLog.fatal("Core", "Failed to retrieve GameInit function from game: %s", SDL_GetError());
         return false;
     }
     
     gameServices.preReload = (GamePreReloadCB*)SDL_LoadFunction(game, "GamePreReload");
     if (!gameServices.preReload)
     {
-        gLog.fatal("Core", "Failed to retrieve GamePreReload function from game: %s", SDL_GetError());
+        // @todo gLog.fatal("Core", "Failed to retrieve GamePreReload function from game: %s", SDL_GetError());
         ZERO_STRUCT(gameServices);
         return false;
     }
@@ -283,7 +285,7 @@ bool GameRetrieveFunctions(void* game, GameServices& gameServices)
     gameServices.postReload = (GamePostReloadCB*)SDL_LoadFunction(game, "GamePostReload");
     if (!gameServices.postReload)
     {
-        gLog.fatal("Core", "Failed to retrieve GamePostReload function from game: %s", SDL_GetError());
+        // @todo gLog.fatal("Core", "Failed to retrieve GamePostReload function from game: %s", SDL_GetError());
         ZERO_STRUCT(gameServices);
         return false;
     }
@@ -291,31 +293,7 @@ bool GameRetrieveFunctions(void* game, GameServices& gameServices)
     gameServices.cleanup = (GameCleanupCB*)SDL_LoadFunction(game, "GameCleanup");
     if (!gameServices.cleanup)
     {
-        gLog.fatal("Core", "Failed to retrieve GameCleanup function from game: %s", SDL_GetError());
-        ZERO_STRUCT(gameServices);
-        return false;
-    }
-    
-    gameServices.input = (GameInputCB*)SDL_LoadFunction(game, "GameInput");
-    if (!gameServices.input)
-    {
-        gLog.fatal("Core", "Failed to retrieve GameInput function from game: %s", SDL_GetError());
-        ZERO_STRUCT(gameServices);
-        return false;
-    }
-    
-    gameServices.logic = (GameLogicCB*)SDL_LoadFunction(game, "GameLogic");
-    if (!gameServices.logic)
-    {
-        gLog.fatal("Core", "Failed to retrieve GameLogic function from game: %s", SDL_GetError());
-        ZERO_STRUCT(gameServices);
-        return false;
-    }
-    
-    gameServices.render = (GameRenderCB*)SDL_LoadFunction(game, "GameRender");
-    if (!gameServices.render)
-    {
-        gLog.fatal("Core", "Failed to retrieve GameRender function from game: %s", SDL_GetError());
+        // @todo gLog.fatal("Core", "Failed to retrieve GameCleanup function from game: %s", SDL_GetError());
         ZERO_STRUCT(gameServices);
         return false;
     }
@@ -330,7 +308,7 @@ bool GameCopyToTemp()
     ResultBool r = PlatformCopyFile(gGamePath, gGameLivePath, false);
     if (!r.result)
     {
-        gLog.fatal("Core", "Failed to copy game to live file: %s", r.error.c_str());
+        // @todo gLog.fatal("Core", "Failed to copy game to live file: %s", r.error.c_str());
         return false;
     }
 
@@ -348,7 +326,7 @@ void* GameInit(CoreServices& coreServices, GameServices& gameServices)
     void* g = SDL_LoadObject(gGameLivePath.c_str());
     if (!g)
     {
-        gLog.fatal("Core", "Failed to load game: %s", SDL_GetError());
+        // @todo gLog.fatal("Core", "Failed to load game: %s", SDL_GetError());
         return nullptr;
     }
 
@@ -373,7 +351,7 @@ void* GameInit(CoreServices& coreServices, GameServices& gameServices)
 // Returns game via SDL_LoadObject or nullptr on error.
 void* GameReload(void* oldGame, CoreServices& coreServices, GameServices& gameServices)
 {
-    ASSERT(oldGame);
+    DEBUG_ASSERT(oldGame);
 
     gameServices.preReload();
     ZERO_STRUCT(gameServices);
@@ -389,7 +367,7 @@ void* GameReload(void* oldGame, CoreServices& coreServices, GameServices& gameSe
     void* g = SDL_LoadObject(gGameLivePath.c_str());
     if (!g)
     {
-        gLog.fatal("Core", "Failed to load game: %s", SDL_GetError());
+        // @todo gLog.fatal("Core", "Failed to load game: %s", SDL_GetError());
         return nullptr;
     }
 
@@ -406,7 +384,7 @@ void* GameReload(void* oldGame, CoreServices& coreServices, GameServices& gameSe
 
 void GameCleanup(void* game, GameServices& gameServices)
 {
-    ASSERT(game);
+    DEBUG_ASSERT(game);
 
     gameServices.cleanup();
 
@@ -417,7 +395,8 @@ void GameCleanup(void* game, GameServices& gameServices)
     // Check if file exists before trying to delete it to avoid a useless error message being logged.
     ResultBool r = PlatformDeleteFile(gGameLivePath);
     if (!r.result)
-        gLog.warn("Core", "Failed to delete live game: %s", r.error.c_str());
+        // @todo gLog.warn("Core", "Failed to delete live game: %s", r.error.c_str());
+        ;
 }
 
 struct TestData
@@ -452,7 +431,7 @@ bool TestInit()
     if (!success)
     {
         glGetProgramInfoLog(testData.shaderProgramID, INFOLOGSIZE, nullptr, infoLog);
-        gLog.fatal("OpenGL", "Failed to link shader program: %s.", infoLog);
+        // @todo gLog.fatal("OpenGL", "Failed to link shader program: %s.", infoLog);
         return false;
     }
     GLCHECK(glDeleteShader(vertexShader.id));
@@ -487,7 +466,7 @@ bool TestInit()
     return true;
 }
 
-bool TestRender(float dt)
+bool TestRender(float /*dt*/)
 {
     std::string e; // GL Errors.
     GLCHECK(glClearColor(0.0f, 0.0f, 0.0f, 1.0f));
@@ -499,17 +478,17 @@ bool TestRender(float dt)
     return true;
 }
 
-bool TestLogic(float dt)
+bool TestLogic(float /*dt*/)
 {
     return true;
 }
 
-bool TestInput(float dt)
+bool TestInput(float /*dt*/)
 {
     return true;
 }
 
-bool TestEvent(SDL_Event& e, float dt)
+bool TestEvent(SDL_Event& e, float /*dt*/)
 {
     static bool wireframe = false;
     switch (e.type)
@@ -531,7 +510,7 @@ bool TestEvent(SDL_Event& e, float dt)
                     GLCHECK(glPolygonMode(GL_FRONT_AND_BACK, GL_FILL));
                 }
                 
-                gLog.info("Test", "Set wireframe to %s.", OnOffToStr(wireframe));
+                // @todo gLog.info("Test", "Set wireframe to %s.", OnOffToStr(wireframe));
             }
             
             break;
@@ -546,8 +525,47 @@ void TestCleanup()
 {
 }
 
+#include <spdlog/sinks/basic_file_sink.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+
 bool CoreInit(CoreServices& coreServices)
 {
+    char* sdlPrefPath = SDL_GetPrefPath(ORGANIZATION, PROJECT_NAME);
+    if (sdlPrefPath)
+    {
+        gPrefPath = sdlPrefPath;
+        SDL_free(sdlPrefPath);
+        sdlPrefPath = nullptr;
+    }
+    else
+    {
+        std::cerr << "Failed to get user preferences path: " << SDL_GetError() << std::endl;
+        return 1;
+    }
+    
+    auto consoleSink = std::make_shared<spdlog::sinks::stderr_color_sink_mt>();
+    consoleSink->set_level(spdlog::level::err);
+    consoleSink->set_pattern("[%^%l%$] %v");
+    // @todo Enable support of Unicode filenames.
+    auto fileSink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(gPrefPath + PROJECT_NAME + ".log", true);
+    fileSink->set_level(spdlog::level::trace);
+    fileSink->set_pattern("%@ %T.%e [%l] %v");
+    std::vector<spdlog::sink_ptr> sinks;
+    sinks.push_back(consoleSink);
+    sinks.push_back(fileSink);
+    gLogger = std::make_shared<spdlog::logger>("default", sinks.begin(), sinks.end());
+    // @todo Why doesn't trace and debug show up in the file log?
+    SPDLOG_LOGGER_TRACE(gLogger, "Trace");
+    SPDLOG_LOGGER_DEBUG(gLogger, "Debug");
+    SPDLOG_LOGGER_INFO(gLogger, "Info");
+    SPDLOG_LOGGER_WARN(gLogger, "Warning");
+    SPDLOG_LOGGER_ERROR(gLogger, "Error");
+    SPDLOG_LOGGER_CRITICAL(gLogger, "Critical");
+    ALWAYS_ASSERT(0);
+    // We should always use gLogger, so registering/setting default doesn't really matter.
+    spdlog::register_logger(gLogger);
+    spdlog::set_default_logger(gLogger);
+    
     char* exePathBuf = SDL_GetBasePath();
     if (!exePathBuf)
     {
@@ -558,49 +576,30 @@ bool CoreInit(CoreServices& coreServices)
     SDL_free(exePathBuf);
     exePathBuf = nullptr;
     
-    char* sdlPrefPath = SDL_GetPrefPath("DanielMTyler", PROJECT_NAME);
-    if (sdlPrefPath)
-    {
-        gPrefPath = sdlPrefPath;
-        SDL_free(sdlPrefPath);
-        sdlPrefPath = nullptr;
-    }
-    else
-    {
-        std::cerr << "Failed to get user preferences path: " << SDL_GetError() << std::endl;
-        return false;
-    }
-    
-    if (!gLog.init((gPrefPath + PLATFORM_LOG_FILENAME).c_str()))
-        return false;
-
-    #if BUILD_RELEASE
-        gLog.info("Core", "Build: Release.");
-    #elif BUILD_DEBUG
-        gLog.info("Core", "Build: Debug.");
-    #else
-        #error Build type unknown.
+    #ifndef NDEBUG
+        SPDLOG_LOGGER_WARN(gLogger, "Debug Build.");
     #endif
     
-    coreServices.log = &gLog;
-    gLog.info("Core", "EXE path: %s", exePath.c_str());
-    gGamePath = exePath + GAME_FILENAME;
-    gLog.info("Core", "Game fullpath: %s", gGamePath.c_str());
+    coreServices.logger = gLogger;
+    // @todo gLog.info("Core", "EXE path: %s", exePath.c_str());
+    gGamePath = exePath + PLATFORM_SHARED_LIBRARY_PREFIX + PROJECT_NAME + PLATFORM_SHARED_LIBRARY_EXT;
+    // @todo gLog.info("Core", "Game fullpath: %s", gGamePath.c_str());
     ResultBool r = PlatformCreateTempFile(gGameLivePath);
     if (!r.result)
     {
-        gLog.fatal("Core", "Failed to create temp live game file: %s", r.error.c_str());
+        // @todo gLog.fatal("Core", "Failed to create temp live game file: %s", r.error.c_str());
         return false;
     }
-    gLog.info("Core", "Game Live fullpath: %s", gGameLivePath.c_str());
+    // @todo gLog.info("Core", "Game Live fullpath: %s", gGameLivePath.c_str());
     
     std::string cwdPath;
     r = PlatformGetCWD(cwdPath);
     if (!r.result)
     {
-        gLog.fatal("Core", "Failed to get the current working directory: %s", r.error.c_str());
+        // @todo gLog.fatal("Core", "Failed to get the current working directory: %s", r.error.c_str());
         return false;
     }
+    // @todo Check ..\..\release
     // Prefer the CWD over programPath for releasePath, but verify the data folder exists in releasePath.
     std::string releasePath = cwdPath;
     gDataPath = releasePath + "data" + PLATFORM_PATH_SEPARATOR;
@@ -612,19 +611,19 @@ bool CoreInit(CoreServices& coreServices)
         r = PlatformFolderExists(gDataPath);
         if (!r.result)
         {
-            gLog.fatal("Core", "The data folder wasn't found in the current working directory (%s) or the executable directory (%s).", cwdPath.c_str(), exePath.c_str());
+            // @todo gLog.fatal("Core", "The data folder wasn't found in the current working directory (%s) or the executable directory (%s).", cwdPath.c_str(), exePath.c_str());
             return false;
         }
     }
-    gLog.info("Core", "Release path: %s", releasePath.c_str());
-    gLog.info("Core", "Data path: %s", gDataPath.c_str());
-    gLog.info("Core", "User preferences path: %s", gPrefPath.c_str());
-    gLog.info("Core", "CWD path: %s", cwdPath.c_str());
+    // @todo gLog.info("Core", "Release path: %s", releasePath.c_str());
+    // @todo gLog.info("Core", "Data path: %s", gDataPath.c_str());
+    // @todo gLog.info("Core", "User preferences path: %s", gPrefPath.c_str());
+    // @todo gLog.info("Core", "CWD path: %s", cwdPath.c_str());
     return true;
 }
 
 // WARNING: SDL 2 requires this exact function signature, changing it will give "undefined reference to SDL_main" linker errors.
-int main(int argc, char* argv[])
+int main(int /*argc*/, char* /*argv*/[])
 {
     CoreServices coreServices;
     if (!CoreInit(coreServices))
@@ -650,12 +649,19 @@ int main(int argc, char* argv[])
     bool quit = false;
     uint64 dtNow = SDL_GetPerformanceCounter();
     uint64 dtLast = 0;
+    // The real dt before modification by timeDilation.
+    float dtReal = 0.0f;
+    // Time Dilation is a percentage of how fast time moves.
+    // Time elapsed = dt*timeDilation, so 1.0f (100%) is real-time.
+    float timeDilation = 1.0f;
+    // This is the dt we send to other systems.
     float dt = 0.0f;
     while (!quit)
     {
         dtLast = dtNow;
         dtNow = SDL_GetPerformanceCounter();
-        dt = (float)(dtNow - dtLast) * 1000.0f / (float)SDL_GetPerformanceFrequency();
+        dtReal = (float)(dtNow - dtLast) * 1000.0f / (float)SDL_GetPerformanceFrequency();
+        dt = dtReal * timeDilation;
         
         while (SDL_PollEvent(&event))
         {
@@ -683,12 +689,6 @@ int main(int argc, char* argv[])
 
         if (quit)
             break;
-        if (!gameServices.input(dt) || !TestInput(dt))
-            break;
-        if (!gameServices.logic(dt) || !TestLogic(dt))
-            break;
-        if (!gameServices.render(dt) || !TestRender(dt))
-            break;
         
         SDL_GL_SwapWindow(sdl.window);
         SDL_Delay(1);
@@ -697,5 +697,6 @@ int main(int argc, char* argv[])
     GameCleanup(game, gameServices);
     TestCleanup();
     // @todo Should there be OGL/SDL cleanup here?
+    spdlog::shutdown();
     return 0;
 }
