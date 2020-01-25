@@ -46,26 +46,23 @@ endif()
 
 
 
-# Uncomment this and dependencies' includes will use the SYSTEM flag and warnings will be ignored by certain compilers.
-#set(thirdparty_INCLUDE_SYSTEM_SPEC SYSTEM)
+target_include_directories(ellie-bin PRIVATE thirdparty/imgui thirdparty/imgui/examples thirdparty/imgui/misc/cpp)
+target_include_directories(ellie-lib PRIVATE thirdparty/imgui thirdparty/imgui/examples thirdparty/imgui/misc/cpp)
 
-target_include_directories(ellie-bin ${thirdparty_INCLUDE_SYSTEM_SPEC} PRIVATE thirdparty/imgui thirdparty/imgui/examples thirdparty/imgui/misc/cpp)
-target_include_directories(ellie-lib ${thirdparty_INCLUDE_SYSTEM_SPEC} PRIVATE thirdparty/imgui thirdparty/imgui/examples thirdparty/imgui/misc/cpp)
+target_include_directories(ellie-bin PRIVATE thirdparty/glad)
+target_include_directories(ellie-lib PRIVATE thirdparty/glad)
 
-target_include_directories(ellie-bin ${thirdparty_INCLUDE_SYSTEM_SPEC} PRIVATE thirdparty/glad)
-target_include_directories(ellie-lib ${thirdparty_INCLUDE_SYSTEM_SPEC} PRIVATE thirdparty/glad)
-
-target_include_directories(ellie-bin ${thirdparty_INCLUDE_SYSTEM_SPEC} PRIVATE thirdparty/glm)
-target_include_directories(ellie-lib ${thirdparty_INCLUDE_SYSTEM_SPEC} PRIVATE thirdparty/glm)
+target_include_directories(ellie-bin PRIVATE thirdparty/glm)
+target_include_directories(ellie-lib PRIVATE thirdparty/glm)
 
 find_package(fmt 6.1.2 REQUIRED)
 target_link_libraries(ellie-bin fmt::fmt)
 target_link_libraries(ellie-lib fmt::fmt)
 
 find_package(SDL2 REQUIRED)
-target_include_directories(ellie-bin ${thirdparty_INCLUDE_SYSTEM_SPEC} PRIVATE ${SDL2_INCLUDE_DIRS})
+target_include_directories(ellie-bin PRIVATE ${SDL2_INCLUDE_DIRS})
 # Required because SDL.h is included in global.hpp.
-target_include_directories(ellie-lib ${thirdparty_INCLUDE_SYSTEM_SPEC} PRIVATE ${SDL2_INCLUDE_DIRS})
+target_include_directories(ellie-lib PRIVATE ${SDL2_INCLUDE_DIRS})
 target_link_libraries(ellie-bin ${SDL2_LIBRARIES})
 message(WARNING "SDL2 should be v2.0.10, but it can't be verified automatically.")
 
@@ -73,5 +70,5 @@ find_package(spdlog 1.5.0 REQUIRED)
 target_link_libraries(ellie-bin spdlog::spdlog)
 target_link_libraries(ellie-lib spdlog::spdlog)
 
-target_include_directories(ellie-bin ${thirdparty_INCLUDE_SYSTEM_SPEC} PRIVATE thirdparty/stb)
-target_include_directories(ellie-lib ${thirdparty_INCLUDE_SYSTEM_SPEC} PRIVATE thirdparty/stb)
+target_include_directories(ellie-bin PRIVATE thirdparty/stb)
+target_include_directories(ellie-lib PRIVATE thirdparty/stb)
