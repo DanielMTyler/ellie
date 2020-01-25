@@ -20,24 +20,32 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 
 
+set(ORGANIZATION "Ellie" CACHE STRING "Used to determine the user preferences folder location.")
+set(PROJECT_NAME "Ellie" CACHE STRING "Primarily used to determine the user preferences folder location.")
+
+set(THIRDPARTY_SOURCES "thirdparty/glad/glad.c thirdparty/imgui/imgui.cpp thirdparty/imgui/imgui_demo.cpp thirdparty/imgui/imgui_draw.cpp thirdparty/imgui/imgui_widgets.cpp thirdparty/imgui/examples/imgui_impl_opengl3.cpp thirdparty/imgui/examples/imgui_impl_sdl.cpp thirdparty/imgui/misc/cpp/imgui_stdlib.cpp")
+
+
+
 if(WIN32 AND "${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
+# Win64.
     # Remove "lib" prefix on DLL names.
     set(CMAKE_SHARED_LIBRARY_PREFIX "")
     set(CMAKE_SHARED_MODULE_PREFIX "")
-    add_executable(ellie-bin src/platform_win64.cpp thirdparty/glad/glad.c thirdparty/imgui/imgui.cpp thirdparty/imgui/imgui_demo.cpp thirdparty/imgui/imgui_draw.cpp thirdparty/imgui/imgui_widgets.cpp thirdparty/imgui/examples/imgui_impl_opengl3.cpp thirdparty/imgui/examples/imgui_impl_sdl.cpp thirdparty/imgui/misc/cpp/imgui_stdlib.cpp)
+    add_executable(ellie-bin src/app_win64.cpp ${THIRDPARTY_SOURCES})
 else()
     message(FATAL_ERROR "Unknown OS.")
 endif()
 
-# MODULE means no .a file for linking.
-add_library(ellie-lib MODULE src/game.cpp)
+add_library(ellie-lib MODULE src/library.cpp)
 
 set_target_properties(ellie-bin PROPERTIES OUTPUT_NAME ellie)
 set_target_properties(ellie-lib PROPERTIES OUTPUT_NAME ellie)
-target_compile_definitions(ellie-bin PRIVATE ORGANIZATION="DanielMTyler" PROJECT_NAME="ellie")
-target_compile_definitions(ellie-lib PRIVATE ORGANIZATION="DanielMTyler" PROJECT_NAME="ellie")
+target_compile_definitions(ellie-bin PRIVATE ORGANIZATION=${ORGANIZATION} PROJECT_NAME=${PROJECT_NAME})
+target_compile_definitions(ellie-lib PRIVATE ORGANIZATION=${ORGANIZATION} PROJECT_NAME=${PROJECT_NAME})
 
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang" AND NOT "x${CMAKE_CXX_SIMULATE_ID}" STREQUAL "xMSVC")
+# clang++.
     target_compile_options(ellie-bin PRIVATE -Werror -Wall -Wextra -Wpedantic)
     target_compile_options(ellie-lib PRIVATE -Werror -Wall -Wextra -Wpedantic)
 else()
@@ -61,8 +69,6 @@ target_link_libraries(ellie-lib fmt::fmt)
 
 find_package(SDL2 REQUIRED)
 target_include_directories(ellie-bin PRIVATE ${SDL2_INCLUDE_DIRS})
-# Required because SDL.h is included in global.hpp.
-target_include_directories(ellie-lib PRIVATE ${SDL2_INCLUDE_DIRS})
 target_link_libraries(ellie-bin ${SDL2_LIBRARIES})
 message(WARNING "SDL2 should be v2.0.10, but it can't be verified automatically.")
 
