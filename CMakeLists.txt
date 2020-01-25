@@ -24,7 +24,7 @@ if(WIN32 AND "${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
     # Remove "lib" prefix on DLL names.
     set(CMAKE_SHARED_LIBRARY_PREFIX "")
     set(CMAKE_SHARED_MODULE_PREFIX "")
-    add_executable(ellie-bin src/platform_win64.cpp deps/glad/glad.c deps/imgui/imgui.cpp deps/imgui/imgui_demo.cpp deps/imgui/imgui_draw.cpp deps/imgui/imgui_widgets.cpp deps/imgui/examples/imgui_impl_opengl3.cpp deps/imgui/examples/imgui_impl_sdl.cpp deps/imgui/misc/cpp/imgui_stdlib.cpp)
+    add_executable(ellie-bin src/platform_win64.cpp thirdparty/glad/glad.c thirdparty/imgui/imgui.cpp thirdparty/imgui/imgui_demo.cpp thirdparty/imgui/imgui_draw.cpp thirdparty/imgui/imgui_widgets.cpp thirdparty/imgui/examples/imgui_impl_opengl3.cpp thirdparty/imgui/examples/imgui_impl_sdl.cpp thirdparty/imgui/misc/cpp/imgui_stdlib.cpp)
 else()
     message(FATAL_ERROR "Unknown OS.")
 endif()
@@ -47,25 +47,25 @@ endif()
 
 
 # Uncomment this and dependencies' includes will use the SYSTEM flag and warnings will be ignored by certain compilers.
-#set(DEPS_INCLUDE_SYSTEM_SPEC SYSTEM)
+#set(thirdparty_INCLUDE_SYSTEM_SPEC SYSTEM)
 
-target_include_directories(ellie-bin ${DEPS_INCLUDE_SYSTEM_SPEC} PRIVATE deps/imgui deps/imgui/examples deps/imgui/misc/cpp)
-target_include_directories(ellie-lib ${DEPS_INCLUDE_SYSTEM_SPEC} PRIVATE deps/imgui deps/imgui/examples deps/imgui/misc/cpp)
+target_include_directories(ellie-bin ${thirdparty_INCLUDE_SYSTEM_SPEC} PRIVATE thirdparty/imgui thirdparty/imgui/examples thirdparty/imgui/misc/cpp)
+target_include_directories(ellie-lib ${thirdparty_INCLUDE_SYSTEM_SPEC} PRIVATE thirdparty/imgui thirdparty/imgui/examples thirdparty/imgui/misc/cpp)
 
-target_include_directories(ellie-bin ${DEPS_INCLUDE_SYSTEM_SPEC} PRIVATE deps/glad)
-target_include_directories(ellie-lib ${DEPS_INCLUDE_SYSTEM_SPEC} PRIVATE deps/glad)
+target_include_directories(ellie-bin ${thirdparty_INCLUDE_SYSTEM_SPEC} PRIVATE thirdparty/glad)
+target_include_directories(ellie-lib ${thirdparty_INCLUDE_SYSTEM_SPEC} PRIVATE thirdparty/glad)
 
-target_include_directories(ellie-bin ${DEPS_INCLUDE_SYSTEM_SPEC} PRIVATE deps/glm)
-target_include_directories(ellie-lib ${DEPS_INCLUDE_SYSTEM_SPEC} PRIVATE deps/glm)
+target_include_directories(ellie-bin ${thirdparty_INCLUDE_SYSTEM_SPEC} PRIVATE thirdparty/glm)
+target_include_directories(ellie-lib ${thirdparty_INCLUDE_SYSTEM_SPEC} PRIVATE thirdparty/glm)
 
 find_package(fmt 6.1.2 REQUIRED)
 target_link_libraries(ellie-bin fmt::fmt)
 target_link_libraries(ellie-lib fmt::fmt)
 
 find_package(SDL2 REQUIRED)
-target_include_directories(ellie-bin ${DEPS_INCLUDE_SYSTEM_SPEC} PRIVATE ${SDL2_INCLUDE_DIRS})
+target_include_directories(ellie-bin ${thirdparty_INCLUDE_SYSTEM_SPEC} PRIVATE ${SDL2_INCLUDE_DIRS})
 # Required because SDL.h is included in global.hpp.
-target_include_directories(ellie-lib ${DEPS_INCLUDE_SYSTEM_SPEC} PRIVATE ${SDL2_INCLUDE_DIRS})
+target_include_directories(ellie-lib ${thirdparty_INCLUDE_SYSTEM_SPEC} PRIVATE ${SDL2_INCLUDE_DIRS})
 target_link_libraries(ellie-bin ${SDL2_LIBRARIES})
 message(WARNING "SDL2 should be v2.0.10, but it can't be verified automatically.")
 
@@ -73,5 +73,5 @@ find_package(spdlog 1.5.0 REQUIRED)
 target_link_libraries(ellie-bin spdlog::spdlog)
 target_link_libraries(ellie-lib spdlog::spdlog)
 
-target_include_directories(ellie-bin ${DEPS_INCLUDE_SYSTEM_SPEC} PRIVATE deps/stb)
-target_include_directories(ellie-lib ${DEPS_INCLUDE_SYSTEM_SPEC} PRIVATE deps/stb)
+target_include_directories(ellie-bin ${thirdparty_INCLUDE_SYSTEM_SPEC} PRIVATE thirdparty/stb)
+target_include_directories(ellie-lib ${thirdparty_INCLUDE_SYSTEM_SPEC} PRIVATE thirdparty/stb)

@@ -6,10 +6,10 @@ Copyright (C) 2020 Daniel M Tyler.
 Directory Structure:
     assets: Raw Assets.
     build/<buildname>: (Empty) Builds.
-    deps: (Empty) Dependencies.
     docs: Documentation.
     release: Everything needed to run the game, minus the binaries.
     src: Source Code.
+    thirdparty: (Empty) Third-party Dependencies.
 
 Dependencies:
     CMake v3.15.6: Project build tool.
@@ -47,17 +47,17 @@ Win64 Build Instructions:
     1.1) Install MSYS2 x64 from https://www.msys2.org/.
     1.2) Update MSYS2 package database with "pacman -Syu" and then close the window.
     1.3) Open MSYS2 MinGW64 Shell and update packages with "pacman -Su".
-    1.4) Install deps (Qt5 is for cmake-gui) with "pacman -S base-devel mingw-w64-x86_64-toolchain git mingw-w64-x86_64-cmake mingw-w64-x86_64-qt5 mingw-w64-x86_64-clang mingw-w64-x86_64-SDL2".
-    2) Update Git Submodule deps if not pulled in already.
-    3.1) mkdir deps/fmt/build.
-    3.2) cd deps/fmt/build.
+    1.4) Install thirdparty (Qt5 is for cmake-gui) with "pacman -S base-devel mingw-w64-x86_64-toolchain git mingw-w64-x86_64-cmake mingw-w64-x86_64-qt5 mingw-w64-x86_64-clang mingw-w64-x86_64-SDL2".
+    2) Update Git Submodule thirdparty if not pulled in already.
+    3.1) mkdir thirdparty/fmt/build.
+    3.2) cd thirdparty/fmt/build.
     3.3) cmake ../ -G"MSYS Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=/mingw64/bin/clang.exe -DCMAKE_CXX_COMPILER=/mingw64/bin/clang++.exe -DCMAKE_INSTALL_PREFIX=/mingw64/x86_64-w64-mingw32 -DCMAKE_PREFIX_PATH=/mingw64/x86_64-w64-mingw32 -DFMT_TEST=False.
     3.4) make && make install.
-    4.1) mkdir deps/spdlog/build.
-    4.2) cd deps/spdlog/build.
+    4.1) mkdir thirdparty/spdlog/build.
+    4.2) cd thirdparty/spdlog/build.
     4.3) cmake ../ -G"MSYS Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=/mingw64/bin/clang.exe -DCMAKE_CXX_COMPILER=/mingw64/bin/clang++.exe -DCMAKE_INSTALL_PREFIX=/mingw64/x86_64-w64-mingw32 -DCMAKE_PREFIX_PATH=/mingw64/x86_64-w64-mingw32 -DSPDLOG_BUILD_EXAMPLE=False -DSPDLOG_BUILD_TESTS=False -DSPDLOG_FMT_EXTERNAL=True.
     4.4) make && make install.
-    5) Go to GLAD website and extract files to deps/glad/.
+    5) Go to GLAD website and extract files to thirdparty/glad/.
     6.1) mkdir build/win64-release.
     6.2) Copy libgcc_s_seh-1.dll, libstdc++-6.dll, libwinpthread-1.dll, and SDL2.dll into the build folder.
     6.3) cd build/win64-release.
