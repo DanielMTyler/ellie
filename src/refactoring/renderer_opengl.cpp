@@ -23,8 +23,24 @@ struct Shader
     GLuint id;
 };
 
+#include <fstream> // std::ifstream
+
 namespace CoreShaderImpl
 {
+    // @todo This shouldn't throw exceptions.
+    // @todo Use ResultBool return with a useful error message.
+    // @todo Use SDL_RWops?
+    bool ReadFileToStr(std::string file, std::string& contents)
+    {
+        std::ifstream in(file, std::ios::in | std::ios::binary);
+        if (in)
+            contents = std::string((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+        else
+            return false;
+        
+        return true;
+    }
+    
     bool LoadAndCompileShader(Shader& shader, std::string baseFilename, Shader::Type type)
     {
         DEBUG_ASSERT(!baseFilename.empty());

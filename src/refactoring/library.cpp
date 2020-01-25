@@ -9,7 +9,7 @@
 #include "services.hpp"
 
 static std::shared_ptr<spdlog::logger> gLogger;
-static CoreServices* gServices = nullptr;
+static AppServices* gAppServices = nullptr;
 
 extern "C" GAME_INIT
 {

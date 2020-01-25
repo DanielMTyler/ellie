@@ -20,10 +20,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 
 
-set(ORGANIZATION "Ellie" CACHE STRING "Used to determine the user preferences folder location.")
-set(PROJECT_NAME "Ellie" CACHE STRING "Primarily used to determine the user preferences folder location.")
+set(ORGANIZATION "Ellie" CACHE STRING "Organization name.")
+set(PROJECT_NAME "Ellie" CACHE STRING "Project name.")
 
-set(THIRDPARTY_SOURCES "thirdparty/glad/glad.c thirdparty/imgui/imgui.cpp thirdparty/imgui/imgui_demo.cpp thirdparty/imgui/imgui_draw.cpp thirdparty/imgui/imgui_widgets.cpp thirdparty/imgui/examples/imgui_impl_opengl3.cpp thirdparty/imgui/examples/imgui_impl_sdl.cpp thirdparty/imgui/misc/cpp/imgui_stdlib.cpp")
+set(THIRDPARTY_SOURCES thirdparty/glad/glad.c thirdparty/imgui/imgui.cpp thirdparty/imgui/imgui_demo.cpp thirdparty/imgui/imgui_draw.cpp thirdparty/imgui/imgui_widgets.cpp thirdparty/imgui/examples/imgui_impl_opengl3.cpp thirdparty/imgui/examples/imgui_impl_sdl.cpp thirdparty/imgui/misc/cpp/imgui_stdlib.cpp)
 
 
 
@@ -37,17 +37,12 @@ else()
     message(FATAL_ERROR "Unknown OS.")
 endif()
 
-add_library(ellie-lib MODULE src/library.cpp)
-
 set_target_properties(ellie-bin PROPERTIES OUTPUT_NAME ellie)
-set_target_properties(ellie-lib PROPERTIES OUTPUT_NAME ellie)
-target_compile_definitions(ellie-bin PRIVATE ORGANIZATION=${ORGANIZATION} PROJECT_NAME=${PROJECT_NAME})
-target_compile_definitions(ellie-lib PRIVATE ORGANIZATION=${ORGANIZATION} PROJECT_NAME=${PROJECT_NAME})
+target_compile_definitions(ellie-bin PRIVATE ORGANIZATION="${ORGANIZATION}" PROJECT_NAME="${PROJECT_NAME}")
 
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang" AND NOT "x${CMAKE_CXX_SIMULATE_ID}" STREQUAL "xMSVC")
 # clang++.
     target_compile_options(ellie-bin PRIVATE -Werror -Wall -Wextra -Wpedantic)
-    target_compile_options(ellie-lib PRIVATE -Werror -Wall -Wextra -Wpedantic)
 else()
     message(FATAL_ERROR "Unknown Compiler.")
 endif()
@@ -55,17 +50,13 @@ endif()
 
 
 target_include_directories(ellie-bin PRIVATE thirdparty/imgui thirdparty/imgui/examples thirdparty/imgui/misc/cpp)
-target_include_directories(ellie-lib PRIVATE thirdparty/imgui thirdparty/imgui/examples thirdparty/imgui/misc/cpp)
 
 target_include_directories(ellie-bin PRIVATE thirdparty/glad)
-target_include_directories(ellie-lib PRIVATE thirdparty/glad)
 
 target_include_directories(ellie-bin PRIVATE thirdparty/glm)
-target_include_directories(ellie-lib PRIVATE thirdparty/glm)
 
 find_package(fmt 6.1.2 REQUIRED)
 target_link_libraries(ellie-bin fmt::fmt)
-target_link_libraries(ellie-lib fmt::fmt)
 
 find_package(SDL2 REQUIRED)
 target_include_directories(ellie-bin PRIVATE ${SDL2_INCLUDE_DIRS})
@@ -74,7 +65,5 @@ message(WARNING "SDL2 should be v2.0.10, but it can't be verified automatically.
 
 find_package(spdlog 1.5.0 REQUIRED)
 target_link_libraries(ellie-bin spdlog::spdlog)
-target_link_libraries(ellie-lib spdlog::spdlog)
 
 target_include_directories(ellie-bin PRIVATE thirdparty/stb)
-target_include_directories(ellie-lib PRIVATE thirdparty/stb)
