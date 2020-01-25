@@ -3,17 +3,14 @@ Copyright (C) 2020 Daniel M Tyler.
   This file is part of Ellie.
 ==================================
 
-* Memory Allocator/Pool.
-* Event/Messaging System.
-
-* Input system.
-* Options, e.g., Q3/CSS console.
-
+* Basic Memory Allocator to allow tracking of allocation points.
+* Event/Message System.
+* Input System.
+* Options System, e.g., Q3/CSS console.
 * Entity Component System.
-* Reload game library when modified.
-* OpenGL Debug Context.
-* Loop editing (record commands, replay them forever until stopped).
-* Memory Usage/Free/Total tracking.
+* Reload library when modified or on command.
+* OpenGL Debug Context support.
+* Loop editing (record commands, replay them forever until stopped) in player view.
 * Log PC specs, OpenGL info, etc.
-* Performance tracking.
+* Performance tracking (Memory Usage/Free/Total).
 * Telemetry tracking.
