@@ -282,9 +282,8 @@ public:
     
     void Cleanup()
     {
-        for (auto it = m_tasks.begin(); it != m_tasks.end(); it++)
+        for (auto& t : m_tasks)
         {
-            Task::StrongPtr t = *it;
             t->OnAbort();
             t->m_state = Task::State::Aborted;
             t->OnCleanup();
@@ -374,9 +373,8 @@ public:
     void AbortAndRemoveAll()
     {
         SDL_assert(m_init);
-        for (auto it = m_tasks.begin(); it != m_tasks.end(); it++)
+        for (auto& t : m_tasks)
         {
-            Task::StrongPtr t = *it;
             t->OnAbort();
             t->m_state = Task::State::Aborted;
             t->OnCleanup();
