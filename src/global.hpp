@@ -226,15 +226,16 @@ public:
     bool IsPaused() const { return m_state == State::Paused; }
     
     
-    WeakPtr AttachChild(StrongPtr child) { m_child = child; return m_child; }
+    // Returns StrongPtr to allow easy chaining, e.g., AttachChild(1)->AttachChild(2).
+    StrongPtr AttachChild(StrongPtr child) { m_child = child; return m_child; }
     StrongPtr RemoveChild() { StrongPtr c = m_child; m_child.reset(); return c; }
-    WeakPtr GetChild() { return m_child; }
+    WeakPtr   GetChild()    { return m_child; }
     
     
 protected:
     /// Override if desired, but don't call Task::OnInit.
     /// It's ok to Succeed() and never reach OnUpdate().
-    virtual ResultBool OnInit() { ResultBool r; r.result = true; return r; }
+    virtual bool OnInit() { return true; }
     
     /// Override if desired. Always called, even if OnInit failed.
     virtual void OnCleanup() {}
@@ -267,17 +268,16 @@ public:
     typedef std::size_t TaskCount;
     
     
-    ResultBool Init(IApp* app)
+    // app may use us for initialization, so we can't use it within Init.
+    void Init(IApp* app)
     {
         SDL_assert(!m_init);
         SDL_assert(app);
         
-        m_app = app;
+        m_app  = app;
         m_init = true;
-        
-        ResultBool r;
-        r.result = true;
-        return r;
+        m_numSucceeded = 0;
+        m_numFailed    = 0;
     }
     
     void Cleanup()
@@ -289,7 +289,9 @@ public:
             t->OnCleanup();
         }
         m_tasks.clear();
-        m_app = nullptr;
+        m_numSucceeded = 0;
+        m_numFailed    = 0;
+        m_app  = nullptr;
         m_init = false;
     }
     
@@ -314,6 +316,7 @@ public:
                 else
                 {
                     t->m_state = Task::State::Failed;
+                    m_numFailed++;
                     t->OnCleanup();
                     m_tasks.erase(thisIt);
                     continue;
@@ -330,6 +333,7 @@ public:
                 {
                     case Task::State::Succeeded:
                     {
+                        m_numSucceeded++;
                         t->OnSuccess();
                         Task::StrongPtr c = t->RemoveChild();
                         if (c)
@@ -338,11 +342,13 @@ public:
                     }
                     case Task::State::Failed:
                     {
+                        m_numFailed++;
                         t->OnFail();
                         break;
                     }
                     case Task::State::Aborted:
                     {
+                        m_numFailed++;
                         t->OnAbort();
                         break;
                     }
@@ -360,7 +366,8 @@ public:
     }
     
     
-    Task::WeakPtr AttachTask(Task::StrongPtr task)
+    // Returns a StrongPtr to allow easy chaining, e.g., AttachTask(t)->AttachChild(1)->AttachChild(2).
+    Task::StrongPtr AttachTask(Task::StrongPtr task)
     {
         SDL_assert(m_init);
         SDL_assert(task);
@@ -379,13 +386,27 @@ public:
             t->m_state = Task::State::Aborted;
             t->OnCleanup();
         }
+        m_numFailed += m_tasks.size();
         m_tasks.clear();
     }
     
-    TaskCount GetSize() const
+    TaskCount GetCount() const
     {
         SDL_assert(m_init);
         return m_tasks.size();
+    }
+    
+    TaskCount GetSucceeded() const
+    {
+        SDL_assert(m_init);
+        return m_numSucceeded;
+    }
+    
+    /// Returns the number of tasks that didn't Succeed.
+    TaskCount GetFailed() const
+    {
+        SDL_assert(m_init);
+        return m_numFailed;
     }
     
     
@@ -394,6 +415,8 @@ private:
     bool m_init = false;
     IApp* m_app;
     TaskList m_tasks;
+    TaskCount m_numSucceeded;
+    TaskCount m_numFailed;
 };
 
 
