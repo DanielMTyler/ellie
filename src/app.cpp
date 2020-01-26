@@ -9,6 +9,7 @@
 #include <SDL.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
+#include <exception> // exception
 #include <iostream>
 #include <memory> // make_shared, shared_ptr
 #include <string>
@@ -25,45 +26,40 @@ public:
         if (!BaseApp::Init())
             return false;
         
+        
+        // Must SDL_Init before SDL_GetPrefPath.
+        if (SDL_Init(0) < 0)
+        {
+            std::cerr << "Failed to initialze minimal SDL: " << SDL_GetError() << "." << std::endl;
+            return false;
+        }
+        
+        char* sdlPrefPath = SDL_GetPrefPath(ORGANIZATION, PROJECT_NAME);
+        if (!sdlPrefPath)
+        {
+            std::cerr << "Failed to get user preferences path: " << SDL_GetError() << "." << std::endl;
+            return false;
+        }
+        m_prefPath = sdlPrefPath;
+        SDL_free(sdlPrefPath);
+        sdlPrefPath = nullptr;
+        
+        
         try
         {
             auto consoleSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-            consoleSink->set_pattern("[%^%l%$] %v");
+            auto fileSink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(m_prefPath + PROJECT_NAME + ".log", true);
+            
+            consoleSink->set_pattern("[%^%L%$] %v");
+            fileSink->set_pattern("%T [%L] %v");
+            
             #ifdef NDEBUG
                 consoleSink->set_level(spdlog::level::info);
-            #else
-                consoleSink->set_level(spdlog::level::trace);
-            #endif
-            
-            auto consoleLogger = std::make_shared<spdlog::logger>("console", consoleSink);
-            
-            
-            if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
-            {
-                SPDLOG_LOGGER_CRITICAL(consoleLogger, "Failed to initialize SDL: %s", SDL_GetError());
-                return false;
-            }
-            
-            
-            char* sdlPrefPath = SDL_GetPrefPath(ORGANIZATION, PROJECT_NAME);
-            if (!sdlPrefPath)
-            {
-                SPDLOG_LOGGER_CRITICAL(consoleLogger, "Failed to get user preferences path: {}.", SDL_GetError());
-                return false;
-            }
-            m_prefPath = sdlPrefPath;
-            SDL_free(sdlPrefPath);
-            sdlPrefPath = nullptr;
-            
-            
-            auto fileSink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(m_prefPath + PROJECT_NAME + ".log", true);
-            fileSink->set_pattern("%@ %T.%e [%l] %v");
-            #ifdef NDEBUG
                 fileSink->set_level(spdlog::level::info);
             #else
+                consoleSink->set_level(spdlog::level::trace);
                 fileSink->set_level(spdlog::level::trace);
             #endif
-            
             
             std::vector<spdlog::sink_ptr> loggerSinks;
             loggerSinks.push_back(consoleSink);
@@ -74,7 +70,7 @@ public:
         }
         catch (const spdlog::spdlog_ex& ex)
         {
-            std::cerr << "Failed to initialize logger: " << ex.what() << "." << std::endl;
+            std::cerr << "Failed to initialize loggers: " << ex.what() << "." << std::endl;
             return false;
         }
         
@@ -83,7 +79,15 @@ public:
             SPDLOG_LOGGER_WARN(m_logger, "Debug Build.");
         #endif
         
-        SPDLOG_LOGGER_INFO(m_logger, "User preferences path: {}.", m_prefPath);
+        SPDLOG_LOGGER_INFO(m_logger, "User preferences path: {}.", PrefPath());
+        
+        
+        if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
+        {
+            SPDLOG_LOGGER_CRITICAL(m_logger, "Failed to initialize SDL: %s", SDL_GetError());
+            return false;
+        }
+        SPDLOG_LOGGER_INFO(m_logger, "Initalized SDL.");
         
         
         // exePathBuf will end with a path separator, which is what we want.
@@ -136,11 +140,22 @@ public:
         }
         SPDLOG_LOGGER_INFO(m_logger, "Data path: {}.", m_dataPath);
         
+        
+        r = m_taskMan.Init(this);
+        if (!r)
+        {
+            SPDLOG_LOGGER_CRITICAL(m_logger, "Failed to initalize primary task manager: {}.", r.error);
+            return false;
+        }
+        SPDLOG_LOGGER_INFO(m_logger, "Initialized primary task manager.");
+        
+        
         return true;
     }
     
     virtual void Cleanup() override
     {
+        m_taskMan.Cleanup();
         SDL_Quit();
         spdlog::shutdown();
         BaseApp::Cleanup();
@@ -159,18 +174,21 @@ public:
             dtNow = SDL_GetPerformanceCounter();
             dtReal = (DeltaTime)(dtNow - dtLast) * 1000.0f / (DeltaTime)SDL_GetPerformanceFrequency();
             dt = dtReal * m_timeDilation;
-            
-            quit = true;
-            SPDLOG_INFO("We ran.");
+            //m_taskMan.Add(std::make_shared<TestTask>());
+            m_taskMan.Update(dt);
+            if (!m_taskMan.Count())
+                quit = true;
             SDL_Delay(1);
         }
         
         return 0;
     }
     
-    virtual std::shared_ptr<spdlog::logger> Logger() override { return m_logger; }
+    virtual StrongLoggerPtr Logger() override { return m_logger; }
     virtual std::string DataPath() override { return m_dataPath; }
     virtual std::string PrefPath() override { return m_prefPath; }
+    
+    virtual TaskManager& TaskMan() override { return m_taskMan; }
     
     virtual DeltaTime TimeDilation() override { return m_timeDilation; }
     virtual void TimeDilation(DeltaTime td) override { m_timeDilation = td; }
@@ -178,21 +196,33 @@ public:
     
     
 private:
-    std::shared_ptr<spdlog::logger> m_logger;
+    friend class InitLogAndPrefPathTask;
+    friend class InitSDLAndPathsTask;
+    
+    StrongLoggerPtr m_logger;
     std::string m_dataPath;
     std::string m_prefPath;
+    TaskManager m_taskMan;
     DeltaTime m_timeDilation = 1.0f;
 };
 
 
 
 // WARNING: SDL 2 requires this function signature; changing it will give "undefined reference to SDL_main" linker errors.
-int main(int /*argc*/, char* /*argv*/[])
+int main(int argc, char* argv[])
 {
     App app;
     int ret = 1;
-    if (app.Init())
-        ret = app.Run();
+    
+    try
+    {
+        if (app.Init())
+            ret = app.Run();
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << e.what() << std::endl;
+    }
     
     app.Cleanup();
     return ret;

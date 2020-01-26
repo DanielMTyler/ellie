@@ -20,8 +20,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 
 
-set(ORGANIZATION "Ellie" CACHE STRING "Organization name.")
-set(PROJECT_NAME "Ellie" CACHE STRING "Project name.")
+set(ORGANIZATION "Ellie" CACHE STRING "May become part of a directory name and should be ASCII/UTF-8 with only letters, numbers, and spaces.")
+set(PROJECT_NAME "Ellie" CACHE STRING "May become part of a directory name and should be ASCII/UTF-8 with only letters, numbers, and spaces.")
 
 set(THIRDPARTY_SOURCES thirdparty/glad/glad.c thirdparty/imgui/imgui.cpp thirdparty/imgui/imgui_demo.cpp thirdparty/imgui/imgui_draw.cpp thirdparty/imgui/imgui_widgets.cpp thirdparty/imgui/examples/imgui_impl_opengl3.cpp thirdparty/imgui/examples/imgui_impl_sdl.cpp thirdparty/imgui/misc/cpp/imgui_stdlib.cpp)
 
@@ -42,7 +42,7 @@ target_compile_definitions(ellie-bin PRIVATE ORGANIZATION="${ORGANIZATION}" PROJ
 
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang" AND NOT "x${CMAKE_CXX_SIMULATE_ID}" STREQUAL "xMSVC")
 # clang++.
-    target_compile_options(ellie-bin PRIVATE -Werror -Wall -Wextra -Wpedantic)
+    target_compile_options(ellie-bin PRIVATE -Werror -Wall -Wextra -Wpedantic -Wno-unused-parameter)
 else()
     message(FATAL_ERROR "Unknown Compiler.")
 endif()

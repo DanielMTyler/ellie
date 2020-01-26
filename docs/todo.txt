@@ -3,8 +3,6 @@ Copyright (C) 2020 Daniel M Tyler.
   This file is part of Ellie.
 ==================================
 
-* Process System.
-* Basic Memory Allocator to allow tracking of allocation points.
 * Event/Message System.
 * Input System.
 * Q3/CSS CVar/Console Variable System for Options.
