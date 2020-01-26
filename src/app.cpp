@@ -196,9 +196,6 @@ public:
     
     
 private:
-    friend class InitLogAndPrefPathTask;
-    friend class InitSDLAndPathsTask;
-    
     StrongLoggerPtr m_logger;
     std::string m_dataPath;
     std::string m_prefPath;
