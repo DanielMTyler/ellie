@@ -79,7 +79,7 @@ public:
             SPDLOG_LOGGER_WARN(m_logger, "Debug Build.");
         #endif
         
-        SPDLOG_LOGGER_INFO(m_logger, "User preferences path: {}.", PrefPath());
+        SPDLOG_LOGGER_INFO(m_logger, "User preferences path: {}.", GetPrefPath());
         
         
         if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
@@ -113,11 +113,11 @@ public:
         
         // Find the data folder in cwdPath, exePath, or "<cwdPath>/../../release/" in debug builds.
         std::string releasePath = cwdPath;
-        m_dataPath = releasePath + "data" + PathSeparator();
+        m_dataPath = releasePath + "data" + GetPathSeparator();
         if (!FolderExists(m_dataPath))
         {
             releasePath = exePath;
-            m_dataPath = releasePath + "data" + PathSeparator();
+            m_dataPath = releasePath + "data" + GetPathSeparator();
             if (!FolderExists(m_dataPath))
             {
                 #ifdef NDEBUG
@@ -126,10 +126,10 @@ public:
                 #else
                     // Move cwdPath up 2 directories.
                     releasePath = cwdPath.substr(0, cwdPath.size()-1);
-                    releasePath = releasePath.substr(0, releasePath.find_last_of(PathSeparator()));
-                    releasePath = releasePath.substr(0, releasePath.find_last_of(PathSeparator()));
-                    releasePath += PathSeparator() + "release" + PathSeparator();
-                    m_dataPath = releasePath + "data" + PathSeparator();
+                    releasePath = releasePath.substr(0, releasePath.find_last_of(GetPathSeparator()));
+                    releasePath = releasePath.substr(0, releasePath.find_last_of(GetPathSeparator()));
+                    releasePath += GetPathSeparator() + "release" + GetPathSeparator();
+                    m_dataPath = releasePath + "data" + GetPathSeparator();
                     if (!FolderExists(m_dataPath))
                     {
                         SPDLOG_LOGGER_CRITICAL(m_logger, "The data folder wasn't found in the current working directory ({}), the executable directory ({}), or \"<cwd>../../release/\" ({}).", cwdPath, exePath, releasePath);
@@ -141,7 +141,7 @@ public:
         SPDLOG_LOGGER_INFO(m_logger, "Data path: {}.", m_dataPath);
         
         
-        r = m_taskMan.Init(this);
+        r = m_taskManager.Init(this);
         if (!r)
         {
             SPDLOG_LOGGER_CRITICAL(m_logger, "Failed to initalize primary task manager: {}.", r.error);
@@ -155,7 +155,7 @@ public:
     
     virtual void Cleanup() override
     {
-        m_taskMan.Cleanup();
+        m_taskManager.Cleanup();
         SDL_Quit();
         spdlog::shutdown();
         BaseApp::Cleanup();
@@ -174,9 +174,9 @@ public:
             dtNow = SDL_GetPerformanceCounter();
             dtReal = (DeltaTime)(dtNow - dtLast) * 1000.0f / (DeltaTime)SDL_GetPerformanceFrequency();
             dt = dtReal * m_timeDilation;
-            //m_taskMan.Add(std::make_shared<TestTask>());
-            m_taskMan.Update(dt);
-            if (!m_taskMan.Count())
+            //m_taskManager.Add(std::make_shared<TestTask>());
+            m_taskManager.Update(dt);
+            if (!m_taskManager.GetSize())
                 quit = true;
             SDL_Delay(1);
         }
@@ -184,22 +184,20 @@ public:
         return 0;
     }
     
-    virtual StrongLoggerPtr Logger() override { return m_logger; }
-    virtual std::string DataPath() override { return m_dataPath; }
-    virtual std::string PrefPath() override { return m_prefPath; }
+    virtual StrongLoggerPtr GetLogger()      override { return m_logger;       }
+    virtual std::string     GetDataPath()    override { return m_dataPath;     }
+    virtual std::string     GetPrefPath()    override { return m_prefPath;     }
+    virtual TaskManager&    GetTaskManager() override { return m_taskManager;  }
     
-    virtual TaskManager& TaskMan() override { return m_taskMan; }
-    
-    virtual DeltaTime TimeDilation() override { return m_timeDilation; }
-    virtual void TimeDilation(DeltaTime td) override { m_timeDilation = td; }
-    
+    virtual DeltaTime GetTimeDilation()             override { return m_timeDilation; }
+    virtual void      SetTimeDilation(DeltaTime td) override { m_timeDilation = td;   }
     
     
 private:
     StrongLoggerPtr m_logger;
     std::string m_dataPath;
     std::string m_prefPath;
-    TaskManager m_taskMan;
+    TaskManager m_taskManager;
     DeltaTime m_timeDilation = 1.0f;
 };
 

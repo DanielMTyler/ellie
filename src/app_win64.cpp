@@ -18,11 +18,10 @@ class BaseApp : public IApp
 public:
     virtual ~BaseApp() {}
     
-    virtual char PathSeparatorChar() override { return '\\'; }
-    virtual std::string PathSeparator() override { return "\\"; }
-    virtual std::string SharedLibPrefix() override { return ""; }
-    virtual std::string SharedLibExt() override { return ".dll"; }
-    
+    virtual char        GetPathSeparatorChar() override { return '\\';   }
+    virtual std::string GetPathSeparator()     override { return "\\";   }
+    virtual std::string GetSharedLibPrefix()   override { return "";     }
+    virtual std::string GetSharedLibExt()      override { return ".dll"; }
     
     
     virtual ResultBool CopyFile(std::string src, std::string dst, bool failIfExists) override
@@ -32,7 +31,7 @@ public:
         if (!::CopyFile(src.c_str(), dst.c_str(), failIfExists))
         {
             std::string msg;
-            DWORD e = FormattedLastError(msg);
+            DWORD e = FormatLastError(msg);
             if (!msg.empty())
                 r.error = "CopyFile failed: " + msg;
             else
@@ -55,7 +54,7 @@ public:
         if (retDW > MAX_PATH || !retDW)
         {
             std::string msg;
-            DWORD e = FormattedLastError(msg);
+            DWORD e = FormatLastError(msg);
             if (!msg.empty())
                 r.error = "GetTempPath failed: " + msg;
             else
@@ -69,7 +68,7 @@ public:
         if (!GetTempFileName(tempPathBuf, PROJECT_NAME, 0, tempFileNameBuf))
         {
             std::string msg;
-            DWORD e = FormattedLastError(msg);
+            DWORD e = FormatLastError(msg);
             if (!msg.empty())
                 r.error = "GetTempFileName failed: " + msg;
             else
@@ -91,7 +90,7 @@ public:
         if (!::DeleteFile(file.c_str()))
         {
             std::string msg;
-            DWORD e = FormattedLastError(msg);
+            DWORD e = FormatLastError(msg);
             if (!msg.empty())
                 r.error = "DeleteFile failed: " + msg;
             else
@@ -114,7 +113,7 @@ public:
             if (GetLastError() != ERROR_FILE_NOT_FOUND)
             {
                 std::string msg;
-                DWORD e = FormattedLastError(msg);
+                DWORD e = FormatLastError(msg);
                 if (!msg.empty())
                     r.error = "GetFileAttributes failed: " + msg;
                 else
@@ -137,7 +136,7 @@ public:
         if (a == INVALID_FILE_ATTRIBUTES)
         {
             std::string msg;
-            DWORD e = FormattedLastError(msg);
+            DWORD e = FormatLastError(msg);
             if (!msg.empty())
                 r.error = "GetFileAttributes failed: " + msg;
             else
@@ -166,7 +165,7 @@ public:
         if (!GetCurrentDirectory(MAX_PATH, cwdBuf))
         {
             std::string msg;
-            DWORD e = FormattedLastError(msg);
+            DWORD e = FormatLastError(msg);
             if (!msg.empty())
                 r.error = "GetCurrentDirectory failed: " + msg;
             else
@@ -178,20 +177,19 @@ public:
         
         cwd = cwdBuf;
         // GetCurrentDirectory doesn't add a path separator at the end.
-        cwd += PathSeparator();
+        cwd += GetPathSeparator();
         r.result = true;
         return r;
     }
     
     virtual bool Init() override { return true; }
     virtual void Cleanup() override {}
-
-
-
+    
+    
 private:
     // Format GetLastError() and put it into msg.
     // Return 0 if successful and the error if not.
-    DWORD FormattedLastError(std::string& msg)
+    DWORD FormatLastError(std::string& msg)
     {
         DWORD e = GetLastError();
         if (!e)

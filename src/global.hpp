@@ -228,7 +228,7 @@ public:
     
     WeakPtr AttachChild(StrongPtr child) { m_child = child; return m_child; }
     StrongPtr RemoveChild() { StrongPtr c = m_child; m_child.reset(); return c; }
-    WeakPtr Child() { return m_child; }
+    WeakPtr GetChild() { return m_child; }
     
     
 protected:
@@ -334,7 +334,7 @@ public:
                         t->OnSuccess();
                         Task::StrongPtr c = t->RemoveChild();
                         if (c)
-                            Add(c);
+                            AttachTask(c);
                         break;
                     }
                     case Task::State::Failed:
@@ -361,7 +361,7 @@ public:
     }
     
     
-    Task::WeakPtr Add(Task::StrongPtr task)
+    Task::WeakPtr AttachTask(Task::StrongPtr task)
     {
         SDL_assert(m_init);
         SDL_assert(task);
@@ -384,7 +384,7 @@ public:
         m_tasks.clear();
     }
     
-    TaskCount Count() const
+    TaskCount GetSize() const
     {
         SDL_assert(m_init);
         return m_tasks.size();
@@ -408,10 +408,10 @@ class IApp {
 public:
     virtual ~IApp() {}
     
-    virtual char        PathSeparatorChar() = 0;
-    virtual std::string PathSeparator()     = 0;
-    virtual std::string SharedLibPrefix()   = 0;
-    virtual std::string SharedLibExt()      = 0;
+    virtual char        GetPathSeparatorChar() = 0;
+    virtual std::string GetPathSeparator()     = 0;
+    virtual std::string GetSharedLibPrefix()   = 0;
+    virtual std::string GetSharedLibExt()      = 0;
     
     virtual ResultBool CopyFile(std::string src, std::string dst, bool failIfExists) = 0;
     virtual ResultBool CreateTempFile(std::string& file) = 0;
@@ -427,15 +427,14 @@ public:
     /// Returns main() return code.
     virtual int  Run()     = 0;
     
-    virtual StrongLoggerPtr Logger() = 0;
-    virtual std::string DataPath() = 0;
-    virtual std::string PrefPath() = 0;
-    
-    virtual TaskManager& TaskMan() = 0;
+    virtual StrongLoggerPtr GetLogger()   = 0;
+    virtual std::string     GetDataPath() = 0;
+    virtual std::string     GetPrefPath() = 0;
+    virtual TaskManager& GetTaskManager() = 0;
     
     /// Time Dilation is how fast time moves, e.g., 1.0f = 100% = real-time.
-    virtual DeltaTime TimeDilation()             = 0;
-    virtual void      TimeDilation(DeltaTime td) = 0;
+    virtual DeltaTime GetTimeDilation()             = 0;
+    virtual void      SetTimeDilation(DeltaTime td) = 0;
 };
 
 #endif
