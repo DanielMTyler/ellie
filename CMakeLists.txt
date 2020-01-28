@@ -27,16 +27,16 @@ set(THIRDPARTY_SOURCES thirdparty/glad/glad.c thirdparty/imgui/imgui.cpp thirdpa
 
 
 
-if(WIN32 AND "${CMAKE_SIZEOF_VOID_P}" EQUAL "8")
-# Win64.
+if(WIN32)
+# Windows.
     # Remove "lib" prefix on DLL names.
     set(CMAKE_SHARED_LIBRARY_PREFIX "")
     set(CMAKE_SHARED_MODULE_PREFIX "")
-    add_executable(ellie-bin src/app_win64.cpp ${THIRDPARTY_SOURCES})
 else()
     message(FATAL_ERROR "Unknown OS.")
 endif()
 
+add_executable(ellie-bin src/main.cpp ${THIRDPARTY_SOURCES})
 set_target_properties(ellie-bin PROPERTIES OUTPUT_NAME ellie)
 target_compile_definitions(ellie-bin PRIVATE ORGANIZATION="${ORGANIZATION}" PROJECT_NAME="${PROJECT_NAME}")
 

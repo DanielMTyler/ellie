@@ -121,8 +121,10 @@ typedef std::size_t MemorySize;
 
 typedef float DeltaTime;
 
-typedef std::shared_ptr<spdlog::logger> StrongLoggerPtr;
-typedef std::weak_ptr<spdlog::logger>   WeakLoggerPtr;
+typedef spdlog::logger          Logger;
+typedef std::shared_ptr<Logger> StrongLoggerPtr;
+typedef std::weak_ptr<Logger>   WeakLoggerPtr;
+
 
 struct ResultBool
 {
@@ -131,6 +133,7 @@ struct ResultBool
     
     explicit operator bool() const { return result; }
 };
+
 
 uint32 CheckedUInt64ToUInt32(uint64 v)
 {
@@ -155,7 +158,10 @@ const char* OnOffToStr(bool b)
 
 
 
-class IApp;
+// @todo Replace Task with a struct of callbacks where nullptr indicates non-use.
+//       Probably need a userdata ptr for saved data.
+// @todo Replace TaskManager with a group of functions that work on a list of Task structs.
+
 
 
 class Task
@@ -212,7 +218,6 @@ public:
         m_state = State::Running;
     }
     
-    IApp& GetApp() { return *m_app; }
     State GetState() const { return m_state; }
     bool IsAlive() const { return (m_state == State::Running || m_state == State::Paused); }
     bool IsDead() const { return (m_state == State::Succeeded || m_state == State::Failed || m_state == State::Aborted); }
@@ -249,7 +254,6 @@ protected:
 private:
     friend class TaskManager;
     
-    IApp* m_app   = nullptr; // Set by TaskManager before OnInit.
     State m_state = State::Uninitialized; // Set after OnInit by TaskManager.
     StrongPtr m_child;
 };
@@ -261,13 +265,10 @@ public:
     typedef std::size_t TaskCount;
     
     
-    // app may use us for initialization, so we can't use it within Init.
-    void Init(IApp* app)
+    void Init()
     {
         SDL_assert(!m_init);
-        SDL_assert(app);
         
-        m_app  = app;
         m_init = true;
         m_numSucceeded = 0;
         m_numFailed    = 0;
@@ -284,7 +285,6 @@ public:
         m_tasks.clear();
         m_numSucceeded = 0;
         m_numFailed    = 0;
-        m_app  = nullptr;
         m_init = false;
     }
     
@@ -365,7 +365,6 @@ public:
         SDL_assert(m_init);
         SDL_assert(task);
         SDL_assert(task->m_state == Task::State::Uninitialized);
-        task->m_app = m_app;
         m_tasks.push_back(task);
         return task;
     }
@@ -406,49 +405,9 @@ public:
 private:
     typedef std::list<Task::StrongPtr> TaskList;
     bool m_init = false;
-    IApp* m_app;
     TaskList m_tasks;
     TaskCount m_numSucceeded;
     TaskCount m_numFailed;
-};
-
-
-
-// Interfaces:
-
-
-
-class IApp {
-public:
-    virtual ~IApp() {}
-    
-    virtual char        GetPathSeparatorChar() = 0;
-    virtual std::string GetPathSeparator()     = 0;
-    virtual std::string GetSharedLibPrefix()   = 0;
-    virtual std::string GetSharedLibExt()      = 0;
-    
-    virtual ResultBool CopyFile(std::string src, std::string dst, bool failIfExists) = 0;
-    virtual ResultBool CreateTempFile(std::string& file) = 0;
-    virtual ResultBool DeleteFile(std::string file)      = 0;
-    virtual ResultBool FileExists(std::string file)      = 0;
-    virtual ResultBool FolderExists(std::string folder)  = 0;
-    /// cwd will end with a path separator.
-    virtual ResultBool GetCWD(std::string& cwd)          = 0;
-    
-    virtual bool Init()    = 0;
-    /// Always call, even if Init fails.
-    virtual void Cleanup() = 0;
-    /// Returns main() return code.
-    virtual int  Run()     = 0;
-    
-    virtual StrongLoggerPtr GetLogger()   = 0;
-    virtual std::string     GetDataPath() = 0;
-    virtual std::string     GetPrefPath() = 0;
-    virtual TaskManager& GetTaskManager() = 0;
-    
-    /// Time Dilation is how fast time moves, e.g., 1.0f = 100% = real-time.
-    virtual DeltaTime GetTimeDilation()             = 0;
-    virtual void      SetTimeDilation(DeltaTime td) = 0;
 };
 
 #endif

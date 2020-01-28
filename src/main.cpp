@@ -14,77 +14,19 @@
 #include <memory> // make_shared, shared_ptr
 #include <string>
 #include <vector>
+#include "platform.cpp"
 
 
 
-class App : public BaseApp {
-public:
-    virtual ~App() {}
-    
-    // Init() has to be defined outside the class so that it can create the Init
-    // tasks while allowing the Init tasks to have a complete definition of App.
-    virtual bool Init() override;
-    
-    virtual void Cleanup() override
-    {
-        m_taskManager.Cleanup();
-        SDL_Quit();
-        spdlog::shutdown();
-        BaseApp::Cleanup();
-    }
-    
-    virtual int Run() override
-    {
-        // @todo dt should be in the logic system?
-        bool quit = false;
-        uint64 dtNow = SDL_GetPerformanceCounter();
-        uint64 dtLast = 0;
-        DeltaTime dtReal = 0.0f;
-        DeltaTime dt = 0.0f;
-        while (!quit)
-        {
-            dtLast = dtNow;
-            dtNow = SDL_GetPerformanceCounter();
-            dtReal = (DeltaTime)(dtNow - dtLast) * 1000.0f / (DeltaTime)SDL_GetPerformanceFrequency();
-            dt = dtReal * m_timeDilation;
-            m_taskManager.Update(dt);
-            if (!m_taskManager.GetCount())
-                quit = true;
-            SDL_Delay(1);
-        }
-        
-        return 0;
-    }
-    
-    virtual StrongLoggerPtr GetLogger()      override { return m_logger;       }
-    virtual std::string     GetDataPath()    override { return m_dataPath;     }
-    virtual std::string     GetPrefPath()    override { return m_prefPath;     }
-    virtual TaskManager&    GetTaskManager() override { return m_taskManager;  }
-    
-    virtual DeltaTime GetTimeDilation()             override { return m_timeDilation; }
-    virtual void      SetTimeDilation(DeltaTime td) override { m_timeDilation = td;   }
-    
-    
-private:
-    friend class InitPrefPathTask;
-    friend class InitLogTask;
-    friend class InitSDLTask;
-    friend class InitPathsTask;
-    
-    StrongLoggerPtr m_logger;
-    std::string m_dataPath;
-    std::string m_prefPath;
-    TaskManager m_taskManager;
-    DeltaTime m_timeDilation = 1.0f;
-};
+std::string g_dataPath;
+std::string g_prefPath;
+
 
 
 class InitPrefPathTask : public Task {
 public:
     virtual bool OnInit()
     {
-        App& app = (App&)GetApp();
-        
         // Must SDL_Init before SDL_GetPrefPath.
         if (SDL_Init(0) < 0)
         {
@@ -98,7 +40,7 @@ public:
             std::cerr << "Failed to get user preferences path: " << SDL_GetError() << "." << std::endl;
             return false;
         }
-        app.m_prefPath = sdlPrefPath;
+        g_prefPath = sdlPrefPath;
         SDL_free(sdlPrefPath);
         sdlPrefPath = nullptr;
         
@@ -112,13 +54,10 @@ class InitLogTask : public Task {
 public:
     virtual bool OnInit()
     {
-        App& app = (App&)GetApp();
-        StrongLoggerPtr logger;
-        
         try
         {
             auto consoleSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-            auto fileSink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(app.m_prefPath + PROJECT_NAME + ".log", true);
+            auto fileSink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(g_prefPath + PROJECT_NAME + ".log", true);
             
             consoleSink->set_pattern("[%^%L%$] %v");
             fileSink->set_pattern("%T [%L] %v");
@@ -134,7 +73,7 @@ public:
             std::vector<spdlog::sink_ptr> loggerSinks;
             loggerSinks.push_back(consoleSink);
             loggerSinks.push_back(fileSink);
-            logger = app.m_logger = std::make_shared<spdlog::logger>("default", loggerSinks.begin(), loggerSinks.end());
+            StrongLoggerPtr logger = std::make_shared<Logger>("default", loggerSinks.begin(), loggerSinks.end());
             spdlog::register_logger(logger);
             spdlog::set_default_logger(logger);
         }
@@ -146,10 +85,10 @@ public:
         
         
         #ifndef NDEBUG
-            SPDLOG_LOGGER_WARN(logger, "Debug Build.");
+            SPDLOG_WARN("Debug Build.");
         #endif
         
-        SPDLOG_LOGGER_INFO(logger, "User preferences path: {}.", app.GetPrefPath());
+        SPDLOG_INFO("User preferences path: {}.", g_prefPath);
         
         
         Succeed();
@@ -162,14 +101,12 @@ class InitSDLTask : public Task {
 public:
     virtual bool OnInit()
     {
-        App& app = (App&)GetApp();
-        
         if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
         {
-            SPDLOG_LOGGER_CRITICAL(app.m_logger, "Failed to initialize SDL: %s", SDL_GetError());
+            SPDLOG_CRITICAL("Failed to initialize SDL: %s", SDL_GetError());
             return false;
         }
-        SPDLOG_LOGGER_INFO(app.m_logger, "Initalized SDL.");
+        SPDLOG_INFO("Initalized SDL.");
         
         Succeed();
         return true;
@@ -181,43 +118,39 @@ class InitPathsTask : public Task {
 public:
     virtual bool OnInit()
     {
-        App& app = (App&)GetApp();
-        StrongLoggerPtr logger   = app.m_logger;
-        std::string     pathSep  = app.GetPathSeparator();
-        std::string     dataPath;
-        
         // exePathBuf will end with a path separator, which is what we want.
         char* exePathBuf = SDL_GetBasePath();
         if (!exePathBuf)
         {
-            SPDLOG_LOGGER_CRITICAL(logger, "Failed to get executable path: {}.", SDL_GetError());
+            SPDLOG_CRITICAL("Failed to get executable path: {}.", SDL_GetError());
             return false;
         }
         std::string exePath = exePathBuf;
         SDL_free(exePathBuf);
         exePathBuf = nullptr;
-        SPDLOG_LOGGER_INFO(logger, "EXE path: {}.", exePath);
+        SPDLOG_INFO("EXE path: {}.", exePath);
         
         std::string cwdPath;
-        ResultBool r = app.GetCWD(cwdPath);
+        ResultBool r = RetrieveCWD(cwdPath);
         if (!r)
         {
-            SPDLOG_LOGGER_CRITICAL(logger, "Failed to get the current working directory: {}.", r.error);
+            SPDLOG_CRITICAL("Failed to get the current working directory: {}.", r.error);
             return false;
         }
-        SPDLOG_LOGGER_INFO(logger, "CWD: {}.", cwdPath);
+        SPDLOG_INFO("CWD: {}.", cwdPath);
         
         // Find the data folder in cwdPath, exePath, or "<cwdPath>/../../release/" in debug builds.
+        std::string pathSep = GetPathSeparator();
         std::string releasePath = cwdPath;
-        dataPath = releasePath + "data" + pathSep;
-        if (!app.FolderExists(dataPath))
+        std::string dataPath = releasePath + "data" + pathSep;
+        if (!FolderExists(dataPath))
         {
             releasePath = exePath;
             dataPath = releasePath + "data" + pathSep;
-            if (!app.FolderExists(dataPath))
+            if (!FolderExists(dataPath))
             {
                 #ifdef NDEBUG
-                    SPDLOG_LOGGER_CRITICAL(logger, "The data folder wasn't found in the current working directory ({}) or the executable directory ({}).", cwdPath, exePath);
+                    SPDLOG_CRITICAL("The data folder wasn't found in the current working directory ({}) or the executable directory ({}).", cwdPath, exePath);
                     return false;
                 #else
                     // Move cwdPath up 2 directories.
@@ -226,16 +159,16 @@ public:
                     releasePath = releasePath.substr(0, releasePath.find_last_of(pathSep));
                     releasePath += pathSep + "release" + pathSep;
                     dataPath = releasePath + "data" + pathSep;
-                    if (!app.FolderExists(dataPath))
+                    if (!FolderExists(dataPath))
                     {
-                        SPDLOG_LOGGER_CRITICAL(logger, "The data folder wasn't found in the current working directory ({}), the executable directory ({}), or \"<cwd>../../release/\" ({}).", cwdPath, exePath, releasePath);
+                        SPDLOG_CRITICAL("The data folder wasn't found in the current working directory ({}), the executable directory ({}), or \"<cwd>../../release/\" ({}).", cwdPath, exePath, releasePath);
                         return false;
                     }
                 #endif
             }
         }
-        app.m_dataPath = dataPath;
-        SPDLOG_LOGGER_INFO(logger, "Data path: {}.", dataPath);
+        g_dataPath = dataPath;
+        SPDLOG_INFO("Data path: {}.", g_dataPath);
         
         Succeed();
         return true;
@@ -243,46 +176,78 @@ public:
 };
 
 
-bool App::Init()
+bool MainInit()
 {
-    if (!BaseApp::Init())
-        return false;
-    
     // @todo Verify there's no other instances of the game running.
     
-    m_taskManager.Init(this);
+    // @todo We don't need a TaskManager here, but I want it as a test for
+    //       the TaskManager refactor later.
+    TaskManager tm;
+    tm.Init();
     
-    m_taskManager.AttachTask(std::make_shared<InitPrefPathTask>())
+    tm.AttachTask(std::make_shared<InitPrefPathTask>())
         ->AttachChild(std::make_shared<InitLogTask>())
         ->AttachChild(std::make_shared<InitSDLTask>())
         ->AttachChild(std::make_shared<InitPathsTask>());
-    // Run all init tasks.
-    while (m_taskManager.GetCount())
-        m_taskManager.Update(0.0f);
-    if (m_taskManager.GetFailed())
+    // Run all tasks.
+    while (tm.GetCount())
+        tm.Update(0.0f);
+    if (tm.GetFailed())
         return false;
     
+    tm.Cleanup();
     return true;
 }
 
 
 
+int MainLoop()
+{
+    // @todo dt and timeDilation should be in the logic system.
+    bool quit = false;
+    // Time Dilation is how fast time moves, e.g., 0.5f means time is 50% slower than normal.
+    DeltaTime timeDilation = 1.0f;
+    uint64 dtNow = SDL_GetPerformanceCounter();
+    uint64 dtLast = 0;
+    DeltaTime dtReal = 0.0f;
+    DeltaTime dt = 0.0f;
+    while (!quit)
+    {
+        dtLast = dtNow;
+        dtNow = SDL_GetPerformanceCounter();
+        dtReal = (DeltaTime)(dtNow - dtLast) * 1000.0f / (DeltaTime)SDL_GetPerformanceFrequency();
+        dt = dtReal * timeDilation;
+        quit = true;
+        SDL_Delay(1);
+    }
+    
+    return 0;
+}
+
+
+void MainCleanup()
+{
+    SDL_Quit();
+    spdlog::shutdown();
+}
+
+
 // WARNING: SDL 2 requires this function signature; changing it will give "undefined reference to SDL_main" linker errors.
 int main(int argc, char* argv[])
 {
-    App app;
     int ret = 1;
     
+    // While I don't use exceptions, many libraries (including the STL) do.
     try
     {
-        if (app.Init())
-            ret = app.Run();
+        if (MainInit())
+            ret = MainLoop();
     }
     catch (const std::exception& e)
     {
         std::cerr << e.what() << std::endl;
     }
     
-    app.Cleanup();
+    MainCleanup();
     return ret;
 }
