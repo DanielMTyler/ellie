@@ -35,6 +35,7 @@ public:
     
     virtual int Run() override
     {
+        // @todo dt should be in the logic system?
         bool quit = false;
         uint64 dtNow = SDL_GetPerformanceCounter();
         uint64 dtLast = 0;
@@ -246,6 +247,8 @@ bool App::Init()
 {
     if (!BaseApp::Init())
         return false;
+    
+    // @todo Verify there's no other instances of the game running.
     
     m_taskManager.Init(this);
     
