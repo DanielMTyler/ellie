@@ -6,6 +6,7 @@
 */
 
 #include "global.hpp"
+#include <SDL.h>
 #include <string>
 
 
@@ -21,6 +22,11 @@ ResultBool  CreateTempFile(std::string& file);
 ResultBool  FileExists    (std::string  file);
 ResultBool  FolderExists  (std::string  folder);
 ResultBool  RetrieveCWD   (std::string& cwd);
+
+/// Returns true if we're alone OR if a failure occurs.
+/// Displays an error message to the user if another instance is running.
+bool VerifySingleInstanceInit();
+void VerifySingleInstanceCleanup();
 
 
 
@@ -216,6 +222,38 @@ ResultBool RetrieveCWD(std::string& cwd)
     cwd += GetPathSeparator();
     r.result = true;
     return r;
+}
+
+HANDLE g_WindowsSingleInstanceMutex = nullptr;
+
+bool VerifySingleInstanceInit()
+{
+    SDL_assert(!g_WindowsSingleInstanceMutex);
+    
+    const char* name = ORGANIZATION "/" PROJECT_NAME "/VerifySingleInstance";
+    
+    g_WindowsSingleInstanceMutex = CreateMutex(nullptr, true, name);
+    if (g_WindowsSingleInstanceMutex && GetLastError() != ERROR_SUCCESS)
+    {
+        // GetLastError() should be ERROR_ALREADY_EXISTS || ERROR_ACCESS_DENIED.
+        g_WindowsSingleInstanceMutex = nullptr;
+        const char* msg = "Another instance of " PROJECT_NAME " is already running.";
+        const char* title = PROJECT_NAME " Is Already Running";
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title, msg, nullptr);
+        std::cerr << msg << std::endl;
+        return false;
+    }
+    
+    return true;
+}
+
+void VerifySingleInstanceCleanup()
+{
+    if (g_WindowsSingleInstanceMutex)
+    {
+        ReleaseMutex(g_WindowsSingleInstanceMutex);
+        g_WindowsSingleInstanceMutex = nullptr;
+    }
 }
 
 

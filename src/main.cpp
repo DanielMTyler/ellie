@@ -178,7 +178,10 @@ public:
 
 bool MainInit()
 {
-    // @todo Verify there's no other instances of the game running.
+    if (!VerifySingleInstanceInit())
+    {
+        return false;
+    }
     
     // @todo We don't need a TaskManager here, but I want it as a test for
     //       the TaskManager refactor later.
@@ -229,6 +232,7 @@ void MainCleanup()
 {
     SDL_Quit();
     spdlog::shutdown();
+    VerifySingleInstanceCleanup();
 }
 
 
