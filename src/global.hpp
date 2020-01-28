@@ -101,13 +101,6 @@
 
 #define ZERO_STRUCT(s) std::memset(&(s), 0, sizeof(s))
 
-// Memory macros to allow easier tracking in the future.
-#define ELLIE_NEW new
-#define ELLIE_DELETE delete
-#define ELLIE_MALLOC std::malloc
-#define ELLIE_CALLOC std::calloc
-#define ELLIE_FREE std::free
-
 
 
 typedef std::int8_t int8;
