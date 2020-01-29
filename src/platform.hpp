@@ -5,16 +5,22 @@
     ==================================
 */
 
+#ifndef PLATFORM_HPP_INCLUDED
+#define PLATFORM_HPP_INCLUDED
+
 #include "global.hpp"
 #include <SDL.h>
 #include <string>
 
 
 
-char        GetPathSeparatorChar();
-std::string GetPathSeparator();
-std::string GetSharedLibraryPrefix();    /// Linux example: "lib".
-std::string GetSharedLibraryExtension(); /// Linux example: "so".
+/// These defines are per OS below.
+// #define PATH_SEPARATOR "/"
+// #define SHARED_LIBRARY_PREFIX "lib"
+// #define SHARED_LIBRARY_EXTENSION "so"
+
+
+
 // FileCopy/FileDelete avoids Windows' CopyFile/DeleteFile.
 ResultBool  FileCopy      (std::string  src, std::string dst, bool failIfExists);
 ResultBool  FileDelete    (std::string  file);
@@ -33,8 +39,12 @@ void VerifySingleInstanceCleanup();
 #ifdef OS_WINDOWS
 
 
-
 // @todo Support paths > MAX_PATH via Unicode/path prefixes.
+
+
+#define PATH_SEPARATOR "\\"
+#define SHARED_LIBRARY_PREFIX ""
+#define SHARED_LIBRARY_EXTENSION "dll"
 
 
 #define WIN32_LEAN_AND_MEAN
@@ -59,12 +69,6 @@ DWORD WindowsFormatLastError(std::string& msg)
     LocalFree(rawMsg);
     return e;
 }
-
-
-char        GetPathSeparatorChar()      { return  '\\'; }
-std::string GetPathSeparator()          { return  "\\"; }
-std::string GetSharedLibraryPrefix()    { return    ""; }
-std::string GetSharedLibraryExtension() { return "dll"; }
 
 
 ResultBool FileCopy(std::string src, std::string dst, bool failIfExists) 
@@ -219,10 +223,11 @@ ResultBool RetrieveCWD(std::string& cwd)
     
     cwd = cwdBuf;
     // GetCurrentDirectory doesn't add a path separator at the end.
-    cwd += GetPathSeparator();
+    cwd += PATH_SEPARATOR;
     r.result = true;
     return r;
 }
+
 
 HANDLE g_WindowsSingleInstanceMutex = nullptr;
 
@@ -261,3 +266,5 @@ void VerifySingleInstanceCleanup()
 #else
     #error Unknown platform.
 #endif // OS_WINDOWS.
+
+#endif // PLATFORM_HPP_INCLUDED.

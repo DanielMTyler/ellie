@@ -14,10 +14,13 @@
 #include <memory> // make_shared, shared_ptr
 #include <string>
 #include <vector>
-#include "platform.cpp"
+#include "platform.hpp"
+#include "resources.hpp"
+#include "tasks.hpp"
 
 
 
+// @todo Remove these.
 std::string g_dataPath;
 std::string g_prefPath;
 
@@ -140,7 +143,7 @@ public:
         SPDLOG_INFO("CWD: {}.", cwdPath);
         
         // Find the data folder in cwdPath, exePath, or "<cwdPath>/../../release/" in debug builds.
-        std::string pathSep = GetPathSeparator();
+        std::string pathSep = PATH_SEPARATOR;
         std::string releasePath = cwdPath;
         std::string dataPath = releasePath + "data" + pathSep;
         if (!FolderExists(dataPath))
@@ -169,6 +172,7 @@ public:
         }
         g_dataPath = dataPath;
         SPDLOG_INFO("Data path: {}.", g_dataPath);
+        ResManInit(g_dataPath, g_prefPath);
         
         Succeed();
         return true;
