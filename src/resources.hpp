@@ -12,42 +12,42 @@
 
 
 
-bool        g_ResManInited = false;
-std::string g_ResManDataPath;
-std::string g_ResManSavePath;
+bool        g_resManInited = false;
+std::string g_resManDataPath;
+std::string g_resManSavePath;
 
 
 
 /// dataPath and savePath must end with a path separator.
 bool ResManInit(std::string dataPath, std::string savePath)
 {
-    SDL_assert(!g_ResManInited);
+    SDL_assert(!g_resManInited);
     SDL_assert(!dataPath.empty());
     SDL_assert(!savePath.empty());
     
-    g_ResManDataPath = dataPath;
-    g_ResManSavePath = savePath;
-    g_ResManInited = true;
+    g_resManDataPath = dataPath;
+    g_resManSavePath = savePath;
+    g_resManInited = true;
     
     return true;
 }
 
 void ResManCleanup()
 {
-    if (!g_ResManInited)
+    if (!g_resManInited)
         return;
 }
 
 /// The returned SDL_RWops MUST be closed with ResManClose() instead of SDL_RWclose().
 SDL_RWops* ResManOpenFile(std::string file, std::string mode)
 {
-    return SDL_RWFromFile(std::string(g_ResManDataPath + file).c_str(), mode.c_str());
+    return SDL_RWFromFile(std::string(g_resManDataPath + file).c_str(), mode.c_str());
 }
 
 /// The returned SDL_RWops MUST be closed with ResManClose() instead of SDL_RWclose().
 SDL_RWops* ResManOpenShader(std::string file, std::string mode)
 {
-    return SDL_RWFromFile(std::string(g_ResManDataPath + "shaders" + PATH_SEPARATOR + file).c_str(), mode.c_str());
+    return SDL_RWFromFile(std::string(g_resManDataPath + "shaders" + PATH_SEPARATOR + file).c_str(), mode.c_str());
 }
 
 void ResManCloseFile(SDL_RWops* file)

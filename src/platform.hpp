@@ -229,19 +229,19 @@ ResultBool RetrieveCWD(std::string& cwd)
 }
 
 
-HANDLE g_WindowsSingleInstanceMutex = nullptr;
+HANDLE g_windowsSingleInstanceMutex = nullptr;
 
 bool VerifySingleInstanceInit()
 {
-    SDL_assert(!g_WindowsSingleInstanceMutex);
+    SDL_assert(!g_windowsSingleInstanceMutex);
     
     const char* name = ORGANIZATION "/" PROJECT_NAME "/VerifySingleInstance";
     
-    g_WindowsSingleInstanceMutex = CreateMutex(nullptr, true, name);
-    if (g_WindowsSingleInstanceMutex && GetLastError() != ERROR_SUCCESS)
+    g_windowsSingleInstanceMutex = CreateMutex(nullptr, true, name);
+    if (g_windowsSingleInstanceMutex && GetLastError() != ERROR_SUCCESS)
     {
         // GetLastError() should be ERROR_ALREADY_EXISTS || ERROR_ACCESS_DENIED.
-        g_WindowsSingleInstanceMutex = nullptr;
+        g_windowsSingleInstanceMutex = nullptr;
         const char* msg = "Another instance of " PROJECT_NAME " is already running.";
         const char* title = PROJECT_NAME " Is Already Running";
         SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title, msg, nullptr);
@@ -254,10 +254,10 @@ bool VerifySingleInstanceInit()
 
 void VerifySingleInstanceCleanup()
 {
-    if (g_WindowsSingleInstanceMutex)
+    if (g_windowsSingleInstanceMutex)
     {
-        ReleaseMutex(g_WindowsSingleInstanceMutex);
-        g_WindowsSingleInstanceMutex = nullptr;
+        ReleaseMutex(g_windowsSingleInstanceMutex);
+        g_windowsSingleInstanceMutex = nullptr;
     }
 }
 
