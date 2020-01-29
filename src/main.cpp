@@ -20,7 +20,7 @@
 
 
 
-bool InitSavePathTaskOnInit(StrongTaskPtr t)
+bool AppInitSavePathTask(StrongTaskPtr t)
 {
     // Must SDL_Init before SDL_GetPrefPath.
     if (SDL_Init(0) < 0)
@@ -39,13 +39,12 @@ bool InitSavePathTaskOnInit(StrongTaskPtr t)
     SDL_free(prefPath);
     prefPath = nullptr;
     
-    TaskSucceed(t);
     return true;
 }
 
-bool InitLogTaskOnInit(StrongTaskPtr t)
+bool AppInitLogTask(StrongTaskPtr t)
 {
-    std::string& savePath = *((std::string*)t->userData);
+    const std::string& savePath = *((std::string*)t->userData);
     t->child->userData = t->userData;
     
     try
@@ -82,13 +81,10 @@ bool InitLogTaskOnInit(StrongTaskPtr t)
         SPDLOG_WARN("Debug Build.");
     #endif
     
-    SPDLOG_INFO("Save path: {}.", savePath);
-    
-    TaskSucceed(t);
     return true;
 }
 
-bool InitSDLTaskOnInit(StrongTaskPtr t)
+bool AppInitSDLTask(StrongTaskPtr t)
 {
     t->child->userData = t->userData;
     
@@ -100,11 +96,10 @@ bool InitSDLTaskOnInit(StrongTaskPtr t)
     }
     SPDLOG_INFO("Initalized SDL.");
     
-    TaskSucceed(t);
     return true;
 }
 
-bool InitPathsTaskOnInit(StrongTaskPtr t)
+bool AppInitPathsTask(StrongTaskPtr t)
 {
     std::string savePath = *((std::string*)t->userData);
     delete (std::string*)t->userData;
@@ -120,7 +115,6 @@ bool InitPathsTaskOnInit(StrongTaskPtr t)
     std::string exePath = exePathBuf;
     SDL_free(exePathBuf);
     exePathBuf = nullptr;
-    SPDLOG_INFO("EXE path: {}.", exePath);
     
     std::string cwdPath;
     ResultBool r = RetrieveCWD(cwdPath);
@@ -129,7 +123,6 @@ bool InitPathsTaskOnInit(StrongTaskPtr t)
         SPDLOG_CRITICAL("Failed to get the current working directory: {}.", r.error);
         return false;
     }
-    SPDLOG_INFO("CWD: {}.", cwdPath);
     
     // Find the data folder in cwdPath, exePath, or "<cwdPath>/../../release/" in debug builds.
     std::string pathSep = PATH_SEPARATOR;
@@ -159,10 +152,12 @@ bool InitPathsTaskOnInit(StrongTaskPtr t)
             #endif
         }
     }
-    SPDLOG_INFO("Data path: {}.", dataPath);
-    ResManInit(dataPath, savePath);
     
-    TaskSucceed(t);
+    SPDLOG_INFO("Save path: {}.", savePath);
+    SPDLOG_INFO("Data path: {}.", dataPath);
+    if (!ResManInit(dataPath, savePath))
+        return false;
+    
     return true;
 }
 
@@ -173,11 +168,10 @@ bool AppInit()
     
     TaskManager tm;
     TaskManInit(tm);
-    StrongTaskPtr t = TaskManAttachTask(tm, TaskCreate(InitSavePathTaskOnInit));
-    t = TaskAttachChild(t, TaskCreate(InitLogTaskOnInit));
-    t = TaskAttachChild(t, TaskCreate(InitSDLTaskOnInit));
-    t = TaskAttachChild(t, TaskCreate(InitPathsTaskOnInit));
-    // Run all tasks.
+    StrongTaskPtr t = TaskManAttachTask(tm, TaskCreate(AppInitSavePathTask));
+    t = TaskAttachChild(t, TaskCreate(AppInitLogTask));
+    t = TaskAttachChild(t, TaskCreate(AppInitSDLTask));
+    t = TaskAttachChild(t, TaskCreate(AppInitPathsTask));
     while (TaskManNumTasks(tm))
         TaskManUpdate(tm, 0.0f);
     TaskCount numFailed = TaskManNumFailed(tm);
@@ -190,6 +184,7 @@ bool AppInit()
 
 void AppCleanup()
 {
+    ResManCleanup();
     SDL_Quit();
     spdlog::shutdown();
     VerifySingleInstanceCleanup();
