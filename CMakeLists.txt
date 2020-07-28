@@ -3,67 +3,29 @@
 #  This file is part of Ellie.
 #==================================
 
-cmake_minimum_required(VERSION 3.15.6)
+cmake_minimum_required(VERSION 3.18.0)
 # Must include C or .c files will be silently ignored.
 project(ellie C CXX)
 
-# Set a default build type if none was specified.
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-  message(STATUS "Setting build type to 'Release' as none was specified.")
-  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build." FORCE)
-  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+  message(FATAL_ERROR "Build type must be specified.")
 endif()
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-
-
-set(ORGANIZATION "Ellie" CACHE STRING "May become part of a directory name and should be ASCII/UTF-8 with only letters, numbers, and spaces.")
-set(PROJECT_NAME "Ellie" CACHE STRING "May become part of a directory name and should be ASCII/UTF-8 with only letters, numbers, and spaces.")
-
-set(THIRDPARTY_SOURCES thirdparty/glad/glad.c thirdparty/imgui/imgui.cpp thirdparty/imgui/imgui_demo.cpp thirdparty/imgui/imgui_draw.cpp thirdparty/imgui/imgui_widgets.cpp thirdparty/imgui/examples/imgui_impl_opengl3.cpp thirdparty/imgui/examples/imgui_impl_sdl.cpp thirdparty/imgui/misc/cpp/imgui_stdlib.cpp)
-
-
-
-if(WIN32)
-# Windows.
-    # Remove "lib" prefix on DLL names.
-    set(CMAKE_SHARED_LIBRARY_PREFIX "")
-    set(CMAKE_SHARED_MODULE_PREFIX "")
-else()
-    message(FATAL_ERROR "Unknown OS.")
-endif()
-
-add_executable(ellie-bin src/main.cpp ${THIRDPARTY_SOURCES})
+add_executable(ellie-bin src/main.cpp)
 set_target_properties(ellie-bin PROPERTIES OUTPUT_NAME ellie)
-target_compile_definitions(ellie-bin PRIVATE ORGANIZATION="${ORGANIZATION}" PROJECT_NAME="${PROJECT_NAME}")
 
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang" AND NOT "x${CMAKE_CXX_SIMULATE_ID}" STREQUAL "xMSVC")
 # clang++.
     target_compile_options(ellie-bin PRIVATE -Werror -Wall -Wextra -Wpedantic -Wno-unused-parameter)
 else()
-    message(FATAL_ERROR "Unknown Compiler.")
+    message(FATAL_ERROR "Compiler not yet supported.")
 endif()
-
-
-
-target_include_directories(ellie-bin PRIVATE thirdparty/imgui thirdparty/imgui/examples thirdparty/imgui/misc/cpp)
-
-target_include_directories(ellie-bin PRIVATE thirdparty/glad)
-
-target_include_directories(ellie-bin PRIVATE thirdparty/glm)
-
-find_package(fmt 6.1.2 REQUIRED)
-target_link_libraries(ellie-bin fmt::fmt)
 
 find_package(SDL2 REQUIRED)
 target_include_directories(ellie-bin PRIVATE ${SDL2_INCLUDE_DIRS})
 target_link_libraries(ellie-bin ${SDL2_LIBRARIES})
-message(WARNING "SDL2 should be v2.0.10, but it can't be verified automatically.")
-
-find_package(spdlog 1.5.0 REQUIRED)
-target_link_libraries(ellie-bin spdlog::spdlog)
-
-target_include_directories(ellie-bin PRIVATE thirdparty/stb)
+message(WARNING "SDL2 should be v2.0.12, but it can't be verified automatically.")
