@@ -10,5 +10,3 @@
 
 # Windows folder config.
 **/desktop.ini
-
-# bin and deps have their own .gitignore.
