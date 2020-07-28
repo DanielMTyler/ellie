@@ -3,13 +3,16 @@ Copyright (C) 2020 Daniel M Tyler.
   This file is part of Ellie.
 ==================================
 
+Items are added here as they pop into my head and are in fairly random order.
+
 * Event/Message System.
 * Input System.
 * Q3/CSS CVar/Console Variable System for Options.
 * Entity Component System.
-* Reload library when modified or on command.
+* Game code in library that reloads when modified or on command.
 * OpenGL Debug Context support.
 * Loop editing (record commands, replay them forever until stopped) in player view.
 * Log PC specs, OpenGL info, etc.
 * Performance tracking (Memory Usage/Free/Total).
 * Telemetry tracking.
+* Task system (Game Coding Complete; basically pseudo-threads, but can be chained so that task completion activates another task).
