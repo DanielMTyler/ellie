@@ -4,9 +4,3 @@
 #   This file is part of Ellie.
 # ==================================
 #
-
-# Ignore everything in this folder.
-*
-
-# Except this file.
-!.gitignore
