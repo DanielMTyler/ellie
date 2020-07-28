@@ -9,8 +9,6 @@
 #define PLATFORM_HPP_INCLUDED
 
 #include "global.hpp"
-#include <SDL.h>
-#include <string>
 
 
 
