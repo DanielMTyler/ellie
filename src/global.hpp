@@ -8,12 +8,10 @@
 #ifndef GLOBAL_HPP_INCLUDED
 #define GLOBAL_HPP_INCLUDED
 
-#ifndef ORGANIZATION
-    #error ORGANIZATION isn't defined.
-#endif
-#ifndef PROJECT_NAME
-    #error PROJECT_NAME isn't defined.
-#endif
+// These are both used with SDL_GetPrefPath and are used to name the saves folder.
+#define PREFERENCES_ORG "DanielMTyler"
+#define PREFERENCES_APP "Ellie"
+
 
 
 #if defined(_WIN32) || defined(_WIN64)
@@ -60,94 +58,53 @@
 
 
 
-#include <cstddef> // (u)int(8/16/32/64)_t
-#include <cstdint> // size_t
-#include <cstring> // memset
-#include <list>    // list
-#include <memory>  // make_shared, shared_ptr, weak_ptr
-#include <string>  // string
-
-/*
-    WARNING: SDL.h must be included before windows.h or you'll get compile errors like this:
-        In file included from ..\..\src\platform_win64.cpp:143:
-        In file included from ..\..\src/core.cpp:10:
-        In file included from ..\..\deps\include\SDL2\SDL.h:38:
-        In file included from ..\..\deps\include\SDL2/SDL_cpuinfo.h:59:
-        In file included from C:\Program Files\LLVM\lib\clang\10.0.0\include\intrin.h:12:
-        In file included from C:\Program Files\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\x86_64-w64-mingw32\include\intrin.h:41:
-        C:\Program Files\mingw-w64\x86_64-8.1.0-posix-seh-rt_v6-rev0\mingw64\x86_64-w64-mingw32\include\psdk_inc/intrin-impl.h:1781:18: error: redefinition of '__builtin_ia32_xgetbv' as different kind of symbol
-        unsigned __int64 _xgetbv(unsigned int);
-    
-    WARNING: glad and spdlog both include windows.h and cause the problem above.
- */
-#include <SDL.h>
-
-#ifdef NDEBUG
-    #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_INFO
-#else
-    #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
-#endif
-#include <spdlog/spdlog.h>
-
-
-
 #define KIBIBYTES(v) ((v) * 1024LL)
 #define MEBIBYTES(v) (KIBIBYTES(v) * 1024LL)
 #define GIBIBYTES(v) (MEBIBYTES(v) * 1024LL)
 
 #define ARRAY_COUNT(a) (sizeof(a) / sizeof((a)[0]))
 
+#include <cstring> // memset
 #define ZERO_STRUCT(s) std::memset(&(s), 0, sizeof(s))
 
+/* @note Making global functions static does two things: it keeps them from being
+         exported and it makes them local to a translation/compilation unit. The
+         second item could be a problem in non-unity builds. */
+// These will hopefully make finding certain functions/variables easier.
+#define internal static
+#define global static
 
 
+
+#include <cstddef> // (u)int(8/16/32/64)_t
 typedef std::int8_t int8;
 typedef std::int16_t int16;
 typedef std::int32_t int32;
 typedef std::int64_t int64;
-
 typedef std::uint8_t uint8;
 typedef std::uint16_t uint16;
 typedef std::uint32_t uint32;
 typedef std::uint64_t uint64;
+typedef float float32;
+typedef double float64;
 
-typedef float real32;
-typedef double real64;
-
-typedef std::size_t MemoryIndex;
-typedef std::size_t MemorySize;
-
-typedef float DeltaTime;
-
-typedef spdlog::logger          Logger;
-typedef std::shared_ptr<Logger> StrongLoggerPtr;
-typedef std::weak_ptr<Logger>   WeakLoggerPtr;
+typedef float32 DeltaTime;
 
 
-struct ResultBool
-{
-    bool result;
-    std::string error;
-    
-    explicit operator bool() const { return result; }
-};
-
-const char* TrueFalseToStr(bool b)
+inline const char* TrueFalseBoolToStr(bool b)
 {
     return (b ? "True" : "False");
 }
 
-const char* OnOffToStr(bool b)
+inline const char* OnOffBoolToStr(bool b)
 {
     return (b ? "On" : "Off");
 }
 
 
-uint32 CheckedUInt64ToUInt32(uint64 v)
-{
-    SDL_assert_release(v <= 0xFFFFFFFF);
-    uint32 r = (uint32)v;
-    return r;
-}
+
+#include <string>  // string
+// @warning: This is included _now_ because of compile errors if windows.h is included first.
+#include <SDL.h>
 
 #endif // GLOBAL_HPP_INCLUDED.
