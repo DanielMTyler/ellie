@@ -119,23 +119,24 @@ inline const char* OnOffBoolToStr(bool b)
 
 
 // This is my non-exception based method of making error _reporting_ optional.
-global_variable std::string g_lastErrorInternal;
+global_variable std::string g_appError_;
 
 // Returns the last error (may be "") and clears it to "".
-inline std::string AppGetLastError()
+inline std::string AppGetError()
 {
-    std::string r = g_lastErrorInternal;
-    g_lastErrorInternal.clear();
+    std::string r = g_appError_;
+    g_appError_.clear();
     return r;
 }
 
-inline void AppSetLastError(std::string e)
+inline void AppSetError(std::string e)
 {
-    g_lastErrorInternal = e;
+    g_appError_ = e;
 }
 
 
 // @warning Don't use before SDL_Init.
+// @todo Eventually, custom logging functions may be better.
 #define LogInfo(...)    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, __VA_ARGS__)
 #define LogWarning(...) SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, __VA_ARGS__)
 #define LogDebug(...)   SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, __VA_ARGS__)
