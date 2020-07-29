@@ -1,3 +1,9 @@
+// @todo this whole file needs to be checked over and redone; add internal/global/etc.
+
+
+
+
+
 /*
     ==================================
     Copyright (C) 2020 Daniel M Tyler.
@@ -19,6 +25,7 @@
 
 
 
+#if 0
 // FileCopy/FileDelete avoids Windows' CopyFile/DeleteFile.
 ResultBool  FileCopy      (std::string  src, std::string dst, bool failIfExists);
 ResultBool  FileDelete    (std::string  file);
@@ -26,15 +33,49 @@ ResultBool  CreateTempFile(std::string& file);
 ResultBool  FileExists    (std::string  file);
 ResultBool  FolderExists  (std::string  folder);
 ResultBool  RetrieveCWD   (std::string& cwd);
+#endif
+
+// Calls AppSetLastError() on failure.
+bool RetrieveCWD(std::string& cwd)
+{
+    std::error_code ec;
+    std::filesystem::path p = std::filesystem::current_path(ec);
+    if (ec)
+    {
+        AppSetLastError(ec.message());
+        return false;
+    }
+    
+    cwd = p.string() + std::filesystem::path::preferred_separator;
+    return true;
+}
+
+// Calls AppSetLastError() on failure.
+bool FolderExists(std::string folder)
+{
+    std::error_code ec;
+    if (std::filesystem::is_directory(folder, ec))
+    {
+        return true;
+    }
+    else
+    {
+        if (ec)
+            AppSetLastError(ec.message());
+        
+        return false;
+    }
+}
 
 /// Returns true if we're alone OR if a failure occurs.
 /// Displays an error message to the user if another instance is running.
-bool VerifySingleInstanceInit();
-void VerifySingleInstanceCleanup();
+bool VerifySingleInstanceInit() { return true; }
+void VerifySingleInstanceCleanup() {}
 
 
 
-#ifdef OS_WINDOWS
+#define PATH_SEPARATOR "/"
+#if 0 //def OS_WINDOWS
 
 
 // @todo Support paths > MAX_PATH via Unicode/path prefixes.
@@ -261,7 +302,7 @@ void VerifySingleInstanceCleanup()
 
 
 
-#else
+//#else
     #error Unknown platform.
 #endif // OS_WINDOWS.
 

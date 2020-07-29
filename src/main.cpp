@@ -9,7 +9,11 @@
 
 
 
-bool AppInitSavePathTask(StrongTaskPtr t)
+global_variable std::string g_prefPath;
+
+
+
+internal bool AppInitSavePath()
 {
     // Must SDL_Init before SDL_GetPrefPath.
     if (SDL_Init(0) < 0)
@@ -18,87 +22,55 @@ bool AppInitSavePathTask(StrongTaskPtr t)
         return false;
     }
     
-    char* prefPath = SDL_GetPrefPath(ORGANIZATION, PROJECT_NAME);
+    char* prefPath = SDL_GetPrefPath(PREFERENCES_ORGANIZATION, PREFERENCES_APPLICATION);
     if (!prefPath)
     {
         std::cerr << "Failed to get save path: " << SDL_GetError() << "." << std::endl;
         return false;
     }
-    t->child->userData = new std::string(prefPath);
+    g_prefPath = prefPath;
     SDL_free(prefPath);
     prefPath = nullptr;
     
     return true;
 }
 
-bool AppInitLogTask(StrongTaskPtr t)
+internal void AppSDLLogOutputFunction(void* userdata, int category, SDL_LogPriority priority, const char* message)
 {
-    const std::string& savePath = *((std::string*)t->userData);
-    t->child->userData = t->userData;
-    
-    try
-    {
-        auto consoleSink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
-        auto fileSink = std::make_shared<spdlog::sinks::basic_file_sink_mt>(savePath + PROJECT_NAME + ".log", true);
-        
-        consoleSink->set_pattern("[%^%L%$] %v");
-        fileSink->set_pattern("%T [%L] %v");
-        
-        #ifdef NDEBUG
-            consoleSink->set_level(spdlog::level::info);
-            fileSink->set_level(spdlog::level::info);
-        #else
-            consoleSink->set_level(spdlog::level::trace);
-            fileSink->set_level(spdlog::level::trace);
-        #endif
-        
-        std::vector<spdlog::sink_ptr> loggerSinks;
-        loggerSinks.push_back(consoleSink);
-        loggerSinks.push_back(fileSink);
-        StrongLoggerPtr logger = std::make_shared<Logger>("default", loggerSinks.begin(), loggerSinks.end());
-        spdlog::register_logger(logger);
-        spdlog::set_default_logger(logger);
-    }
-    catch (const spdlog::spdlog_ex& ex)
-    {
-        delete (std::string*)t->userData;
-        std::cerr << "Failed to initialize logger: " << ex.what() << "." << std::endl;
-        return false;
-    }
+    // @todo Log to file and console; maybe cerr (works even with GUIs) and cout?
+    std::cout << message << std::endl;
+}
+
+internal bool AppInitLog()
+{
+    SDL_LogSetOutputFunction(AppSDLLogOutputFunction, nullptr);
     
     #ifndef NDEBUG
-        SPDLOG_WARN("Debug Build.");
+        LogWarning("Debug Build.");
     #endif
     
     return true;
 }
 
-bool AppInitSDLTask(StrongTaskPtr t)
+internal bool AppInitSDL()
 {
-    t->child->userData = t->userData;
-    
     if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
     {
-        delete (std::string*)t->userData;
-        SPDLOG_CRITICAL("Failed to initialize SDL: %s", SDL_GetError());
+        LogFatal("Failed to initialize SDL: %s", SDL_GetError());
         return false;
     }
-    SPDLOG_INFO("Initalized SDL.");
+    LogInfo("Initalized SDL.");
     
     return true;
 }
 
-bool AppInitPathsTask(StrongTaskPtr t)
+internal bool AppInitPaths()
 {
-    std::string savePath = *((std::string*)t->userData);
-    delete (std::string*)t->userData;
-    t->userData = nullptr;
-    
     // exePathBuf will end with a path separator, which is what we want.
     char* exePathBuf = SDL_GetBasePath();
     if (!exePathBuf)
     {
-        SPDLOG_CRITICAL("Failed to get executable path: {}.", SDL_GetError());
+        LogFatal("Failed to get executable path: %s.", SDL_GetError());
         return false;
     }
     std::string exePath = exePathBuf;
@@ -106,10 +78,9 @@ bool AppInitPathsTask(StrongTaskPtr t)
     exePathBuf = nullptr;
     
     std::string cwdPath;
-    ResultBool r = RetrieveCWD(cwdPath);
-    if (!r)
+    if (!RetrieveCWD(cwdPath))
     {
-        SPDLOG_CRITICAL("Failed to get the current working directory: {}.", r.error);
+        LogFatal("Failed to get the current working directory: %s.", AppGetLastError().c_str());
         return false;
     }
     
@@ -124,7 +95,7 @@ bool AppInitPathsTask(StrongTaskPtr t)
         if (!FolderExists(dataPath))
         {
             #ifdef NDEBUG
-                SPDLOG_CRITICAL("The data folder wasn't found in the current working directory ({}) or the executable directory ({}).", cwdPath, exePath);
+                LogFatal("The data folder wasn't found in the current working directory (%s) or the executable directory (%s).", cwdPath, exePath);
                 return false;
             #else
                 // Move cwdPath up 2 directories.
@@ -135,51 +106,46 @@ bool AppInitPathsTask(StrongTaskPtr t)
                 dataPath = releasePath + "data" + pathSep;
                 if (!FolderExists(dataPath))
                 {
-                    SPDLOG_CRITICAL("The data folder wasn't found in the current working directory ({}), the executable directory ({}), or \"<cwd>../../release/\" ({}).", cwdPath, exePath, releasePath);
+                    LogFatal("The data folder wasn't found in the current working directory (%s), the executable directory (%s), or \"<cwd>../../release/\" (%s).", cwdPath.c_str(), exePath.c_str(), releasePath.c_str());
                     return false;
                 }
             #endif
         }
     }
     
-    SPDLOG_INFO("Save path: {}.", savePath);
-    SPDLOG_INFO("Data path: {}.", dataPath);
-    if (!ResManInit(dataPath, savePath))
+    LogInfo("Save path: %s.", g_prefPath.c_str());
+    LogInfo("Data path: %s.", dataPath.c_str());
+    if (!ResManInit(dataPath, g_prefPath))
         return false;
     
     return true;
 }
 
-bool AppInit()
+internal bool AppInit()
 {
     if (!VerifySingleInstanceInit())
         return false;
     
-    TaskManager tm;
-    TaskManInit(tm);
-    StrongTaskPtr t = TaskManAttachTask(tm, TaskCreate(AppInitSavePathTask));
-    t = TaskAttachChild(t, TaskCreate(AppInitLogTask));
-    t = TaskAttachChild(t, TaskCreate(AppInitSDLTask));
-    t = TaskAttachChild(t, TaskCreate(AppInitPathsTask));
-    while (TaskManNumTasks(tm))
-        TaskManUpdate(tm, 0.0f);
-    TaskCount numFailed = TaskManNumFailed(tm);
-    TaskManCleanup(tm);
-    if (numFailed)
+    if (!AppInitSavePath())
+        return false;
+    if (!AppInitLog())
+        return false;
+    if (!AppInitSDL())
+        return false;
+    if (!AppInitPaths())
         return false;
     
     return true;
 }
 
-void AppCleanup()
+internal void AppCleanup()
 {
     ResManCleanup();
     SDL_Quit();
-    spdlog::shutdown();
     VerifySingleInstanceCleanup();
 }
 
-int AppLoop()
+internal int AppLoop()
 {
     // @todo dt and timeDilation should be in the logic system.
     bool quit = false;
@@ -206,7 +172,7 @@ int AppLoop()
 // @warning SDL 2 requires this function signature to avoid SDL_main linker errors.
 int main(int argc, char* argv[])
 {
-    int ret = 1;
+    int ret = 0;
     
     try
     {

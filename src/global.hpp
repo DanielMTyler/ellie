@@ -9,8 +9,8 @@
 #define GLOBAL_HPP_INCLUDED
 
 // These are both used with SDL_GetPrefPath and are used to name the saves folder.
-#define PREFERENCES_ORG "DanielMTyler"
-#define PREFERENCES_APP "Ellie"
+#define PREFERENCES_ORGANIZATION "DanielMTyler"
+#define PREFERENCES_APPLICATION  "Ellie"
 
 
 
@@ -67,13 +67,6 @@
 #include <cstring> // memset
 #define ZERO_STRUCT(s) std::memset(&(s), 0, sizeof(s))
 
-/* @note Making global functions static does two things: it keeps them from being
-         exported and it makes them local to a translation/compilation unit. The
-         second item could be a problem in non-unity builds. */
-// These will hopefully make finding certain functions/variables easier.
-#define internal static
-#define global static
-
 
 
 #include <cstdint> // (u)int(8/16/32/64)_t
@@ -91,6 +84,29 @@ typedef double float64;
 typedef float32 DeltaTime;
 
 
+
+// @warning: This is included _now_ because of compile errors if windows.h is included first.
+#include "SDL.h"
+
+#include <filesystem>
+#include <iostream>
+#include <string>
+
+
+
+/* @note Making global functions static does two things: it keeps them from being
+         exported and it makes them local to a translation/compilation unit. The
+         second item could be a problem in non-unity builds. Apparently, inline
+         functions don't need to be defined as internal, but I haven't looked
+         into it. */
+// @warning These have to come after include's, particularly thanks to internal.
+// These will hopefully make searching easier.
+#define internal static
+#define global static
+#define global_variable static
+
+
+
 inline const char* TrueFalseBoolToStr(bool b)
 {
     return (b ? "True" : "False");
@@ -102,10 +118,30 @@ inline const char* OnOffBoolToStr(bool b)
 }
 
 
+// This is my non-exception based method of making error _reporting_ optional.
+global_variable std::string g_lastErrorInternal;
 
-#include <string>  // string
-// @warning: This is included _now_ because of compile errors if windows.h is included first.
-#include <SDL2/SDL.h>
+// Returns the last error (may be "") and clears it to "".
+inline std::string AppGetLastError()
+{
+    std::string r = g_lastErrorInternal;
+    g_lastErrorInternal.clear();
+    return r;
+}
+
+inline void AppSetLastError(std::string e)
+{
+    g_lastErrorInternal = e;
+}
+
+
+// @warning Don't use before SDL_Init.
+#define LogInfo(...)    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, __VA_ARGS__)
+#define LogWarning(...) SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, __VA_ARGS__)
+#define LogDebug(...)   SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, __VA_ARGS__)
+#define LogFatal(...)   SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, __VA_ARGS__)
+
+
 
 #include "platform.hpp"
 #include "resources.hpp"
