@@ -22,7 +22,7 @@ internal bool AppInitSavePath()
         return false;
     }
     
-    char* prefPath = SDL_GetPrefPath(PREFERENCES_ORGANIZATION, PREFERENCES_APPLICATION);
+    char* prefPath = SDL_GetPrefPath(ORGANIZATION_NAME, APPLICATION_NAME);
     if (!prefPath)
     {
         std::cerr << "Failed to get save path: " << SDL_GetError() << "." << std::endl;

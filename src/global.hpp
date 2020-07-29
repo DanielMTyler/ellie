@@ -8,9 +8,9 @@
 #ifndef GLOBAL_HPP_INCLUDED
 #define GLOBAL_HPP_INCLUDED
 
-// These are both used with SDL_GetPrefPath and are used to name the saves folder.
-#define PREFERENCES_ORGANIZATION "DanielMTyler"
-#define PREFERENCES_APPLICATION  "Ellie"
+// These are used to name the saves folder among other things, so ASCII without spaces is probably best.
+#define ORGANIZATION_NAME "DanielMTyler"
+#define APPLICATION_NAME  "Ellie"
 
 
 
@@ -132,6 +132,11 @@ inline std::string AppGetError()
 inline void AppSetError(std::string e)
 {
     g_appError_ = e;
+}
+
+inline bool AppCheckError()
+{
+    return g_appError_.empty();
 }
 
 
