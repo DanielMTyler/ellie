@@ -7,10 +7,6 @@ cmake_minimum_required(VERSION 3.18.0)
 # Must include C or .c files will be silently ignored.
 project(ellie C CXX)
 
-if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-  message(FATAL_ERROR "Build type must be specified.")
-endif()
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_EXTENSIONS OFF)
