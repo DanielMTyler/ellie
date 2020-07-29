@@ -5,8 +5,12 @@
 # ==================================
 #
 
-# Temp files.
+# Temp files:
 *~
 
-# Windows folder config.
+# Windows folder config:
 **/desktop.ini
+
+# Emacs auto saves:
+*#*#
+**/.#*
