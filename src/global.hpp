@@ -76,7 +76,7 @@
 
 
 
-#include <cstddef> // (u)int(8/16/32/64)_t
+#include <cstdint> // (u)int(8/16/32/64)_t
 typedef std::int8_t int8;
 typedef std::int16_t int16;
 typedef std::int32_t int32;
@@ -105,6 +105,9 @@ inline const char* OnOffBoolToStr(bool b)
 
 #include <string>  // string
 // @warning: This is included _now_ because of compile errors if windows.h is included first.
-#include <SDL.h>
+#include <SDL2/SDL.h>
+
+#include "platform.hpp"
+#include "resources.hpp"
 
 #endif // GLOBAL_HPP_INCLUDED.

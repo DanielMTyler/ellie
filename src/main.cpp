@@ -6,17 +6,6 @@
 */
 
 #include "global.hpp"
-#include <SDL.h>
-#include <spdlog/sinks/basic_file_sink.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
-#include <exception> // exception
-#include <iostream>
-#include <memory> // make_shared, shared_ptr
-#include <string>
-#include <vector>
-#include "platform.hpp"
-#include "resources.hpp"
-#include "tasks.hpp"
 
 
 
@@ -214,7 +203,7 @@ int AppLoop()
 }
 
 
-// WARNING: SDL 2 requires this function signature; changing it will give "undefined reference to SDL_main" linker errors.
+// @warning SDL 2 requires this function signature to avoid SDL_main linker errors.
 int main(int argc, char* argv[])
 {
     int ret = 1;
