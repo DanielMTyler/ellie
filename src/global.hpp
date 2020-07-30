@@ -134,14 +134,18 @@ inline void AppSetError(std::string e)
     g_appError_ = e;
 }
 
-inline bool AppCheckError()
+inline bool AppHasError()
 {
     return g_appError_.empty();
 }
 
+inline void AppClearError()
+{
+    g_appError_.clear();
+}
 
-// @warning Don't use before SDL_Init.
-// @todo Eventually, custom logging functions may be better.
+
+// @note SDL logging works without initialization, so it can be used anytime :).
 #define LogInfo(...)    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, __VA_ARGS__)
 #define LogWarning(...) SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, __VA_ARGS__)
 #define LogDebug(...)   SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, __VA_ARGS__)
@@ -150,6 +154,5 @@ inline bool AppCheckError()
 
 
 #include "platform.hpp"
-#include "resources.hpp"
 
 #endif // GLOBAL_HPP_INCLUDED.

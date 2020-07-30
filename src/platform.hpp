@@ -21,16 +21,15 @@ internal bool RetrieveCWD(std::string& cwd);
 // Calls AppSetError() on failure.
 internal bool FolderExists(std::string folder);
 
-// Returns true if we're the only running instance.
-// Returns false and displays a pop-up error message to the user if another instance is running.
-// Returns false and calls AppSetError() on failure.
-internal bool ForceSingleInstanceInit();
+// Returns true if we're the only running instance or false if we're not; also returns false and calls AppSetError() on failure.
+internal bool CheckSingleInstanceInit();
 
-internal void ForceSingleInstanceCleanup();
+internal void CheckSingleInstanceCleanup();
 
 
 
-#ifdef OS_WINDOWS
+#if defined(OS_WINDOWS)
+    
     #define PATH_SEPARATOR "\\"
     
     
@@ -40,7 +39,7 @@ internal void ForceSingleInstanceCleanup();
     
     global_variable HANDLE g_windowsSingleInstanceMutex_ = nullptr;
     
-    internal bool ForceSingleInstanceInit()
+    internal bool CheckSingleInstanceInit()
     {
         SDL_assert(!g_windowsSingleInstanceMutex_);
         
@@ -51,17 +50,13 @@ internal void ForceSingleInstanceCleanup();
         {
             // GetLastError() should be ERROR_ALREADY_EXISTS || ERROR_ACCESS_DENIED.
             g_windowsSingleInstanceMutex_ = nullptr;
-	    LogFatal("Another instance is already running.");
-            const char* msg = "Another instance of " APPLICATION_NAME " is already running.";
-            const char* title = APPLICATION_NAME " Is Already Running";
-            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title, msg, nullptr);
             return false;
         }
         
         return true;
     }
     
-    internal void ForceSingleInstanceCleanup()
+    internal void CheckSingleInstanceCleanup()
     {
         if (g_windowsSingleInstanceMutex_)
         {
@@ -70,6 +65,24 @@ internal void ForceSingleInstanceCleanup();
         }
     }
 
+#elif defined(OS_LINUX)
+    
+    #define PATH_SEPARATOR "/"
+    
+    
+    internal bool CheckSingleInstanceInit()
+    {
+        // @todo
+        std::cerr << "TODO: CheckSingleInstanceInit." << std::endl;
+        return true;
+    }
+    
+    internal void CheckSingleInstanceCleanup()
+    {
+        // @todo
+        std::cerr << "TOOD: CheckSingleInstanceCleanup." << std::endl;
+    }
+    
 #else
     
     #error Unknown platform.
@@ -84,7 +97,7 @@ internal bool RetrieveCWD(std::string& cwd)
     std::filesystem::path p = std::filesystem::current_path(ec);
     if (ec)
     {
-        AppLastError(ec.message());
+        AppSetError(ec.message());
         return false;
     }
     
@@ -102,7 +115,7 @@ internal bool FolderExists(std::string folder)
     else
     {
         if (ec)
-            AppSetLastError(ec.message());
+            AppSetError(ec.message());
         
         return false;
     }

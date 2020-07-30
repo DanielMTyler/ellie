@@ -18,14 +18,14 @@ internal bool AppInitSavePath()
     // Must SDL_Init before SDL_GetPrefPath.
     if (SDL_Init(0) < 0)
     {
-        std::cerr << "Failed to initialze minimal SDL: " << SDL_GetError() << "." << std::endl;
+        LogFatal("Failed to initialze minimal SDL: %s.", SDL_GetError());
         return false;
     }
     
     char* prefPath = SDL_GetPrefPath(ORGANIZATION_NAME, APPLICATION_NAME);
     if (!prefPath)
     {
-        std::cerr << "Failed to get save path: " << SDL_GetError() << "." << std::endl;
+        LogFatal("Failed to get save path: %s.", SDL_GetError());
         return false;
     }
     g_prefPath = prefPath;
@@ -80,7 +80,7 @@ internal bool AppInitPaths()
     std::string cwdPath;
     if (!RetrieveCWD(cwdPath))
     {
-        LogFatal("Failed to get the current working directory: %s.", AppGetLastError().c_str());
+        LogFatal("Failed to get the current working directory: %s.", AppGetError().c_str());
         return false;
     }
     
@@ -115,16 +115,24 @@ internal bool AppInitPaths()
     
     LogInfo("Save path: %s.", g_prefPath.c_str());
     LogInfo("Data path: %s.", dataPath.c_str());
-    if (!ResManInit(dataPath, g_prefPath))
-        return false;
     
     return true;
 }
 
 internal bool AppInit()
 {
-    if (!VerifySingleInstanceInit())
+    if (!CheckSingleInstanceInit())
+    {
+        if (AppHasError())
+        {
+            LogFatal("Failed during check for other running instances: %s.", AppGetError().c_str());
+            const char* msg = "Another instance of " APPLICATION_NAME " is already running.";
+            const char* title = APPLICATION_NAME " Is Already Running";
+            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_WARNING, title, msg, nullptr);
+        }
+        
         return false;
+    }
     
     if (!AppInitSavePath())
         return false;
@@ -140,9 +148,8 @@ internal bool AppInit()
 
 internal void AppCleanup()
 {
-    ResManCleanup();
     SDL_Quit();
-    VerifySingleInstanceCleanup();
+    CheckSingleInstanceCleanup();
 }
 
 internal int AppLoop()
@@ -181,7 +188,7 @@ int main(int argc, char* argv[])
     }
     catch (const std::exception& e)
     {
-        std::cerr << e.what() << std::endl;
+        LogFatal("%s.", e.what());
     }
     
     AppCleanup();
