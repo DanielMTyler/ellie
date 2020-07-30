@@ -123,22 +123,14 @@ internal bool AppInit()
 {
     if (!CheckSingleInstanceInit())
     {
-        // Don't allow multiple instances right now; I don't want to deal with file writing issues.
-        
         if (AppHasError())
         {
-            // CheckSingleInstanceInit failed
-            
-            LogFatal("Failed during check for other running instances: %s.", AppGetError().c_str());
+            LogWarning("Failed while checking for other running instances: %s.", AppGetError().c_str());
         }
         else
         {
-            // We're not alone
-            
-            LogFatal("Another instance is already running.");
-            const char* msg = "Another instance of " APPLICATION_NAME " is already running.";
-            const char* title = APPLICATION_NAME " Is Already Running";
-            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_WARNING, title, msg, nullptr);
+            LogWarning("Another instance is already running.");
+            // @todo Maybe use SDL_ShowMessageBox to ask the user if they want to run another instance.
         }
 
         return false;

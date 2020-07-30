@@ -118,9 +118,9 @@ inline const char* OnOffBoolToStr(bool b)
 }
 
 
-// This is my non-exception based method of making error _reporting_ optional.
 global_variable std::string g_appError_;
 
+// This is my non-exception based method of making error _reporting_ optional.
 // Returns the last error (may be "") and clears it to "".
 inline std::string AppGetError()
 {
@@ -134,6 +134,7 @@ inline void AppSetError(std::string e)
     g_appError_ = e;
 }
 
+// @todo This is a silly name...
 inline bool AppHasError()
 {
     return g_appError_.empty();

@@ -73,14 +73,14 @@ internal void CheckSingleInstanceCleanup();
     internal bool CheckSingleInstanceInit()
     {
         // @todo
-        std::cerr << "TODO: CheckSingleInstanceInit." << std::endl;
+        std::cerr << "Implement: CheckSingleInstanceInit." << std::endl;
         return true;
     }
     
     internal void CheckSingleInstanceCleanup()
     {
         // @todo
-        std::cerr << "TOOD: CheckSingleInstanceCleanup." << std::endl;
+        std::cerr << "Implement: CheckSingleInstanceCleanup." << std::endl;
     }
     
 #else
@@ -100,8 +100,9 @@ internal bool RetrieveCWD(std::string& cwd)
         AppSetError(ec.message());
         return false;
     }
-    
-    cwd = p.string() + std::filesystem::path::preferred_separator;
+
+    // std::filesystem::path::preferred_separator can be a wchar, so I prefer PATH_SEPARATOR.
+    cwd = p.string() + PATH_SEPARATOR;
     return true;
 }
 
