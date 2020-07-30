@@ -87,6 +87,7 @@ typedef float32 DeltaTime;
 
 // @warning: This is included _now_ because of compile errors if windows.h is included first.
 #include "SDL.h"
+#include "SDL_syswm.h"
 
 #include <filesystem>
 #include <iostream>
@@ -115,6 +116,11 @@ inline const char* TrueFalseBoolToStr(bool b)
 inline const char* OnOffBoolToStr(bool b)
 {
     return (b ? "On" : "Off");
+}
+
+inline const char* YesNoBoolToStr(bool b)
+{
+    return (b ? "Yes" : "No");
 }
 
 

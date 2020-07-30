@@ -119,6 +119,139 @@ internal bool AppInitPaths()
     return true;
 }
 
+internal void ReportPowerState()
+{
+    int secondsLeft;
+    int batteryPercentage;
+    SDL_PowerState s = SDL_GetPowerInfo(&secondsLeft, &batteryPercentage);
+    
+    if (s == SDL_POWERSTATE_ON_BATTERY)
+    {
+        std::string time = "unknown time";
+        std::string charge = "unknown charge";
+        
+        if (batteryPercentage != -1)
+        {
+            charge = std::to_string(batteryPercentage) + "%";
+        }
+        
+        if (secondsLeft != -1)
+        {
+            int s = secondsLeft;
+            int m = 60;
+            int h = 60*m;
+            int hours = s/h;
+            s -= hours*h;
+            int minutes = s/m;
+            s -= minutes*m;
+            int seconds = s;
+            
+            if (hours > 0)
+                time = std::to_string(hours) + "h" + std::to_string(minutes) + "m" + std::to_string(seconds) + "s";
+            else if (minutes > 0)
+                time = std::to_string(minutes) + "m" + std::to_string(seconds) + "s";
+            else
+                time = std::to_string(seconds) + "s";
+        }
+        
+        LogInfo("- Power Source: Battery with %s and %s remaining.", charge.c_str(), time.c_str());
+    }
+    else if (s == SDL_POWERSTATE_NO_BATTERY)
+    {
+        LogInfo("- Power Source: AC with no battery.");
+    }
+    else if (s == SDL_POWERSTATE_CHARGING)
+    {
+        LogInfo("- Power Source: AC with a charging battery.");
+    }
+    else if (s == SDL_POWERSTATE_CHARGED)
+    {
+        LogInfo("- Power Source: AC with a fully charged battery.");
+    }
+    else
+    {
+        LogInfo("- Power Source: Unknown.");
+    }
+}
+
+internal void ReportSDLVersion()
+{
+    SDL_version c;
+    SDL_version l;
+    SDL_VERSION(&c);
+    SDL_GetVersion(&l);
+    LogInfo("- SDL version: %u.%u.%u compiled & %u.%u.%u linked.",
+            c.major, c.minor, c.patch, l.major, l.minor, l.patch);
+}
+
+internal void ReportWindowManager()
+{
+    SDL_Window* w = nullptr;
+    SDL_SysWMinfo i;
+    w = SDL_CreateWindow("", 0, 0, 0, 0, SDL_WINDOW_HIDDEN);
+    if (!w || !SDL_GetWindowWMInfo(w, &i))
+    {
+        // SDL_GetWindowWMInfo fails if the compiled and linked SDL versions don't match.
+        LogInfo("- Window Manager: Unknown.");
+        return;
+    }
+    else
+    {
+        SDL_DestroyWindow(w);
+        w = nullptr;
+    }
+    
+    const char* wm = "Unknown";
+    switch (i.subsystem)
+    {
+    case SDL_SYSWM_WINDOWS:  wm = "Microsoft Windows"; break;
+    case SDL_SYSWM_X11:      wm = "X Window System"; break;
+    case SDL_SYSWM_WINRT:    wm = "WinRT"; break;
+    case SDL_SYSWM_DIRECTFB: wm = "DirectFB"; break;
+    case SDL_SYSWM_COCOA:    wm = "Apple OS X"; break;
+    case SDL_SYSWM_UIKIT:    wm = "UIKit"; break;
+    case SDL_SYSWM_WAYLAND:  wm = "Wayland"; break;
+    case SDL_SYSWM_MIR:      wm = "Mir"; break;
+    case SDL_SYSWM_ANDROID:  wm = "Android"; break;
+    case SDL_SYSWM_VIVANTE:  wm = "Vivante"; break;
+    default: break;
+    }
+    
+    LogInfo("- Window Manager: %s.", wm);
+}
+
+internal void ReportRAM()
+{
+    LogInfo("- RAM: %i MiB.", SDL_GetSystemRAM());
+}
+
+internal void ReportCPU()
+{
+    #define YNS(b) YesNoBoolToStr(b)
+    LogInfo("- CPU: %i logical cores, L1 cache: %i bytes, 3DNow!: %s, AVX: %s, AVX2: %s, AltiVec: %s, MMX: %s, RDTSC: %s, SSE: %s, SSE2: %s, SSE3: %s, SSE4.1: %s, SSE4.2: %s.",
+            SDL_GetCPUCount(), SDL_GetCPUCacheLineSize(), YNS(SDL_Has3DNow()), YNS(SDL_HasAVX()), YNS(SDL_HasAVX2()), YNS(SDL_HasAltiVec()), YNS(SDL_HasMMX()), YNS(SDL_HasRDTSC()),
+            YNS(SDL_HasSSE()), YNS(SDL_HasSSE2()), YNS(SDL_HasSSE3()), YNS(SDL_HasSSE41()), YNS(SDL_HasSSE42()));
+    #undef YNS
+}
+
+internal void ReportGraphics()
+{
+    // @todo
+    LogInfo("- Graphics: Implement.");
+}
+
+internal void ReportSystemInformation()
+{
+    LogInfo("System Information:");
+    ReportPowerState();
+    LogInfo("- Platform: %s.", SDL_GetPlatform());
+    ReportSDLVersion();
+    ReportWindowManager();
+    ReportRAM();
+    ReportCPU();
+    ReportGraphics();
+}
+
 internal bool AppInit()
 {
     if (!CheckSingleInstanceInit())
@@ -144,6 +277,8 @@ internal bool AppInit()
         return false;
     if (!AppInitPaths())
         return false;
+
+    ReportSystemInformation();
     
     return true;
 }
