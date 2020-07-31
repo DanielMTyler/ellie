@@ -80,7 +80,7 @@ internal void LogSysInfoWindowManager_()
     w = SDL_CreateWindow("", 0, 0, 0, 0, SDL_WINDOW_HIDDEN);
     if (!w || !SDL_GetWindowWMInfo(w, &i))
     {
-        // SDL_GetWindowWMInfo fails if the compiled and linked SDL versions don't match.
+        // SDL_GetWindowWMInfo will fail if the compiled and linked SDL versions don't match <_<.
         LogInfo("- Window Manager: Unknown.");
         return;
     }

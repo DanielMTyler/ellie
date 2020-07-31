@@ -12,6 +12,13 @@
 #define ORGANIZATION_NAME "DanielMTyler"
 #define APPLICATION_NAME  "Ellie"
 
+#define MINIMUM_OPENGL_MAJOR 3
+#define MINIMUM_OPENGL_MINOR 3
+
+#define WINDOW_WIDTH 1280
+#define WINDOW_HEIGHT 720
+#define ENABLE_VYSNC 1
+
 
 
 #if defined(_WIN32) || defined(_WIN64)

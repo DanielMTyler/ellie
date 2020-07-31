@@ -10,6 +10,8 @@
 
 
 global_variable std::string g_prefPath;
+global_variable SDL_Window* g_window = nullptr;
+global_variable SDL_GLContext g_glContext = nullptr;
 
 
 
@@ -68,6 +70,12 @@ internal bool AppInitSDL()
         return false;
     }
     LogInfo("Initalized SDL.");
+
+    if (SDL_GL_LoadLibrary(nullptr))
+    {
+        LogFatal("SDL failed to load OpenGL: %s.", SDL_GetError());
+        return false;
+    }
     
     return true;
 }
@@ -127,6 +135,61 @@ internal bool AppInitPaths()
     return true;
 }
 
+internal bool AppInitWindow()
+{
+    if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, MINIMUM_OPENGL_MAJOR) ||
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, MINIMUM_OPENGL_MINOR) ||
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE))
+    {
+        LogFatal("Failed to set desired OpenGL version and profile attributes: %s.", SDL_GetError());
+        return false;
+    }
+    
+    g_window = SDL_CreateWindow(APPLICATION_NAME, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_OPENGL);
+    if (!g_window)
+    {
+        LogFatal("Failed to create window: %s.", SDL_GetError());
+        return false;
+    }
+    
+    g_glContext = SDL_GL_CreateContext(g_window);
+    if (!g_glContext)
+    {
+        LogFatal("Failed to create OpenGL context: %s.", SDL_GetError());
+        return false;
+    }
+    
+#if ENABLE_VSYNC
+    if (!SDL_GL_SetSwapInterval(1))
+        LogWarning("Failed to enable VSync: %s.", SDL_GetError());
+    else
+        LogInfo("Enabled VSync.");
+#else
+    LogInfo("Not setting VSync.");
+#endif // ENABLE_VSYNC.
+
+    return true;
+}
+
+internal bool AppInitOpenGL()
+{
+    if (!gladLoadGLLoader(SDL_GL_GetProcAddress))
+    {
+        LogFatal("Failed to load OpenGL.");
+        return false;
+    }
+    
+    if (GLVersion.major < MINIMUM_OPENGL_MAJOR ||
+        (GLVersion.major == MINIMUM_OPENGL_MAJOR && GLVersion.minor < MINIMUM_OPENGL_MINOR))
+    {
+        LogFatal("Loaded OpenGL v%i.%i, but need v%i.%i.", GLVersion.major, GLVersion.minor,
+                 MINIMUM_OPENGL_MAJOR, MINIMUM_OPENGL_MINOR);
+        return false;
+    }
+    
+    return true;
+}
+
 internal bool AppInit()
 {
     if (!CheckSingleInstanceInit())
@@ -152,14 +215,31 @@ internal bool AppInit()
         return false;
     if (!AppInitPaths())
         return false;
-
+    
     LogSystemInformation();
+
+    if (!AppInitWindow())
+        return false;
+    if (!AppInitOpenGL())
+        return false;
     
     return true;
 }
 
 internal void AppCleanup()
 {
+    if (g_glContext)
+    {
+        SDL_GL_DeleteContext(g_glContext);
+        g_glContext = nullptr;
+    }
+    
+    if (g_window)
+    {
+        SDL_DestroyWindow(g_window);
+        g_window = nullptr;
+    }
+    
     SDL_Quit();
     CheckSingleInstanceCleanup();
 }
@@ -181,7 +261,10 @@ internal int AppLoop()
         dtReal = (DeltaTime)(dtNow - dtLast) * 1000.0f / (DeltaTime)SDL_GetPerformanceFrequency();
         dt = dtReal * timeDilation;
         quit = true;
-        SDL_Delay(1);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+        SDL_GL_SwapWindow(g_window);
+        SDL_Delay(3000);
     }
     
     return 0;
