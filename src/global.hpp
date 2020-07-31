@@ -88,6 +88,9 @@ typedef float32 DeltaTime;
 // @warning: This is included _now_ because of compile errors if windows.h is included first.
 #include "SDL.h"
 #include "SDL_syswm.h"
+#include "../thirdparty/glad/src/glad.c"
+#include "../thirdparty/glad/include/glad/glad.h"
+#include "../thirdparty/glad/include/KHR/khrplatform.h"
 
 #include <filesystem>
 #include <iostream>
