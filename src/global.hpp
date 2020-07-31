@@ -161,5 +161,6 @@ inline void AppClearError()
 
 
 #include "platform.hpp"
+#include "system_information.hpp"
 
 #endif // GLOBAL_HPP_INCLUDED.

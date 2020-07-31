@@ -8,10 +8,6 @@
 #ifndef PLATFORM_HPP_INCLUDED
 #define PLATFORM_HPP_INCLUDED
 
-#include "global.hpp"
-
-
-
 // This is defined per OS.
 //#define PATH_SEPARATOR "/"
 
@@ -73,14 +69,14 @@ internal void CheckSingleInstanceCleanup();
     internal bool CheckSingleInstanceInit()
     {
         // @todo
-        std::cerr << "Implement: CheckSingleInstanceInit." << std::endl;
+        std::cerr << "TODO: CheckSingleInstanceInit." << std::endl;
         return true;
     }
     
     internal void CheckSingleInstanceCleanup()
     {
         // @todo
-        std::cerr << "Implement: CheckSingleInstanceCleanup." << std::endl;
+        std::cerr << "TODO: CheckSingleInstanceCleanup." << std::endl;
     }
     
 #else
