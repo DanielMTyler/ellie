@@ -38,7 +38,15 @@ internal bool AppInitSavePath()
 internal void AppSDLLogOutputFunction(void* userdata, int category, SDL_LogPriority priority, const char* message)
 {
     // @todo Log to file and console; maybe cerr (works even with GUIs) and cout?
-    std::cout << message << std::endl;
+    std::string prefix;
+    switch (priority)
+    {
+    case SDL_LOG_PRIORITY_DEBUG:    prefix = "[Debug] "; break;
+    case SDL_LOG_PRIORITY_WARN:     prefix = "[Warning] "; break;
+    case SDL_LOG_PRIORITY_CRITICAL: prefix = "[Fatal] "; break;
+    default: break;
+    }
+    std::cout << prefix << message << std::endl;
 }
 
 internal bool AppInitLog()
