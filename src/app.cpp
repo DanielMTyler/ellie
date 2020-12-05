@@ -117,6 +117,7 @@ int App::Loop()
     // @todo This whole function.
     LogInfo("Main loop.");
 
+    // @todo Deal with being minimized, toggling fullscreen, exiting, etc.
     // @todo dt and timeDilation should be in the logic system.
     bool quit = false;
     // Time Dilation is how fast time moves, e.g., 0.75f means everything moves at 75% speed.
@@ -148,7 +149,7 @@ int App::Loop()
 
     global_variable HANDLE g_windowsSingleInstanceMutex = nullptr;
 
-    bool App::ForceSingleInstanceInit()
+    bool App::ForceSingleInstanceInit() const
     {
         SDL_assert(!g_windowsSingleInstanceMutex);
 
@@ -165,7 +166,7 @@ int App::Loop()
         return true;
     }
 
-    void App::ForceSingleInstanceCleanup()
+    void App::ForceSingleInstanceCleanup() const
     {
         if (g_windowsSingleInstanceMutex)
         {
@@ -176,14 +177,14 @@ int App::Loop()
 
 #elif defined(OS_LINUX)
 
-    bool App::ForceSingleInstanceInit()
+    bool App::ForceSingleInstanceInit() const
     {
         // @todo
         LogWarning("TODO: ForceSingleInstanceInit.");
         return true;
     }
 
-    void App::ForceSingleInstanceCleanup()
+    void App::ForceSingleInstanceCleanup() const
     {
         // @todo
         LogWarning("TODO: ForceSingleInstanceCleanup.");
@@ -500,7 +501,7 @@ bool App::InitOpenGL()
     return true;
 }
 
-void App::LogSystemInfoPower()
+void App::LogSystemInfoPower() const
 {
     int secondsLeft;
     int batteryPercentage;
@@ -553,7 +554,7 @@ void App::LogSystemInfoPower()
     }
 }
 
-void App::LogSystemInfoSDLVersion()
+void App::LogSystemInfoSDLVersion() const
 {
     SDL_version c;
     SDL_version l;
@@ -563,7 +564,7 @@ void App::LogSystemInfoSDLVersion()
             c.major, c.minor, c.patch, l.major, l.minor, l.patch);
 }
 
-void App::LogSystemInfoWindowManager()
+void App::LogSystemInfoWindowManager() const
 {
     SDL_Window* w = nullptr;
     SDL_SysWMinfo i;
@@ -611,12 +612,12 @@ void App::LogSystemInfoWindowManager()
     LogInfo("- Window Manager: %s.", wm);
 }
 
-void App::LogSystemInfoRAM()
+void App::LogSystemInfoRAM() const
 {
     LogInfo("- RAM: %i MiB.", SDL_GetSystemRAM());
 }
 
-void App::LogSystemInfoCPU()
+void App::LogSystemInfoCPU() const
 {
     LogInfo("- CPU: %i logical cores, L1 cache: %i bytes, 3DNow!: %s, AVX: %s, AVX2: %s, AltiVec: %s, MMX: %s, RDTSC: %s, SSE: %s, SSE2: %s, SSE3: %s, SSE4.1: %s, SSE4.2: %s.",
             SDL_GetCPUCount(), SDL_GetCPUCacheLineSize(), YesNoBoolToStr(SDL_Has3DNow()), YesNoBoolToStr(SDL_HasAVX()), YesNoBoolToStr(SDL_HasAVX2()),
@@ -624,13 +625,13 @@ void App::LogSystemInfoCPU()
             YesNoBoolToStr(SDL_HasSSE()), YesNoBoolToStr(SDL_HasSSE2()), YesNoBoolToStr(SDL_HasSSE3()), YesNoBoolToStr(SDL_HasSSE41()), YesNoBoolToStr(SDL_HasSSE42()));
 }
 
-void App::LogSystemInfoGraphics()
+void App::LogSystemInfoGraphics() const
 {
     // @todo
     LogInfo("- Graphics: TODO.");
 }
 
-void App::LogSystemInfo()
+void App::LogSystemInfo() const
 {
     LogInfo("System Information:");
     LogSystemInfoPower();

@@ -11,6 +11,7 @@
 #include "global.hpp"
 #include "SDL.h"
 #include <string>
+#include "process_manager.hpp"
 
 class App {
 public:
@@ -31,6 +32,13 @@ public:
     const uint MULTISAMPLING_NUMSAMPLES = 4; // 2 or 4.
 
     const std::string PATH_SEP = PATH_SEPARATOR;
+
+    ProcessManager processManager;
+    // @todo Event Manager.
+    // @todo Resource Manager / Memory Manager.
+
+    // @todo Game Logic.
+    // @todo Game View.
 
     std::string SavePath() const { return m_savePath; }
     std::string DataPath() const { return m_dataPath; }
@@ -65,8 +73,8 @@ private:
     App() {};
 
     // Returns true if we're the only running instance or false if we're not; returns false after SetError() on failure.
-    bool ForceSingleInstanceInit();
-    void ForceSingleInstanceCleanup();
+    bool ForceSingleInstanceInit() const;
+    void ForceSingleInstanceCleanup() const;
 
     bool InitLog();
     bool InitSavePath();
@@ -77,13 +85,13 @@ private:
     bool InitWindow();
     bool InitOpenGL();
 
-    void LogSystemInfoPower();
-    void LogSystemInfoSDLVersion();
-    void LogSystemInfoWindowManager();
-    void LogSystemInfoRAM();
-    void LogSystemInfoCPU();
-    void LogSystemInfoGraphics();
-    void LogSystemInfo();
+    void LogSystemInfoPower() const;
+    void LogSystemInfoSDLVersion() const;
+    void LogSystemInfoWindowManager() const;
+    void LogSystemInfoRAM() const;
+    void LogSystemInfoCPU() const;
+    void LogSystemInfoGraphics() const;
+    void LogSystemInfo() const;
 };
 
 #endif // APP_HPP
