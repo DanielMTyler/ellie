@@ -8,9 +8,64 @@
 #include "view.hpp"
 #include "SDL.h"
 #include "SDL_syswm.h"
+#include <fstream>
 #include "../thirdparty/glad/include/glad/glad.h"
 #include "../thirdparty/glad/include/KHR/khrplatform.h"
 #include "app.hpp"
+
+global_variable uint g_vertexShader;
+global_variable uint g_fragmentShader;
+global_variable uint g_shaderProgram;
+
+/*global_variable float32 g_vertices[] = {
+    -0.5f, -0.5f, 0.0f,
+     0.5f, -0.5f, 0.0f,
+     0.0f,  0.5f, 0.0f
+};*/
+
+global_variable float32 g_vertices2[] = {
+     0.5f,  0.5f, 0.0f,  // top right
+     0.5f, -0.5f, 0.0f,  // bottom right
+    -0.5f, -0.5f, 0.0f,  // bottom left
+    -0.5f,  0.5f, 0.0f   // top left
+};
+global_variable uint g_indices2[] = {  // note that we start from 0!
+    0, 1, 3,   // first triangle
+    1, 2, 3    // second triangle
+};
+
+global_variable uint g_vbo;
+global_variable uint g_vao;
+global_variable uint g_ebo;
+
+
+uint LoadShaderFromFile(std::string file, bool vertex)
+{
+    App& a = App::Get();
+    std::string path = a.DataPath() + "shaders" + PATH_SEPARATOR + file;
+    std::ifstream f(path, std::ios::binary);
+    std::string content((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+
+    uint s;
+    if (vertex)
+        s = glCreateShader(GL_VERTEX_SHADER);
+    else
+        s = glCreateShader(GL_FRAGMENT_SHADER);
+
+    const char* b = content.c_str();
+    glShaderSource(s, 1, &b, nullptr);
+    glCompileShader(s);
+
+    int success;
+    char infoLog[512];
+    glGetShaderiv(s, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(s, 512, nullptr, infoLog);
+        LogFatal("Failed to compile shader %s: %s.", path.c_str(), infoLog);
+    }
+    return s;
+}
 
 bool View::Init()
 {
@@ -26,6 +81,41 @@ bool View::Init()
         return false;
     if (!InitOpenGL())
         return false;
+
+    g_vertexShader = LoadShaderFromFile("default.vert", true);
+    g_fragmentShader = LoadShaderFromFile("default.frag", false);
+
+    g_shaderProgram = glCreateProgram();
+    glAttachShader(g_shaderProgram, g_vertexShader);
+    glAttachShader(g_shaderProgram, g_fragmentShader);
+    glLinkProgram(g_shaderProgram);
+    glDeleteShader(g_vertexShader);
+    glDeleteShader(g_fragmentShader);
+
+    int success;
+    char infoLog[512];
+    glGetProgramiv(g_shaderProgram, GL_LINK_STATUS, &success);
+    if (!success)
+    {
+        glGetProgramInfoLog(g_shaderProgram, 512, nullptr, infoLog);
+        LogFatal("Failed to link shader program: %s.", infoLog);
+    }
+
+    glGenBuffers(1, &g_vbo);
+    glGenVertexArrays(1, &g_vao);
+
+    glBindVertexArray(g_vao);
+
+    glGenBuffers(1, &g_ebo);
+
+    glBindBuffer(GL_ARRAY_BUFFER, g_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertices2), g_vertices2, GL_STATIC_DRAW);
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(g_indices2), g_indices2, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float32), (void*)0);
+    glEnableVertexAttribArray(0);
 
     return true;
 }
@@ -61,8 +151,13 @@ bool View::Update(DeltaTime dt)
     }
 
     m_processManager.Update(dt);
+
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+    glUseProgram(g_shaderProgram);
+    glBindVertexArray(g_vao);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glBindVertexArray(0);
     SDL_GL_SwapWindow(m_window);
     SDL_Delay(1);
 
