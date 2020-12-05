@@ -12,6 +12,7 @@
 #include "SDL.h"
 #include <string>
 #include "process_manager.hpp"
+#include "view.hpp"
 
 class App {
 public:
@@ -19,26 +20,13 @@ public:
     const char* ORGANIZATION_NAME = "DanielMTyler";
     const char* APPLICATION_NAME  = "Ellie";
 
-    const uint MINIMUM_OPENGL_MAJOR = 3;
-    const uint MINIMUM_OPENGL_MINOR = 3;
-
-    const uint WINDOW_WIDTH  = 1280;
-    const uint WINDOW_HEIGHT = 720;
-
-    const bool ENABLE_VYSNC = true;
-    const bool ADAPTIVE_VSYNC = true; // Classic or Adaptive VSync?
-
-    const bool MULTISAMPLING = true;
-    const uint MULTISAMPLING_NUMSAMPLES = 4; // 2 or 4.
-
     const std::string PATH_SEP = PATH_SEPARATOR;
 
-    ProcessManager m_processManager;
+    View m_view;
+
     // @todo Event Manager.
     // @todo Resource Manager / Memory Manager.
-
-    // @todo Game Logic.
-    // @todo Game View.
+    // @todo Game Logic (with Time Dilation [simply multiply dt by it]).
 
     std::string SavePath() const { return m_savePath; }
     std::string DataPath() const { return m_dataPath; }
@@ -67,8 +55,7 @@ private:
     std::string m_executablePath;
     std::string m_cwd;
 
-    SDL_Window* m_window = nullptr;
-    SDL_GLContext m_glContext = nullptr;
+    ProcessManager m_processManager;
 
     App() {};
 
@@ -81,17 +68,6 @@ private:
     bool InitCWD();
     bool InitExecutablePath();
     bool InitDataPath();
-    bool InitSDL();
-    bool InitWindow();
-    bool InitOpenGL();
-
-    void LogSystemInfoPower() const;
-    void LogSystemInfoSDLVersion() const;
-    void LogSystemInfoWindowManager() const;
-    void LogSystemInfoRAM() const;
-    void LogSystemInfoCPU() const;
-    void LogSystemInfoGraphics() const;
-    void LogSystemInfo() const;
 };
 
 #endif // APP_HPP
