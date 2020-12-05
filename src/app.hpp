@@ -11,7 +11,6 @@
 #include "global.hpp"
 #include "SDL.h"
 #include <string>
-#include "process_manager.hpp"
 #include "view.hpp"
 
 class App {
@@ -55,19 +54,18 @@ private:
     std::string m_executablePath;
     std::string m_cwd;
 
-    ProcessManager m_processManager;
-
     App() {};
 
     // Returns true if we're the only running instance or false if we're not; returns false after SetError() on failure.
-    bool ForceSingleInstanceInit() const;
-    void ForceSingleInstanceCleanup() const;
+    bool ForceSingleInstanceInit_() const;
+    void ForceSingleInstanceCleanup_() const;
 
-    bool InitLog();
-    bool InitSavePath();
-    bool InitCWD();
-    bool InitExecutablePath();
-    bool InitDataPath();
+    bool InitLog_();
+    bool InitSDL_();
+    bool InitSavePath_();
+    bool InitCWD_();
+    bool InitExecutablePath_();
+    bool InitDataPath_();
 };
 
 #endif // APP_HPP

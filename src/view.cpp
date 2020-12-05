@@ -8,14 +8,11 @@
 #include "view.hpp"
 #include "SDL.h"
 #include "SDL_syswm.h"
-#include <fstream>
+#include <cstdio>
+#include <sstream>
 #include "../thirdparty/glad/include/glad/glad.h"
 #include "../thirdparty/glad/include/KHR/khrplatform.h"
 #include "app.hpp"
-
-global_variable uint g_vertexShader;
-global_variable uint g_fragmentShader;
-global_variable uint g_shaderProgram;
 
 /*global_variable float32 g_vertices[] = {
     -0.5f, -0.5f, 0.0f,
@@ -38,68 +35,31 @@ global_variable uint g_vbo;
 global_variable uint g_vao;
 global_variable uint g_ebo;
 
-
-uint LoadShaderFromFile(std::string file, bool vertex)
-{
-    App& a = App::Get();
-    std::string path = a.DataPath() + "shaders" + PATH_SEPARATOR + file;
-    std::ifstream f(path, std::ios::binary);
-    std::string content((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
-
-    uint s;
-    if (vertex)
-        s = glCreateShader(GL_VERTEX_SHADER);
-    else
-        s = glCreateShader(GL_FRAGMENT_SHADER);
-
-    const char* b = content.c_str();
-    glShaderSource(s, 1, &b, nullptr);
-    glCompileShader(s);
-
-    int success;
-    char infoLog[512];
-    glGetShaderiv(s, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(s, 512, nullptr, infoLog);
-        LogFatal("Failed to compile shader %s: %s.", path.c_str(), infoLog);
-    }
-    return s;
-}
-
 bool View::Init()
 {
-    // Assuming that our ProcessManager CAN be used for initialization first.
-    while (m_processManager.Count() > 0)
-        m_processManager.Update(0.0f);
-
     LogSystemInfo();
 
-    if (!InitSDL())
+    if (!InitOpenGLLibrary_())
         return false;
-    if (!InitWindow())
+    if (!InitWindowAndGLContext_())
         return false;
-    if (!InitOpenGL())
+    if (!InitOpenGL_())
         return false;
 
-    g_vertexShader = LoadShaderFromFile("default.vert", true);
-    g_fragmentShader = LoadShaderFromFile("default.frag", false);
+    m_shaderPath = App::Get().DataPath() + "shaders" + PATH_SEPARATOR;
 
-    g_shaderProgram = glCreateProgram();
-    glAttachShader(g_shaderProgram, g_vertexShader);
-    glAttachShader(g_shaderProgram, g_fragmentShader);
-    glLinkProgram(g_shaderProgram);
-    glDeleteShader(g_vertexShader);
-    glDeleteShader(g_fragmentShader);
+    glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
 
-    int success;
-    char infoLog[512];
-    glGetProgramiv(g_shaderProgram, GL_LINK_STATUS, &success);
-    if (!success)
-    {
-        glGetProgramInfoLog(g_shaderProgram, 512, nullptr, infoLog);
-        LogFatal("Failed to link shader program: %s.", infoLog);
-    }
+    if (!RequireShader("default", Shader::Type::Vertex))
+        return false;
+    if (!RequireShader("default", Shader::Type::Fragment))
+        return false;
+
+    ShaderList vertexShaders;
+    ShaderList fragmentShaders;
+    vertexShaders.push_back("default");
+    fragmentShaders.push_back("default");
+    CreateShaderProgram("default", vertexShaders, fragmentShaders);
 
     glGenBuffers(1, &g_vbo);
     glGenVertexArrays(1, &g_vao);
@@ -117,11 +77,29 @@ bool View::Init()
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float32), (void*)0);
     glEnableVertexAttribArray(0);
 
+    m_fpsTimer = SDL_GetPerformanceCounter();
+
     return true;
 }
 
 void View::Cleanup()
 {
+    if (!m_shaderPrograms.empty())
+    {
+        for (auto it = m_shaderPrograms.begin(); it != m_shaderPrograms.end(); it++)
+            glDeleteProgram(it->program);
+
+        m_shaderPrograms.clear();
+    }
+
+    if (m_shaders.empty())
+    {
+        for (auto it = m_shaders.begin(); it != m_shaders.end(); it++)
+            glDeleteShader(it->shader);
+
+        m_shaders.clear();
+    }
+
     if (m_glContext)
     {
         SDL_GL_DeleteContext(m_glContext);
@@ -150,29 +128,30 @@ bool View::Update(DeltaTime dt)
         }
     }
 
-    m_processManager.Update(dt);
+    if (((DeltaTime)(SDL_GetPerformanceCounter() - m_fpsTimer) / (DeltaTime)SDL_GetPerformanceFrequency()) >= 1.0f)
+    {
+        LogDebug("FPS: %u, DT: %f.", m_fpsCounter, dt);
+        m_fpsCounter = 0;
+        m_fpsTimer = SDL_GetPerformanceCounter();
+    }
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
-    glUseProgram(g_shaderProgram);
+    if (!UseShaderProgram("default"))
+        return false;
     glBindVertexArray(g_vao);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
     SDL_GL_SwapWindow(m_window);
     SDL_Delay(1);
 
+    m_fpsCounter++;
+
     return !quit;
 }
 
-bool View::InitSDL()
+bool View::InitOpenGLLibrary_()
 {
-    if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
-    {
-        LogFatal("Failed to initialize SDL: %s", SDL_GetError());
-        return false;
-    }
-    LogInfo("Initalized SDL.");
-
     if (SDL_GL_LoadLibrary(nullptr))
     {
         LogFatal("SDL failed to load OpenGL: %s.", SDL_GetError());
@@ -183,7 +162,7 @@ bool View::InitSDL()
     return true;
 }
 
-bool View::InitWindow()
+bool View::InitWindowAndGLContext_()
 {
     if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, MINIMUM_OPENGL_MAJOR))
     {
@@ -341,8 +320,9 @@ bool View::InitWindow()
     return true;
 }
 
-bool View::InitOpenGL()
+bool View::InitOpenGL_()
 {
+    // This requires an OpenGL context.
     if (!gladLoadGLLoader(SDL_GL_GetProcAddress))
     {
         LogFatal("Failed to load OpenGL library functions.");
@@ -358,12 +338,10 @@ bool View::InitOpenGL()
         return false;
     }
 
-    glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
-
     return true;
 }
 
-void View::LogSystemInfoPower() const
+void View::LogSystemInfoPower_() const
 {
     int secondsLeft;
     int batteryPercentage;
@@ -416,7 +394,7 @@ void View::LogSystemInfoPower() const
     }
 }
 
-void View::LogSystemInfoSDLVersion() const
+void View::LogSystemInfoSDLVersion_() const
 {
     SDL_version c;
     SDL_version l;
@@ -426,7 +404,7 @@ void View::LogSystemInfoSDLVersion() const
             c.major, c.minor, c.patch, l.major, l.minor, l.patch);
 }
 
-void View::LogSystemInfoWindowManager() const
+void View::LogSystemInfoWindowManager_() const
 {
     SDL_Window* w = nullptr;
     SDL_SysWMinfo i;
@@ -475,12 +453,12 @@ void View::LogSystemInfoWindowManager() const
     LogInfo("- Window Manager: %s.", wm);
 }
 
-void View::LogSystemInfoRAM() const
+void View::LogSystemInfoRAM_() const
 {
     LogInfo("- RAM: %i MiB.", SDL_GetSystemRAM());
 }
 
-void View::LogSystemInfoCPU() const
+void View::LogSystemInfoCPU_() const
 {
     LogInfo("- CPU: %i logical cores, L1 cache: %i bytes, 3DNow!: %s, AVX: %s, AVX2: %s, AltiVec: %s, MMX: %s, RDTSC: %s, SSE: %s, SSE2: %s, SSE3: %s, SSE4.1: %s, SSE4.2: %s.",
             SDL_GetCPUCount(), SDL_GetCPUCacheLineSize(), YesNoBoolToStr(SDL_Has3DNow()), YesNoBoolToStr(SDL_HasAVX()), YesNoBoolToStr(SDL_HasAVX2()),
@@ -488,7 +466,7 @@ void View::LogSystemInfoCPU() const
             YesNoBoolToStr(SDL_HasSSE()), YesNoBoolToStr(SDL_HasSSE2()), YesNoBoolToStr(SDL_HasSSE3()), YesNoBoolToStr(SDL_HasSSE41()), YesNoBoolToStr(SDL_HasSSE42()));
 }
 
-void View::LogSystemInfoGraphics() const
+void View::LogSystemInfoGraphics_() const
 {
     // @todo
     LogInfo("- Graphics: TODO.");
@@ -497,11 +475,280 @@ void View::LogSystemInfoGraphics() const
 void View::LogSystemInfo() const
 {
     LogInfo("System Information:");
-    LogSystemInfoPower();
+    LogSystemInfoPower_();
     LogInfo("- Platform: %s.", SDL_GetPlatform());
-    LogSystemInfoSDLVersion();
-    LogSystemInfoWindowManager();
-    LogSystemInfoRAM();
-    LogSystemInfoCPU();
-    LogSystemInfoGraphics();
+    LogSystemInfoSDLVersion_();
+    LogSystemInfoWindowManager_();
+    LogSystemInfoRAM_();
+    LogSystemInfoCPU_();
+    LogSystemInfoGraphics_();
+}
+
+bool View::IsShaderLoaded(std::string name, enum Shader::Type type)
+{
+    for (auto it = m_shaders.begin(); it != m_shaders.end(); it++)
+    {
+        if (it->type == type && it->name == name)
+            return true;
+    }
+
+    return false;
+}
+
+bool View::RetrieveShader(std::string name, enum Shader::Type type, uint& shader)
+{
+    for (auto it = m_shaders.begin(); it != m_shaders.end(); it++)
+    {
+        if (it->type == type && it->name == name)
+        {
+            shader = it->shader;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void View::DeleteShader(std::string name, enum Shader::Type type)
+{
+    for (auto it = m_shaders.begin(); it != m_shaders.end(); it++)
+    {
+        if (it->type == type && it->name == name)
+        {
+            glDeleteShader(it->shader);
+            m_shaders.erase(it);
+            return;
+        }
+    }
+}
+
+bool View::LoadShaderFile_(std::string name, enum Shader::Type type, std::string& contents)
+{
+    if (type == Shader::Type::Vertex)
+        name += ".vert";
+    else
+        name += ".frag";
+
+    LogInfo("Loading shader from file: %s.", name.c_str());
+
+    std::FILE* f = std::fopen((m_shaderPath + name).c_str(), "rb");
+    if (!f)
+    {
+        LogWarning("Failed to open file.");
+        return false;
+    }
+
+    const uint32 bufSize = KIBIBYTES(4);
+    char buf[bufSize];
+    std::stringstream ss;
+    bool hasRead = false;
+
+    while (!std::feof(f))
+    {
+        std::fread(buf, 1, bufSize, f);
+        if (std::ferror(f))
+        {
+            LogWarning("Failed to read from file.");
+            std::fclose(f);
+            f = nullptr;
+            return false;
+        }
+
+        hasRead = true;
+        ss << buf;
+    }
+
+    std::fclose(f);
+    f = nullptr;
+
+    if (!hasRead)
+    {
+        LogWarning("File was empty.");
+        return false;
+    }
+    else
+    {
+        contents = ss.str();
+        return true;
+    }
+}
+
+bool View::LoadShader_(std::string name, enum Shader::Type type, bool required)
+{
+    bool vertex = type == Shader::Type::Vertex;
+    LogInfo("Loading %s %s shader: %s.", (required ? "required" : "optional"), (vertex ? "vertex" : "fragment"), name.c_str());
+
+    if (IsShaderLoaded(name, type))
+    {
+        LogInfo("Shader already loaded.");
+        return true;
+    }
+
+    Shader s;
+    s.name = name;
+    s.type = type;
+
+    std::string shaderStr;
+    if (!LoadShaderFile_(name, type, shaderStr))
+    {
+        if (required)
+            LogFatal("Failed to load shader.");
+        else
+            LogWarning("Failed to load shader.");
+
+        return false;
+    }
+
+    if (vertex)
+        s.shader = glCreateShader(GL_VERTEX_SHADER);
+    else
+        s.shader = glCreateShader(GL_FRAGMENT_SHADER);
+
+    const char* shaderCStr = shaderStr.c_str();
+    glShaderSource(s.shader, 1, &shaderCStr, nullptr);
+    glCompileShader(s.shader);
+
+    int success;
+    const uint32 infoLogSize = KIBIBYTES(1);
+    char infoLog[infoLogSize];
+    glGetShaderiv(s.shader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(s.shader, infoLogSize, nullptr, infoLog);
+
+        if (required)
+            LogFatal("Failed to compile shader: %s.", infoLog);
+        else
+            LogWarning("Failed to compile shader: %s.", infoLog);
+
+        glDeleteShader(s.shader);
+        return false;
+    }
+
+    m_shaders.push_back(s);
+    return true;
+}
+
+bool View::IsShaderProgramCreated(std::string name)
+{
+    for (auto it = m_shaderPrograms.begin(); it != m_shaderPrograms.end(); it++)
+    {
+        if (it->name == name)
+            return true;
+    }
+
+    return false;
+}
+
+bool View::RetrieveShaderProgram(std::string name, uint& program)
+{
+    for (auto it = m_shaderPrograms.begin(); it != m_shaderPrograms.end(); it++)
+    {
+        if (it->name == name)
+        {
+            program = it->program;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void View::DeleteShaderProgram(std::string name)
+{
+    for (auto it = m_shaderPrograms.begin(); it != m_shaderPrograms.end(); it++)
+    {
+        if (it->name == name)
+        {
+            glDeleteProgram(it->program);
+            m_shaderPrograms.erase(it);
+            return;
+        }
+    }
+}
+
+bool View::CreateShaderProgram(std::string name, ShaderList vertexShaders, ShaderList fragmentShaders, bool deleteShadersOnSuccess)
+{
+    LogInfo("Creating shader program: %s.", name.c_str());
+
+    if (IsShaderProgramCreated(name))
+    {
+        LogFatal("Shader program already exists.");
+        return false;
+    }
+
+    if (vertexShaders.empty() && fragmentShaders.empty())
+    {
+        LogFatal("Shader lists are empty.");
+        return false;
+    }
+
+    ShaderProgram p;
+    p.name = name;
+    p.program = glCreateProgram();
+
+    for (auto it = vertexShaders.begin(); it != vertexShaders.end(); it++)
+    {
+        uint32 s;
+        if (!RetrieveShader(*it, Shader::Type::Vertex, s))
+        {
+            LogFatal("Vertex shader not loaded: %s.", it->c_str());
+            glDeleteProgram(p.program);
+            return false;
+        }
+
+        glAttachShader(p.program, s);
+    }
+
+    for (auto it = fragmentShaders.begin(); it != fragmentShaders.end(); it++)
+    {
+        uint32 s;
+        if (!RetrieveShader(*it, Shader::Type::Fragment, s))
+        {
+            LogFatal("Fragment shader not loaded: %s.", it->c_str());
+            glDeleteProgram(p.program);
+            return false;
+        }
+
+        glAttachShader(p.program, s);
+    }
+
+    glLinkProgram(p.program);
+
+    int success;
+    const uint32 infoLogSize = KIBIBYTES(1);
+    char infoLog[infoLogSize];
+    glGetProgramiv(p.program, GL_LINK_STATUS, &success);
+    if (!success)
+    {
+        glGetProgramInfoLog(p.program, infoLogSize, nullptr, infoLog);
+        LogFatal("Failed to link shader program: %s.", infoLog);
+        glDeleteProgram(p.program);
+        return false;
+    }
+
+    if (deleteShadersOnSuccess)
+    {
+        for (auto it = vertexShaders.begin(); it != vertexShaders.end(); it++)
+            DeleteShader(*it, Shader::Type::Vertex);
+
+        for (auto it = fragmentShaders.begin(); it != fragmentShaders.end(); it++)
+            DeleteShader(*it, Shader::Type::Fragment);
+    }
+
+    m_shaderPrograms.push_back(p);
+    return true;
+}
+
+bool View::UseShaderProgram(std::string name)
+{
+    uint32 p;
+    if (!RetrieveShaderProgram(name, p))
+    {
+        LogFatal("Tried to use non-existant shader program: %s.", name.c_str());
+        return false;
+    }
+
+    glUseProgram(p);
+    return true;
 }

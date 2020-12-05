@@ -54,11 +54,7 @@ bool App::FolderExists(std::string folder)
 
 bool App::Init()
 {
-    // Assuming that our ProcessManager is for initialization only.
-    while (m_processManager.Count() > 0)
-        m_processManager.Update(0.0f);
-
-    if (!ForceSingleInstanceInit())
+    if (!ForceSingleInstanceInit_())
     {
         if (HasError())
             LogWarning("Failed while checking for other running instances: %s.", LastError().c_str());
@@ -68,15 +64,17 @@ bool App::Init()
         return false;
     }
 
-    if (!InitLog())
+    if (!InitLog_())
         return false;
-    if (!InitSavePath())
+    if (!InitSDL_())
         return false;
-    if (!InitCWD())
+    if (!InitSavePath_())
         return false;
-    if (!InitExecutablePath())
+    if (!InitCWD_())
         return false;
-    if (!InitDataPath())
+    if (!InitExecutablePath_())
+        return false;
+    if (!InitDataPath_())
         return false;
     if (!m_view.Init())
         return false;
@@ -90,7 +88,7 @@ void App::Cleanup()
     LogInfo("Cleaning up.");
     m_view.Cleanup();
     SDL_Quit();
-    ForceSingleInstanceCleanup();
+    ForceSingleInstanceCleanup_();
 }
 
 int App::Loop()
@@ -120,7 +118,7 @@ int App::Loop()
 
     global_variable HANDLE g_windowsSingleInstanceMutex = nullptr;
 
-    bool App::ForceSingleInstanceInit() const
+    bool App::ForceSingleInstanceInit_() const
     {
         SDL_assert(!g_windowsSingleInstanceMutex);
 
@@ -137,7 +135,7 @@ int App::Loop()
         return true;
     }
 
-    void App::ForceSingleInstanceCleanup() const
+    void App::ForceSingleInstanceCleanup_() const
     {
         if (g_windowsSingleInstanceMutex)
         {
@@ -148,14 +146,14 @@ int App::Loop()
 
 #elif defined(OS_LINUX)
 
-    bool App::ForceSingleInstanceInit() const
+    bool App::ForceSingleInstanceInit_() const
     {
         // @todo
         LogWarning("TODO: ForceSingleInstanceInit.");
         return true;
     }
 
-    void App::ForceSingleInstanceCleanup() const
+    void App::ForceSingleInstanceCleanup_() const
     {
         // @todo
         LogWarning("TODO: ForceSingleInstanceCleanup.");
@@ -184,7 +182,7 @@ void LogOutputFunction(void* /*userdata*/, int /*category*/, SDL_LogPriority pri
 }
 #endif // 0
 
-bool App::InitLog()
+bool App::InitLog_()
 {
     //SDL_LogSetOutputFunction(LogOutputFunction, nullptr);
 
@@ -197,7 +195,18 @@ bool App::InitLog()
     return true;
 }
 
-bool App::InitSavePath()
+bool App::InitSDL_()
+{
+    if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
+    {
+        LogFatal("Failed to initialize SDL: %s", SDL_GetError());
+        return false;
+    }
+    LogInfo("Initalized SDL.");
+    return true;
+}
+
+bool App::InitSavePath_()
 {
     // Must SDL_Init before SDL_GetPrefPath.
     if (SDL_Init(0) < 0)
@@ -219,7 +228,7 @@ bool App::InitSavePath()
     return true;
 }
 
-bool App::InitCWD()
+bool App::InitCWD_()
 {
     std::error_code ec;
     std::filesystem::path p = std::filesystem::current_path(ec);
@@ -234,7 +243,7 @@ bool App::InitCWD()
     return true;
 }
 
-bool App::InitExecutablePath()
+bool App::InitExecutablePath_()
 {
     // exePathBuf will end with a path separator, which is what we want.
     char* exePathBuf = SDL_GetBasePath();
@@ -250,7 +259,7 @@ bool App::InitExecutablePath()
     return true;
 }
 
-bool App::InitDataPath()
+bool App::InitDataPath_()
 {
     // Find the data folder in cwd, executable path, or "<cwd>/../../release/".
     std::string releasePath = m_cwd;
