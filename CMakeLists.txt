@@ -16,7 +16,7 @@ set_target_properties(ellie-bin PROPERTIES OUTPUT_NAME ellie)
 
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang" AND NOT "x${CMAKE_CXX_SIMULATE_ID}" STREQUAL "xMSVC")
 # clang++.
-    target_compile_options(ellie-bin PRIVATE -Werror -Wall -Wextra -Wpedantic -Wno-unused-parameter)
+target_compile_options(ellie-bin PRIVATE -Werror -Wall -Wextra -Wpedantic)
 else()
     message(FATAL_ERROR "Compiler not yet supported.")
 endif()
