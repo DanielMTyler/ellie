@@ -33,7 +33,7 @@ public:
 
     const std::string PATH_SEP = PATH_SEPARATOR;
 
-    ProcessManager processManager;
+    ProcessManager m_processManager;
     // @todo Event Manager.
     // @todo Resource Manager / Memory Manager.
 

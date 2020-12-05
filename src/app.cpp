@@ -132,6 +132,7 @@ int App::Loop()
         dtNow = SDL_GetPerformanceCounter();
         dtReal = (DeltaTime)(dtNow - dtLast) * 1000.0f / (DeltaTime)SDL_GetPerformanceFrequency();
         dt = dtReal * timeDilation;
+        m_processManager.Update(dt);
         quit = true;
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
