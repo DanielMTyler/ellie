@@ -19,14 +19,17 @@ public:
     const uint MINIMUM_OPENGL_MAJOR = 3;
     const uint MINIMUM_OPENGL_MINOR = 3;
 
-    const uint WINDOW_WIDTH  = 1280;
-    const uint WINDOW_HEIGHT = 720;
+    const uint DESIRED_WINDOW_WIDTH  = 1280;
+    const uint DESIRED_WINDOW_HEIGHT = 720;
 
     const bool ENABLE_VYSNC = true;
     const bool ADAPTIVE_VSYNC = true; // Classic or Adaptive VSync?
 
     const bool MULTISAMPLING = true;
     const uint MULTISAMPLING_NUMSAMPLES = 4; // 2 or 4.
+
+    uint m_windowWidth  = DESIRED_WINDOW_WIDTH;
+    uint m_windowHeight = DESIRED_WINDOW_HEIGHT;
 
     bool Init();
     void Cleanup();

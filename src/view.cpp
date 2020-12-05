@@ -48,7 +48,7 @@ bool View::Init()
 
     m_shaderPath = App::Get().DataPath() + "shaders" + PATH_SEPARATOR;
 
-    glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
+    glViewport(0, 0, DESIRED_WINDOW_WIDTH, DESIRED_WINDOW_HEIGHT);
 
     if (!RequireShader("default", Shader::Type::Vertex))
         return false;
@@ -115,7 +115,6 @@ void View::Cleanup()
 
 bool View::Update(DeltaTime dt)
 {
-    // @todo On resize: glViewport(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT);
     // @todo Deal with being minimized, toggling fullscreen, exiting, etc.
     bool quit = false;
     SDL_Event e;
@@ -125,6 +124,16 @@ bool View::Update(DeltaTime dt)
         {
             quit = true;
             LogInfo("User requested quit.");
+        }
+        else if (e.type == SDL_WINDOWEVENT && e.window.event == SDL_WINDOWEVENT_RESIZED)
+        {
+            // @note SDL_WINDOWEVENT_RESIZED only fires if the window size
+            //       changed due to an external event, i.e., not an SDL call;
+            //       Also, initial window creation doesn't cause this either.
+            m_windowWidth  = e.window.data1;
+            m_windowHeight = e.window.data2;
+            glViewport(0, 0, m_windowWidth, m_windowHeight);
+            LogInfo("Window resized to %ux%u; viewport set.", m_windowWidth, m_windowHeight);
         }
     }
 
@@ -207,43 +216,12 @@ bool View::InitWindowAndGLContext_()
         LogInfo("Multisampling requested: No.");
     }
 
-    // @note It looks like VSync has to be set prior to window creation.
-    if (ENABLE_VYSNC)
-    {
-        if (ADAPTIVE_VSYNC)
-        {
-            if (!SDL_GL_SetSwapInterval(-1))
-            {
-                LogWarning("Failed to request Adaptive VSync: %s.", SDL_GetError());
-                if (!SDL_GL_SetSwapInterval(1))
-                    LogWarning("Failed to request Standard VSync: %s.", SDL_GetError());
-                else
-                    LogInfo("VSync Request: On.");
-            }
-            else
-            {
-                LogInfo("VSync Request: Adaptive.");
-            }
-        }
-        else
-        {
-            if (!SDL_GL_SetSwapInterval(1))
-                LogWarning("Failed to request Standard VSync: %s.", SDL_GetError());
-            else
-                LogInfo("VSync Request: On.");
-        }
-    }
-    else
-    {
-        if (!SDL_GL_SetSwapInterval(0))
-            LogWarning("Failed to request VSync off: %s.", SDL_GetError());
-        LogInfo("VSync Request: Off.");
-    }
-
     // @note Cleanup is handled by Cleanup().
     m_window = SDL_CreateWindow(App::Get().APPLICATION_NAME,
                                 SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                                WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_OPENGL);
+                                DESIRED_WINDOW_WIDTH, DESIRED_WINDOW_HEIGHT, SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE
+
+);
     if (!m_window)
     {
         LogFatal("Failed to create window: %s.", SDL_GetError());
@@ -259,6 +237,12 @@ bool View::InitWindowAndGLContext_()
         return false;
     }
     LogInfo("Created OpenGL Context.");
+    if (SDL_GL_MakeCurrent(m_window, m_glContext))
+    {
+        LogFatal("Failed to make OpenGL Context current: %s.", SDL_GetError());
+        return false;
+    }
+    LogInfo("Made OpenGL Context current.");
 
     int glMajor;
     if (SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &glMajor))
@@ -308,6 +292,39 @@ bool View::InitWindowAndGLContext_()
         return false;
     }
     LogInfo("Multisampling: %s with %i samples.", OnOffBoolToStr(multisampling), multisampling_numSamples);
+
+    // @note Sometimes SDL_GL_SetSwapInterval isn't allowed, but SDL_GL_GetSwapInterval works fine.
+    if (ENABLE_VYSNC)
+    {
+        if (ADAPTIVE_VSYNC)
+        {
+            if (!SDL_GL_SetSwapInterval(-1))
+            {
+                LogWarning("Failed to set Adaptive VSync: %s.", SDL_GetError());
+                if (!SDL_GL_SetSwapInterval(1))
+                    LogWarning("Failed to set Standard VSync: %s.", SDL_GetError());
+                else
+                    LogInfo("Set VSync: On.");
+            }
+            else
+            {
+                LogInfo("Set VSync: Adaptive.");
+            }
+        }
+        else
+        {
+            if (!SDL_GL_SetSwapInterval(1))
+                LogWarning("Failed to set Standard VSync: %s.", SDL_GetError());
+            else
+                LogInfo("Set VSync: On.");
+        }
+    }
+    else
+    {
+        if (!SDL_GL_SetSwapInterval(0))
+            LogWarning("Failed to set VSync off: %s.", SDL_GetError());
+        LogInfo("Set VSync: Off.");
+    }
 
     int vsync = SDL_GL_GetSwapInterval();
     if (vsync == 0)
