@@ -11,7 +11,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_executable(ellie-bin src/main.cpp)
+add_executable(ellie-bin thirdparty/glad/src/glad.c src/app.cpp src/main.cpp)
 set_target_properties(ellie-bin PROPERTIES OUTPUT_NAME ellie)
 
 if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang" AND NOT "x${CMAKE_CXX_SIMULATE_ID}" STREQUAL "xMSVC")
