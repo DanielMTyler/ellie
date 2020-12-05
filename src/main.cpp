@@ -37,7 +37,7 @@ internal bool AppInitSavePath()
     return true;
 }
 
-internal void AppSDLLogOutputFunction(void* userdata, int category, SDL_LogPriority priority, const char* message)
+internal void AppSDLLogOutputFunction(void* /*userdata*/, int /*category*/, SDL_LogPriority priority, const char* message)
 {
     // @todo Log to file and console; maybe cerr (works even with GUIs) and cout?
     std::string prefix;
@@ -272,7 +272,7 @@ internal int AppLoop()
 
 
 // @warning SDL 2 requires this function signature to avoid SDL_main linker errors.
-int main(int argc, char* argv[])
+int main(int /*argc*/, char* /*argv*/[])
 {
     int ret = 0;
     
