@@ -60,6 +60,7 @@ private:
     bool ForceSingleInstanceInit_() const;
     void ForceSingleInstanceCleanup_() const;
 
+    void InitLogSystemInfo_() const;
     bool InitSavePath_();
     bool InitCWD_();
     bool InitExecutablePath_();

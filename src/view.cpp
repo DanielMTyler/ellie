@@ -7,7 +7,6 @@
 
 #include "view.hpp"
 #include "SDL.h"
-#include "SDL_syswm.h"
 #include <cstdio>
 #include <sstream>
 #include "../thirdparty/glad/include/glad/glad.h"
@@ -16,8 +15,6 @@
 
 bool View::Init()
 {
-    LogSystemInfo();
-
     if (!InitOpenGLLibrary_())
         return false;
     if (!InitWindowAndGLContext_())
@@ -136,10 +133,10 @@ bool View::Update(DeltaTime dt)
             // @note SDL_WINDOWEVENT_RESIZED only fires if the window size
             //       changed due to an external event, i.e., not an SDL call;
             //       Also, initial window creation doesn't cause this either.
-            m_windowWidth  = e.window.data1;
-            m_windowHeight = e.window.data2;
-            glViewport(0, 0, m_windowWidth, m_windowHeight);
-            LogInfo("Window resized to %ux%u; viewport set.", m_windowWidth, m_windowHeight);
+            uint32 w = e.window.data1;
+            uint32 h = e.window.data2;
+            glViewport(0, 0, w, h);
+            LogInfo("Window resized to %ux%u; viewport set.", w, h);
         }
     }
 
@@ -362,149 +359,6 @@ bool View::InitOpenGL_()
     }
 
     return true;
-}
-
-void View::LogSystemInfoPower_() const
-{
-    int secondsLeft;
-    int batteryPercentage;
-    SDL_PowerState s = SDL_GetPowerInfo(&secondsLeft, &batteryPercentage);
-
-    if (s == SDL_POWERSTATE_ON_BATTERY)
-    {
-        std::string time = "unknown time";
-        std::string charge = "unknown charge";
-
-        if (batteryPercentage != -1)
-            charge = std::to_string(batteryPercentage) + "%";
-
-        if (secondsLeft != -1)
-        {
-            int s = secondsLeft;
-            int m = 60;
-            int h = 60*m;
-            int hours = s/h;
-            s -= hours*h;
-            int minutes = s/m;
-            s -= minutes*m;
-            int seconds = s;
-
-            if (hours > 0)
-                time = std::to_string(hours) + "h" + std::to_string(minutes) + "m" + std::to_string(seconds) + "s";
-            else if (minutes > 0)
-                time = std::to_string(minutes) + "m" + std::to_string(seconds) + "s";
-            else
-                time = std::to_string(seconds) + "s";
-        }
-
-        LogInfo("- Power Source: Battery with %s and %s remaining.", charge.c_str(), time.c_str());
-    }
-    else if (s == SDL_POWERSTATE_NO_BATTERY)
-    {
-        LogInfo("- Power Source: AC with no battery.");
-    }
-    else if (s == SDL_POWERSTATE_CHARGING)
-    {
-        LogInfo("- Power Source: AC with a charging battery.");
-    }
-    else if (s == SDL_POWERSTATE_CHARGED)
-    {
-        LogInfo("- Power Source: AC with a fully charged battery.");
-    }
-    else
-    {
-        LogInfo("- Power Source: Unknown.");
-    }
-}
-
-void View::LogSystemInfoSDLVersion_() const
-{
-    SDL_version c;
-    SDL_version l;
-    SDL_VERSION(&c);
-    SDL_GetVersion(&l);
-    LogInfo("- SDL version: %u.%u.%u compiled & %u.%u.%u linked.",
-            c.major, c.minor, c.patch, l.major, l.minor, l.patch);
-}
-
-void View::LogSystemInfoWindowManager_() const
-{
-    SDL_Window* w = nullptr;
-    SDL_SysWMinfo i;
-    SDL_VERSION(&i.version);
-
-    w = SDL_CreateWindow("View::LogSystemInfoWindowManager",
-                         SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                         1, 1, SDL_WINDOW_HIDDEN);
-    if (!w)
-    {
-        LogInfo("- Window Manager: Unknown (failed to create window: %s).", SDL_GetError());
-        return;
-    }
-    else
-    {
-        if (!SDL_GetWindowWMInfo(w, &i))
-        {
-            LogInfo("- Window Manager: Unknown (%s).", SDL_GetError());
-            SDL_DestroyWindow(w);
-            w = nullptr;
-            return;
-        }
-        else
-        {
-            SDL_DestroyWindow(w);
-            w = nullptr;
-        }
-    }
-
-    const char* wm = "Unknown";
-    switch (i.subsystem)
-    {
-    case SDL_SYSWM_WINDOWS:  wm = "Microsoft Windows"; break;
-    case SDL_SYSWM_X11:      wm = "X Window System"; break;
-    case SDL_SYSWM_WINRT:    wm = "WinRT"; break;
-    case SDL_SYSWM_DIRECTFB: wm = "DirectFB"; break;
-    case SDL_SYSWM_COCOA:    wm = "Apple OS X"; break;
-    case SDL_SYSWM_UIKIT:    wm = "UIKit"; break;
-    case SDL_SYSWM_WAYLAND:  wm = "Wayland"; break;
-    case SDL_SYSWM_MIR:      wm = "Mir"; break;
-    case SDL_SYSWM_ANDROID:  wm = "Android"; break;
-    case SDL_SYSWM_VIVANTE:  wm = "Vivante"; break;
-    default: break;
-    }
-
-    LogInfo("- Window Manager: %s.", wm);
-}
-
-void View::LogSystemInfoRAM_() const
-{
-    LogInfo("- RAM: %i MiB.", SDL_GetSystemRAM());
-}
-
-void View::LogSystemInfoCPU_() const
-{
-    LogInfo("- CPU: %i logical cores, L1 cache: %i bytes, 3DNow!: %s, AVX: %s, AVX2: %s, AltiVec: %s, MMX: %s, RDTSC: %s, SSE: %s, SSE2: %s, SSE3: %s, SSE4.1: %s, SSE4.2: %s.",
-            SDL_GetCPUCount(), SDL_GetCPUCacheLineSize(), YesNoBoolToStr(SDL_Has3DNow()), YesNoBoolToStr(SDL_HasAVX()), YesNoBoolToStr(SDL_HasAVX2()),
-            YesNoBoolToStr(SDL_HasAltiVec()), YesNoBoolToStr(SDL_HasMMX()), YesNoBoolToStr(SDL_HasRDTSC()),
-            YesNoBoolToStr(SDL_HasSSE()), YesNoBoolToStr(SDL_HasSSE2()), YesNoBoolToStr(SDL_HasSSE3()), YesNoBoolToStr(SDL_HasSSE41()), YesNoBoolToStr(SDL_HasSSE42()));
-}
-
-void View::LogSystemInfoGraphics_() const
-{
-    // @todo
-    LogInfo("- Graphics: TODO.");
-}
-
-void View::LogSystemInfo() const
-{
-    LogInfo("System Information:");
-    LogSystemInfoPower_();
-    LogInfo("- Platform: %s.", SDL_GetPlatform());
-    LogSystemInfoSDLVersion_();
-    LogSystemInfoWindowManager_();
-    LogSystemInfoRAM_();
-    LogSystemInfoCPU_();
-    LogSystemInfoGraphics_();
 }
 
 bool View::IsShaderLoaded(std::string name, enum Shader::Type type)

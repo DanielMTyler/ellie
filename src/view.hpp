@@ -16,6 +16,11 @@
 class View
 {
 public:
+    bool Init();
+    void Cleanup();
+    bool Update(DeltaTime dt); // Returns false when time to exit.
+
+private:
     const uint MINIMUM_OPENGL_MAJOR = 3;
     const uint MINIMUM_OPENGL_MINOR = 3;
 
@@ -28,14 +33,6 @@ public:
     const bool MULTISAMPLING = true;
     const uint MULTISAMPLING_NUMSAMPLES = 4; // 2 or 4.
 
-    uint m_windowWidth  = DESIRED_WINDOW_WIDTH;
-    uint m_windowHeight = DESIRED_WINDOW_HEIGHT;
-
-    bool Init();
-    void Cleanup();
-    bool Update(DeltaTime dt); // Returns false when time to exit.
-
-private:
     std::string m_shaderPath;
 
     SDL_Window* m_window = nullptr;
@@ -48,13 +45,7 @@ private:
     bool InitWindowAndGLContext_();
     bool InitOpenGL_();
 
-    void LogSystemInfoPower_() const;
-    void LogSystemInfoSDLVersion_() const;
-    void LogSystemInfoWindowManager_() const;
-    void LogSystemInfoRAM_() const;
-    void LogSystemInfoCPU_() const;
-    void LogSystemInfoGraphics_() const;
-    void LogSystemInfo() const;
+    // @todo Log Graphics Information.
 
     // @todo Everything below this really needs to be re-thought out.
     //       Too much individual functionality is being wrapped up, e.g., VBOs.
