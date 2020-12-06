@@ -38,53 +38,32 @@ private:
     SDL_Window* m_window = nullptr;
     SDL_GLContext m_glContext = nullptr;
 
-    uint64 m_fpsTimer;
+    uint64 m_fpsTimer = 0;
     uint32 m_fpsCounter = 0;
 
-    bool InitOpenGLLibrary_();
     bool InitWindowAndGLContext_();
-    bool InitOpenGL_();
-
+    bool InitGLFunctions_();
     // @todo Log Graphics Information.
 
-    // @todo Everything below this really needs to be re-thought out.
-    //       Too much individual functionality is being wrapped up, e.g., VBOs.
-    //       It'd be best to only wrap difficult things like Shader *Programs* or
-    //       hide the implementation details behind a DrawableEntity or something.
-
     struct Shader {
-        enum class Type { Vertex, Fragment };
-
-        std::string name;
-        enum Type type;
-        uint shader;
-    };
-
-    struct ShaderProgram {
         std::string name;
         uint program;
     };
 
     std::vector<Shader> m_shaders;
-
-    bool IsShaderLoaded(std::string name, enum Shader::Type type);
-    bool RetrieveShader(std::string name, enum Shader::Type type, uint& shader);
-    void DeleteShader(std::string name, enum Shader::Type type);
-
-    bool LoadShaderFile_(std::string name, enum Shader::Type type, std::string& contents);
-    bool LoadShader_(std::string name, enum Shader::Type type, bool required);
-
-    bool LoadShader(std::string name, enum Shader::Type type) { return LoadShader_(name, type, false); }
-    bool RequireShader(std::string name, enum Shader::Type type) { return LoadShader_(name, type, true); }
-
-    std::vector<ShaderProgram> m_shaderPrograms;
     typedef std::vector<std::string> ShaderList;
 
-    bool IsShaderProgramCreated(std::string name);
-    bool RetrieveShaderProgram(std::string name, uint& program);
-    void DeleteShaderProgram(std::string name);
-    bool CreateShaderProgram(std::string name, ShaderList vertexShaders, ShaderList fragmentShaders, bool deleteShadersOnSuccess = true);
-    bool UseShaderProgram(std::string name);
+    bool CreateShader(std::string name, ShaderList vertices, ShaderList fragments);
+    void DeleteShader(std::string name);
+    bool UseShader(std::string name);
+
+    bool LoadShader_(std::string name, bool vertex, uint32& shader);
+
+#if 0
+    // @todo Everything below this really needs to be re-thought out.
+    //       Too much individual functionality is being wrapped up, e.g., VBOs.
+    //       It'd be best to only wrap difficult things like Shader *Programs* or
+    //       hide the implementation details behind a DrawableEntity or something.
 
     struct VBO {
         std::string name;
@@ -103,6 +82,7 @@ private:
     //     GL_DYNAMIC_DRAW: the data is changed a lot and used many times.
     bool CreateVBO(std::string name, float32* vertices, uint32 usage);
     bool UseVBO(std::string name);
+#endif // 0
 };
 
 #endif // VIEW_HPP

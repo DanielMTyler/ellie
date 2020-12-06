@@ -7,37 +7,38 @@
 
 #include "view.hpp"
 #include "SDL.h"
-#include <cstdio>
-#include <sstream>
 #include "../thirdparty/glad/include/glad/glad.h"
 #include "../thirdparty/glad/include/KHR/khrplatform.h"
 #include "app.hpp"
 
 bool View::Init()
 {
-    if (!InitOpenGLLibrary_())
+    if (SDL_GL_LoadLibrary(nullptr))
+    {
+        LogFatal("Failed to load OpenGL library: %s.", SDL_GetError());
         return false;
+    }
+    LogInfo("Loaded OpenGL library.");
+
     if (!InitWindowAndGLContext_())
         return false;
-    if (!InitOpenGL_())
+    // @warning Requires active OpenGL Context.
+    if (!InitGLFunctions_())
         return false;
 
     m_shaderPath = App::Get().DataPath() + "shaders" + PATH_SEPARATOR;
+    m_fpsTimer = SDL_GetPerformanceCounter();
 
     glViewport(0, 0, DESIRED_WINDOW_WIDTH, DESIRED_WINDOW_HEIGHT);
-
-    if (!RequireShader("default", Shader::Type::Vertex))
-        return false;
-    if (!RequireShader("default", Shader::Type::Fragment))
-        return false;
 
     ShaderList vertexShaders;
     ShaderList fragmentShaders;
     vertexShaders.push_back("default");
     fragmentShaders.push_back("default");
-    if (!CreateShaderProgram("default", vertexShaders, fragmentShaders))
+    if (!CreateShader("default", vertexShaders, fragmentShaders))
         return false;
 
+#if 0
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float32), (void*)0);
     glEnableVertexAttribArray(0);
 
@@ -52,14 +53,14 @@ bool View::Init()
         return false;
     if (!UseVBO("default"))
         return false;
-
-    m_fpsTimer = SDL_GetPerformanceCounter();
+#endif // 0
 
     return true;
 }
 
 void View::Cleanup()
 {
+#if 0
     if (!m_vbos.empty())
     {
         for (auto it = m_vbos.begin(); it != m_vbos.end(); it++)
@@ -67,19 +68,12 @@ void View::Cleanup()
 
         m_vbos.clear();
     }
-
-    if (!m_shaderPrograms.empty())
-    {
-        for (auto it = m_shaderPrograms.begin(); it != m_shaderPrograms.end(); it++)
-            glDeleteProgram(it->program);
-
-        m_shaderPrograms.clear();
-    }
+#endif // 0
 
     if (!m_shaders.empty())
     {
         for (auto it = m_shaders.begin(); it != m_shaders.end(); it++)
-            glDeleteShader(it->shader);
+            glDeleteProgram(it->program);
 
         m_shaders.clear();
     }
@@ -99,6 +93,7 @@ void View::Cleanup()
 
 bool View::Update(DeltaTime dt)
 {
+#if 0
     static bool once = false;
     static uint32 vao;
     static uint32 ebo;
@@ -117,6 +112,7 @@ bool View::Update(DeltaTime dt)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
     }
+#endif // 0
 
     // @todo Deal with being minimized, toggling fullscreen, exiting, etc.
     bool quit = false;
@@ -149,29 +145,21 @@ bool View::Update(DeltaTime dt)
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
-    if (!UseShaderProgram("default"))
+
+    if (!UseShader("default"))
         return false;
+
+#if 0
     glBindVertexArray(vao);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
+#endif // 0
     SDL_GL_SwapWindow(m_window);
     SDL_Delay(1);
 
     m_fpsCounter++;
 
     return !quit;
-}
-
-bool View::InitOpenGLLibrary_()
-{
-    if (SDL_GL_LoadLibrary(nullptr))
-    {
-        LogFatal("SDL failed to load OpenGL: %s.", SDL_GetError());
-        return false;
-    }
-    LogInfo("Loaded OpenGL library.");
-
-    return true;
 }
 
 bool View::InitWindowAndGLContext_()
@@ -219,12 +207,10 @@ bool View::InitWindowAndGLContext_()
         LogInfo("Multisampling requested: No.");
     }
 
-    // @note Cleanup is handled by Cleanup().
     m_window = SDL_CreateWindow(App::Get().APPLICATION_NAME,
                                 SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                                DESIRED_WINDOW_WIDTH, DESIRED_WINDOW_HEIGHT, SDL_WINDOW_OPENGL|SDL_WINDOW_RESIZABLE
-
-);
+                                DESIRED_WINDOW_WIDTH, DESIRED_WINDOW_HEIGHT,
+                                SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
     if (!m_window)
     {
         LogFatal("Failed to create window: %s.", SDL_GetError());
@@ -232,11 +218,10 @@ bool View::InitWindowAndGLContext_()
     }
     LogInfo("Created window.");
 
-    // @note Cleanup is handled by Cleanup().
     m_glContext = SDL_GL_CreateContext(m_window);
     if (!m_glContext)
     {
-        LogFatal("Failed to create OpenGL context: %s.", SDL_GetError());
+        LogFatal("Failed to create OpenGL Context: %s.", SDL_GetError());
         return false;
     }
     LogInfo("Created OpenGL Context.");
@@ -340,20 +325,20 @@ bool View::InitWindowAndGLContext_()
     return true;
 }
 
-bool View::InitOpenGL_()
+bool View::InitGLFunctions_()
 {
-    // This requires an OpenGL context.
+    // @warning This requires an OpenGL Context.
     if (!gladLoadGLLoader(SDL_GL_GetProcAddress))
     {
-        LogFatal("Failed to load OpenGL library functions.");
+        LogFatal("Failed to load OpenGL functions.");
         return false;
     }
-    LogInfo("Loaded OpenGL library functions.");
+    LogInfo("Loaded OpenGL functions.");
 
     if (GLVersion.major < (int)MINIMUM_OPENGL_MAJOR ||
         (GLVersion.major == (int)MINIMUM_OPENGL_MAJOR && GLVersion.minor < (int)MINIMUM_OPENGL_MINOR))
     {
-        LogFatal("Loaded OpenGL v%i.%i, but need v%i.%i+.", GLVersion.major, GLVersion.minor,
+        LogFatal("Loaded OpenGL v%i.%i functions, but need v%i.%i+.", GLVersion.major, GLVersion.minor,
                  MINIMUM_OPENGL_MAJOR, MINIMUM_OPENGL_MINOR);
         return false;
     }
@@ -361,275 +346,176 @@ bool View::InitOpenGL_()
     return true;
 }
 
-bool View::IsShaderLoaded(std::string name, enum Shader::Type type)
+bool View::CreateShader(std::string name, ShaderList vertices, ShaderList fragments)
 {
-    for (auto it = m_shaders.begin(); it != m_shaders.end(); it++)
+    LogInfo("Creating shader: %s.", name.c_str());
+
+    if (vertices.empty() && fragments.empty())
     {
-        if (it->type == type && it->name == name)
-            return true;
-    }
-
-    return false;
-}
-
-bool View::RetrieveShader(std::string name, enum Shader::Type type, uint& shader)
-{
-    for (auto it = m_shaders.begin(); it != m_shaders.end(); it++)
-    {
-        if (it->type == type && it->name == name)
-        {
-            shader = it->shader;
-            return true;
-        }
-    }
-
-    return false;
-}
-
-void View::DeleteShader(std::string name, enum Shader::Type type)
-{
-    for (auto it = m_shaders.begin(); it != m_shaders.end(); it++)
-    {
-        if (it->type == type && it->name == name)
-        {
-            glDeleteShader(it->shader);
-            m_shaders.erase(it);
-            return;
-        }
-    }
-}
-
-bool View::LoadShaderFile_(std::string name, enum Shader::Type type, std::string& contents)
-{
-    if (type == Shader::Type::Vertex)
-        name += ".vert";
-    else
-        name += ".frag";
-
-    LogInfo("Loading shader from file: %s.", name.c_str());
-
-    std::FILE* f = std::fopen((m_shaderPath + name).c_str(), "rb");
-    if (!f)
-    {
-        LogWarning("Failed to open file.");
+        LogFatal("No vertex or fragment shaders provided.");
         return false;
     }
 
-    const uint32 bufSize = KIBIBYTES(4);
-    char buf[bufSize];
-    std::stringstream ss;
-    bool hasRead = false;
-
-    while (!std::feof(f))
+    for (auto it = m_shaders.begin(); it != m_shaders.end(); it++)
     {
-        std::fread(buf, 1, bufSize, f);
-        if (std::ferror(f))
+        if (it->name == name)
         {
-            LogWarning("Failed to read from file.");
-            std::fclose(f);
-            f = nullptr;
+            LogFatal("Shader already exists.");
             return false;
         }
-
-        hasRead = true;
-        ss << buf;
-    }
-
-    std::fclose(f);
-    f = nullptr;
-
-    if (!hasRead)
-    {
-        LogWarning("File was empty.");
-        return false;
-    }
-    else
-    {
-        contents = ss.str();
-        return true;
-    }
-}
-
-bool View::LoadShader_(std::string name, enum Shader::Type type, bool required)
-{
-    bool vertex = type == Shader::Type::Vertex;
-    LogInfo("Loading %s %s shader: %s.", (required ? "required" : "optional"), (vertex ? "vertex" : "fragment"), name.c_str());
-
-    if (IsShaderLoaded(name, type))
-    {
-        LogInfo("Shader already loaded.");
-        return true;
     }
 
     Shader s;
     s.name = name;
-    s.type = type;
+    s.program = glCreateProgram();
+    std::vector<uint32> shaders;
 
-    std::string shaderStr;
-    if (!LoadShaderFile_(name, type, shaderStr))
+    for (auto it = vertices.begin(); it != vertices.end(); it++)
     {
-        if (required)
-            LogFatal("Failed to load shader.");
-        else
-            LogWarning("Failed to load shader.");
+        uint32 shader;
+        if (!LoadShader_(*it, true, shader))
+        {
+            for (auto its = shaders.begin(); its != shaders.end(); its++)
+                glDeleteShader(*its);
+            shaders.clear();
+            glDeleteProgram(s.program);
+            return false;
+        }
 
-        return false;
+        shaders.push_back(shader);
+        glAttachShader(s.program, shader);
     }
 
-    if (vertex)
-        s.shader = glCreateShader(GL_VERTEX_SHADER);
-    else
-        s.shader = glCreateShader(GL_FRAGMENT_SHADER);
+    for (auto it = fragments.begin(); it != fragments.end(); it++)
+    {
+        uint32 shader;
+        if (!LoadShader_(*it, false, shader))
+        {
+            for (auto its = shaders.begin(); its != shaders.end(); its++)
+                glDeleteShader(*its);
+            shaders.clear();
+            glDeleteProgram(s.program);
+            return false;
+        }
 
-    const char* shaderCStr = shaderStr.c_str();
-    glShaderSource(s.shader, 1, &shaderCStr, nullptr);
-    glCompileShader(s.shader);
+        shaders.push_back(shader);
+        glAttachShader(s.program, shader);
+    }
+
+    glLinkProgram(s.program);
 
     int success;
     const uint32 infoLogSize = KIBIBYTES(1);
     char infoLog[infoLogSize];
-    glGetShaderiv(s.shader, GL_COMPILE_STATUS, &success);
+    glGetProgramiv(s.program, GL_LINK_STATUS, &success);
     if (!success)
     {
-        glGetShaderInfoLog(s.shader, infoLogSize, nullptr, infoLog);
+        glGetProgramInfoLog(s.program, infoLogSize, nullptr, infoLog);
+        LogFatal("Failed to link shader: %s.", infoLog);
 
-        if (required)
-            LogFatal("Failed to compile shader: %s.", infoLog);
-        else
-            LogWarning("Failed to compile shader: %s.", infoLog);
+        for (auto its = shaders.begin(); its != shaders.end(); its++)
+            glDeleteShader(*its);
+        shaders.clear();
 
-        glDeleteShader(s.shader);
+        glDeleteProgram(s.program);
         return false;
     }
+
+    for (auto its = shaders.begin(); its != shaders.end(); its++)
+        glDeleteShader(*its);
+    shaders.clear();
 
     m_shaders.push_back(s);
     return true;
 }
 
-bool View::IsShaderProgramCreated(std::string name)
+void View::DeleteShader(std::string name)
 {
-    for (auto it = m_shaderPrograms.begin(); it != m_shaderPrograms.end(); it++)
-    {
-        if (it->name == name)
-            return true;
-    }
+    LogInfo("Deleting shader if exists: %s.", name.c_str());
 
-    return false;
-}
-
-bool View::RetrieveShaderProgram(std::string name, uint& program)
-{
-    for (auto it = m_shaderPrograms.begin(); it != m_shaderPrograms.end(); it++)
-    {
-        if (it->name == name)
-        {
-            program = it->program;
-            return true;
-        }
-    }
-
-    return false;
-}
-
-void View::DeleteShaderProgram(std::string name)
-{
-    for (auto it = m_shaderPrograms.begin(); it != m_shaderPrograms.end(); it++)
+    for (auto it = m_shaders.begin(); it != m_shaders.end(); it++)
     {
         if (it->name == name)
         {
             glDeleteProgram(it->program);
-            m_shaderPrograms.erase(it);
-            return;
+            m_shaders.erase(it);
+            break;
         }
     }
 }
 
-bool View::CreateShaderProgram(std::string name, ShaderList vertexShaders, ShaderList fragmentShaders, bool deleteShadersOnSuccess)
+bool View::UseShader(std::string name)
 {
-    LogInfo("Creating shader program: %s.", name.c_str());
-
-    if (IsShaderProgramCreated(name))
+    if (name.empty())
     {
-        LogFatal("Shader program already exists.");
+        LogFatal("Tried to use shader with no name.");
         return false;
     }
 
-    if (vertexShaders.empty() && fragmentShaders.empty())
+    Shader* s = nullptr;
+    for (auto it = m_shaders.begin(); it != m_shaders.end(); it++)
     {
-        LogFatal("Shader lists are empty.");
+        if (it->name == name)
+        {
+            s = &(*it);
+            break;
+        }
+    }
+
+    if (!s)
+    {
+        LogFatal("Tried to use non-existant shader: %s.", name.c_str());
         return false;
     }
 
-    ShaderProgram p;
-    p.name = name;
-    p.program = glCreateProgram();
+    glUseProgram(s->program);
+    return true;
+}
 
-    for (auto it = vertexShaders.begin(); it != vertexShaders.end(); it++)
+bool View::LoadShader_(std::string name, bool vertex, uint32& shader)
+{
+    LogInfo("Loading %s shader: %s.", (vertex ? "vertex" : "fragment"), name.c_str());
+
+    if (name.empty())
     {
-        uint32 s;
-        if (!RetrieveShader(*it, Shader::Type::Vertex, s))
-        {
-            LogFatal("Vertex shader not loaded: %s.", it->c_str());
-            glDeleteProgram(p.program);
-            return false;
-        }
-
-        glAttachShader(p.program, s);
+        LogFatal("No name given.");
+        return false;
     }
 
-    for (auto it = fragmentShaders.begin(); it != fragmentShaders.end(); it++)
+    std::string file = m_shaderPath + name + (vertex ? ".vert" : ".frag");
+    std::string shaderStr;
+    if (!App::Get().LoadFile(file, shaderStr))
     {
-        uint32 s;
-        if (!RetrieveShader(*it, Shader::Type::Fragment, s))
-        {
-            LogFatal("Fragment shader not loaded: %s.", it->c_str());
-            glDeleteProgram(p.program);
-            return false;
-        }
-
-        glAttachShader(p.program, s);
+        LogFatal("Failed to load file.");
+        return false;
     }
 
-    glLinkProgram(p.program);
+    if (vertex)
+        shader = glCreateShader(GL_VERTEX_SHADER);
+    else
+        shader = glCreateShader(GL_FRAGMENT_SHADER);
+
+    const char* shaderCStr = shaderStr.c_str();
+    glShaderSource(shader, 1, &shaderCStr, nullptr);
+    glCompileShader(shader);
 
     int success;
     const uint32 infoLogSize = KIBIBYTES(1);
     char infoLog[infoLogSize];
-    glGetProgramiv(p.program, GL_LINK_STATUS, &success);
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
     if (!success)
     {
-        glGetProgramInfoLog(p.program, infoLogSize, nullptr, infoLog);
-        LogFatal("Failed to link shader program: %s.", infoLog);
-        glDeleteProgram(p.program);
+        glGetShaderInfoLog(shader, infoLogSize, nullptr, infoLog);
+        LogFatal("Failed to compile shader: %s.", infoLog);
+        glDeleteShader(shader);
+        shader = 0;
         return false;
     }
 
-    if (deleteShadersOnSuccess)
-    {
-        for (auto it = vertexShaders.begin(); it != vertexShaders.end(); it++)
-            DeleteShader(*it, Shader::Type::Vertex);
-
-        for (auto it = fragmentShaders.begin(); it != fragmentShaders.end(); it++)
-            DeleteShader(*it, Shader::Type::Fragment);
-    }
-
-    m_shaderPrograms.push_back(p);
     return true;
 }
 
-bool View::UseShaderProgram(std::string name)
-{
-    uint32 p;
-    if (!RetrieveShaderProgram(name, p))
-    {
-        LogFatal("Tried to use non-existant shader program: %s.", name.c_str());
-        return false;
-    }
-
-    glUseProgram(p);
-    return true;
-}
-
+#if 0
 bool View::IsVBOCreated(std::string name)
 {
     for (auto it = m_vbos.begin(); it != m_vbos.end(); it++)
@@ -702,3 +588,4 @@ bool View::UseVBO(std::string name)
     glBindBuffer(GL_ARRAY_BUFFER, v);
     return true;
 }
+#endif // 0

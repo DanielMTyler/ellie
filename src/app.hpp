@@ -41,6 +41,7 @@ public:
     void ClearError();
 
     bool FolderExists(std::string folder);
+    bool LoadFile(std::string file, std::string& contents);
 
     bool Init();
     void Cleanup();

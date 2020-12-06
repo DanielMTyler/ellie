@@ -7,6 +7,7 @@
 
 #include "app.hpp"
 #include "SDL_syswm.h"
+#include <cstdio>
 #include <filesystem>
 
 App& App::Get()
@@ -51,6 +52,28 @@ bool App::FolderExists(std::string folder)
 
         return false;
     }
+}
+
+bool App::LoadFile(std::string file, std::string& contents)
+{
+    LogInfo("Loading file: %s.", file.c_str());
+
+    std::FILE* f = std::fopen(file.c_str(), "rb");
+    if (!f)
+    {
+        LogWarning("Failed to open file.");
+        return false;
+    }
+
+    // @todo Add error checking.
+    std::fseek(f, 0, SEEK_END);
+    contents.clear();
+    contents.resize(std::ftell(f));
+    std::rewind(f);
+    std::fread(&contents[0], 1, contents.size(), f);
+    std::fclose(f);
+    f = nullptr;
+    return true;
 }
 
 bool App::Init()
