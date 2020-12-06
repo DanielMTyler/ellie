@@ -56,33 +56,12 @@ private:
     bool CreateShader(std::string name, ShaderList vertices, ShaderList fragments);
     void DeleteShader(std::string name);
     bool UseShader(std::string name);
+    bool ShaderSetBool  (std::string shader, std::string name, bool    value) const;
+    bool ShaderSetInt   (std::string shader, std::string name, int     value) const;
+    bool ShaderSetFloat (std::string shader, std::string name, float32 value) const;
+    bool ShaderSet3Float(std::string shader, std::string name, float32 x, float32 y, float32 z) const;
 
     bool LoadShader_(std::string name, bool vertex, uint32& shader);
-
-#if 0
-    // @todo Everything below this really needs to be re-thought out.
-    //       Too much individual functionality is being wrapped up, e.g., VBOs.
-    //       It'd be best to only wrap difficult things like Shader *Programs* or
-    //       hide the implementation details behind a DrawableEntity or something.
-
-    struct VBO {
-        std::string name;
-        uint vbo;
-        uint32 usage;
-    };
-
-    std::vector<VBO> m_vbos;
-
-    bool IsVBOCreated(std::string name);
-    bool RetrieveVBO(std::string name, uint& vbo);
-    void DeleteVBO(std::string name);
-    // usage:
-    //     GL_STREAM_DRAW:  the data is set only once and used by the GPU at most a few times.
-    //     GL_STATIC_DRAW:  the data is set only once and used many times.
-    //     GL_DYNAMIC_DRAW: the data is changed a lot and used many times.
-    bool CreateVBO(std::string name, float32* vertices, uint32 usage);
-    bool UseVBO(std::string name);
-#endif // 0
 };
 
 #endif // VIEW_HPP

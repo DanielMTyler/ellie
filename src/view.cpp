@@ -11,6 +11,10 @@
 #include "../thirdparty/glad/include/KHR/khrplatform.h"
 #include "app.hpp"
 
+global_variable uint32 g_vbo = 0;
+global_variable uint32 g_vao = 0;
+global_variable uint32 g_ebo = 0;
+
 bool View::Init()
 {
     if (SDL_GL_LoadLibrary(nullptr))
@@ -38,37 +42,52 @@ bool View::Init()
     if (!CreateShader("default", vertexShaders, fragmentShaders))
         return false;
 
-#if 0
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float32), (void*)0);
-    glEnableVertexAttribArray(0);
-
     float32 vertices[] = {
          0.5f,  0.5f, 0.0f,  // top right
          0.5f, -0.5f, 0.0f,  // bottom right
         -0.5f, -0.5f, 0.0f,  // bottom left
         -0.5f,  0.5f, 0.0f   // top left
     };
+    uint32 indices[] = {  // note that we start from 0!
+        0, 1, 3,   // first triangle
+        1, 2, 3    // second triangle
+    };
 
-    if (!CreateVBO("default", vertices, GL_STATIC_DRAW))
-        return false;
-    if (!UseVBO("default"))
-        return false;
-#endif // 0
+    glGenVertexArrays(1, &g_vao);
+    glBindVertexArray(g_vao);
 
+    glGenBuffers(1, &g_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, g_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    glGenBuffers(1, &g_ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float32), nullptr);
+    glEnableVertexAttribArray(0);
     return true;
 }
 
 void View::Cleanup()
 {
-#if 0
-    if (!m_vbos.empty())
+    if (g_ebo)
     {
-        for (auto it = m_vbos.begin(); it != m_vbos.end(); it++)
-            glDeleteBuffers(1, &(it->vbo));
-
-        m_vbos.clear();
+        glDeleteBuffers(1, &g_ebo);
+        g_ebo = 0;
     }
-#endif // 0
+
+    if (g_vao)
+    {
+        glDeleteVertexArrays(1, &g_vao);
+        g_vao = 0;
+    }
+
+    if (g_vbo)
+    {
+        glDeleteBuffers(1, &g_vbo);
+        g_vbo = 0;
+    }
 
     if (!m_shaders.empty())
     {
@@ -93,27 +112,6 @@ void View::Cleanup()
 
 bool View::Update(DeltaTime dt)
 {
-#if 0
-    static bool once = false;
-    static uint32 vao;
-    static uint32 ebo;
-    static uint indices[] = {  // note that we start from 0!
-        0, 1, 3,   // first triangle
-        1, 2, 3    // second triangle
-    };
-
-    if (!once)
-    {
-        once = true;
-        glGenVertexArrays(1, &vao);
-        glBindVertexArray(vao);
-
-        glGenBuffers(1, &ebo);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-    }
-#endif // 0
-
     // @todo Deal with being minimized, toggling fullscreen, exiting, etc.
     bool quit = false;
     SDL_Event e;
@@ -149,11 +147,10 @@ bool View::Update(DeltaTime dt)
     if (!UseShader("default"))
         return false;
 
-#if 0
-    glBindVertexArray(vao);
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    glBindVertexArray(g_vao);
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
     glBindVertexArray(0);
-#endif // 0
+
     SDL_GL_SwapWindow(m_window);
     SDL_Delay(1);
 
@@ -472,6 +469,92 @@ bool View::UseShader(std::string name)
     return true;
 }
 
+bool View::ShaderSetBool(std::string shader, std::string name, bool value) const
+{
+    return ShaderSetInt(shader, name, (int)value);
+}
+
+bool View::ShaderSetInt(std::string shader, std::string name, int value) const
+{
+    if (shader.empty())
+    {
+        LogFatal("Tried to set shader int with no shader name.");
+        return false;
+    }
+    if (name.empty())
+    {
+        LogFatal("Tried to set unnamed shader (%s) int.", shader.c_str());
+        return false;
+    }
+
+    for (auto it = m_shaders.begin(); it != m_shaders.end(); it++)
+    {
+        if (it->name == shader)
+        {
+            uint32 s = it->program;
+            glUniform1i(glGetUniformLocation(s, name.c_str()), value);
+            return true;
+        }
+    }
+
+    LogFatal("Tried to set shader (%s) int (%s), but shader doesn't exist.", shader.c_str(), name.c_str());
+    return false;
+}
+
+bool View::ShaderSetFloat(std::string shader, std::string name, float32 value) const
+{
+    if (shader.empty())
+    {
+        LogFatal("Tried to set shader float with no shader name.");
+        return false;
+    }
+    if (name.empty())
+    {
+        LogFatal("Tried to set unnamed shader (%s) float.", shader.c_str());
+        return false;
+    }
+
+    for (auto it = m_shaders.begin(); it != m_shaders.end(); it++)
+    {
+        if (it->name == shader)
+        {
+            uint32 s = it->program;
+            glUniform1f(glGetUniformLocation(s, name.c_str()), value);
+            return true;
+        }
+    }
+
+    LogFatal("Tried to set shader (%s) float (%s), but shader doesn't exist.", shader.c_str(), name.c_str());
+    return false;
+}
+
+bool View::ShaderSet3Float(std::string shader, std::string name, float32 x, float32 y, float32 z) const
+{
+    if (shader.empty())
+    {
+        LogFatal("Tried to set shader 3 float with no shader name.");
+        return false;
+    }
+    if (name.empty())
+    {
+        LogFatal("Tried to set unnamed shader (%s) 3 float.", shader.c_str());
+        return false;
+    }
+
+    for (auto it = m_shaders.begin(); it != m_shaders.end(); it++)
+    {
+        if (it->name == shader)
+        {
+            uint32 s = it->program;
+            glUniform3f(glGetUniformLocation(s, name.c_str()), x, y, z);
+            return true;
+        }
+    }
+
+    LogFatal("Tried to set shader (%s) 3 float (%s), but shader doesn't exist.", shader.c_str(), name.c_str());
+    return false;
+}
+
 bool View::LoadShader_(std::string name, bool vertex, uint32& shader)
 {
     LogInfo("Loading %s shader: %s.", (vertex ? "vertex" : "fragment"), name.c_str());
@@ -514,78 +597,3 @@ bool View::LoadShader_(std::string name, bool vertex, uint32& shader)
 
     return true;
 }
-
-#if 0
-bool View::IsVBOCreated(std::string name)
-{
-    for (auto it = m_vbos.begin(); it != m_vbos.end(); it++)
-    {
-        if (it->name == name)
-            return true;
-    }
-
-    return false;
-}
-
-bool View::RetrieveVBO(std::string name, uint& vbo)
-{
-    for (auto it = m_vbos.begin(); it != m_vbos.end(); it++)
-    {
-        if (it->name == name)
-        {
-            vbo = it->vbo;
-            return true;
-        }
-    }
-
-    return false;
-}
-
-void View::DeleteVBO(std::string name)
-{
-    for (auto it = m_vbos.begin(); it != m_vbos.end(); it++)
-    {
-        if (it->name == name)
-        {
-            glDeleteBuffers(1, &(it->vbo));
-            m_vbos.erase(it);
-            return;
-        }
-    }
-}
-
-bool View::CreateVBO(std::string name, float32* vertices, uint32 usage)
-{
-    LogInfo("Creating VBO: %s.", name.c_str());
-
-    if (!vertices)
-    {
-        LogFatal("Vertices is nullptr.");
-        return false;
-    }
-
-    VBO v;
-    v.name = name;
-    v.usage = usage;
-    glGenBuffers(1, &v.vbo);
-
-    glBindBuffer(GL_ARRAY_BUFFER, v.vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, usage);
-
-    m_vbos.push_back(v);
-    return true;
-}
-
-bool View::UseVBO(std::string name)
-{
-    uint32 v;
-    if (!RetrieveVBO(name, v))
-    {
-        LogFatal("Tried to use non-existant VBO: %s.", name.c_str());
-        return false;
-    }
-
-    glBindBuffer(GL_ARRAY_BUFFER, v);
-    return true;
-}
-#endif // 0
