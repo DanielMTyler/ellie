@@ -56,6 +56,11 @@ private:
     void LogSystemInfoGraphics_() const;
     void LogSystemInfo() const;
 
+    // @todo Everything below this really needs to be re-thought out.
+    //       Too much individual functionality is being wrapped up, e.g., VBOs.
+    //       It'd be best to only wrap difficult things like Shader *Programs* or
+    //       hide the implementation details behind a DrawableEntity or something.
+
     struct Shader {
         enum class Type { Vertex, Fragment };
 
@@ -70,9 +75,6 @@ private:
     };
 
     std::vector<Shader> m_shaders;
-    std::vector<ShaderProgram> m_shaderPrograms;
-
-    typedef std::vector<std::string> ShaderList;
 
     bool IsShaderLoaded(std::string name, enum Shader::Type type);
     bool RetrieveShader(std::string name, enum Shader::Type type, uint& shader);
@@ -84,11 +86,32 @@ private:
     bool LoadShader(std::string name, enum Shader::Type type) { return LoadShader_(name, type, false); }
     bool RequireShader(std::string name, enum Shader::Type type) { return LoadShader_(name, type, true); }
 
+    std::vector<ShaderProgram> m_shaderPrograms;
+    typedef std::vector<std::string> ShaderList;
+
     bool IsShaderProgramCreated(std::string name);
     bool RetrieveShaderProgram(std::string name, uint& program);
     void DeleteShaderProgram(std::string name);
     bool CreateShaderProgram(std::string name, ShaderList vertexShaders, ShaderList fragmentShaders, bool deleteShadersOnSuccess = true);
     bool UseShaderProgram(std::string name);
+
+    struct VBO {
+        std::string name;
+        uint vbo;
+        uint32 usage;
+    };
+
+    std::vector<VBO> m_vbos;
+
+    bool IsVBOCreated(std::string name);
+    bool RetrieveVBO(std::string name, uint& vbo);
+    void DeleteVBO(std::string name);
+    // usage:
+    //     GL_STREAM_DRAW:  the data is set only once and used by the GPU at most a few times.
+    //     GL_STATIC_DRAW:  the data is set only once and used many times.
+    //     GL_DYNAMIC_DRAW: the data is changed a lot and used many times.
+    bool CreateVBO(std::string name, float32* vertices, uint32 usage);
+    bool UseVBO(std::string name);
 };
 
 #endif // VIEW_HPP

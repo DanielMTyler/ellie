@@ -14,27 +14,6 @@
 #include "../thirdparty/glad/include/KHR/khrplatform.h"
 #include "app.hpp"
 
-/*global_variable float32 g_vertices[] = {
-    -0.5f, -0.5f, 0.0f,
-     0.5f, -0.5f, 0.0f,
-     0.0f,  0.5f, 0.0f
-};*/
-
-global_variable float32 g_vertices2[] = {
-     0.5f,  0.5f, 0.0f,  // top right
-     0.5f, -0.5f, 0.0f,  // bottom right
-    -0.5f, -0.5f, 0.0f,  // bottom left
-    -0.5f,  0.5f, 0.0f   // top left
-};
-global_variable uint g_indices2[] = {  // note that we start from 0!
-    0, 1, 3,   // first triangle
-    1, 2, 3    // second triangle
-};
-
-global_variable uint g_vbo;
-global_variable uint g_vao;
-global_variable uint g_ebo;
-
 bool View::Init()
 {
     LogSystemInfo();
@@ -59,23 +38,23 @@ bool View::Init()
     ShaderList fragmentShaders;
     vertexShaders.push_back("default");
     fragmentShaders.push_back("default");
-    CreateShaderProgram("default", vertexShaders, fragmentShaders);
-
-    glGenBuffers(1, &g_vbo);
-    glGenVertexArrays(1, &g_vao);
-
-    glBindVertexArray(g_vao);
-
-    glGenBuffers(1, &g_ebo);
-
-    glBindBuffer(GL_ARRAY_BUFFER, g_vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(g_vertices2), g_vertices2, GL_STATIC_DRAW);
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(g_indices2), g_indices2, GL_STATIC_DRAW);
+    if (!CreateShaderProgram("default", vertexShaders, fragmentShaders))
+        return false;
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float32), (void*)0);
     glEnableVertexAttribArray(0);
+
+    float32 vertices[] = {
+         0.5f,  0.5f, 0.0f,  // top right
+         0.5f, -0.5f, 0.0f,  // bottom right
+        -0.5f, -0.5f, 0.0f,  // bottom left
+        -0.5f,  0.5f, 0.0f   // top left
+    };
+
+    if (!CreateVBO("default", vertices, GL_STATIC_DRAW))
+        return false;
+    if (!UseVBO("default"))
+        return false;
 
     m_fpsTimer = SDL_GetPerformanceCounter();
 
@@ -84,6 +63,14 @@ bool View::Init()
 
 void View::Cleanup()
 {
+    if (!m_vbos.empty())
+    {
+        for (auto it = m_vbos.begin(); it != m_vbos.end(); it++)
+            glDeleteBuffers(1, &(it->vbo));
+
+        m_vbos.clear();
+    }
+
     if (!m_shaderPrograms.empty())
     {
         for (auto it = m_shaderPrograms.begin(); it != m_shaderPrograms.end(); it++)
@@ -92,7 +79,7 @@ void View::Cleanup()
         m_shaderPrograms.clear();
     }
 
-    if (m_shaders.empty())
+    if (!m_shaders.empty())
     {
         for (auto it = m_shaders.begin(); it != m_shaders.end(); it++)
             glDeleteShader(it->shader);
@@ -115,6 +102,25 @@ void View::Cleanup()
 
 bool View::Update(DeltaTime dt)
 {
+    static bool once = false;
+    static uint32 vao;
+    static uint32 ebo;
+    static uint indices[] = {  // note that we start from 0!
+        0, 1, 3,   // first triangle
+        1, 2, 3    // second triangle
+    };
+
+    if (!once)
+    {
+        once = true;
+        glGenVertexArrays(1, &vao);
+        glBindVertexArray(vao);
+
+        glGenBuffers(1, &ebo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    }
+
     // @todo Deal with being minimized, toggling fullscreen, exiting, etc.
     bool quit = false;
     SDL_Event e;
@@ -148,7 +154,7 @@ bool View::Update(DeltaTime dt)
     glClear(GL_COLOR_BUFFER_BIT);
     if (!UseShaderProgram("default"))
         return false;
-    glBindVertexArray(g_vao);
+    glBindVertexArray(vao);
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
     SDL_GL_SwapWindow(m_window);
@@ -767,5 +773,78 @@ bool View::UseShaderProgram(std::string name)
     }
 
     glUseProgram(p);
+    return true;
+}
+
+bool View::IsVBOCreated(std::string name)
+{
+    for (auto it = m_vbos.begin(); it != m_vbos.end(); it++)
+    {
+        if (it->name == name)
+            return true;
+    }
+
+    return false;
+}
+
+bool View::RetrieveVBO(std::string name, uint& vbo)
+{
+    for (auto it = m_vbos.begin(); it != m_vbos.end(); it++)
+    {
+        if (it->name == name)
+        {
+            vbo = it->vbo;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void View::DeleteVBO(std::string name)
+{
+    for (auto it = m_vbos.begin(); it != m_vbos.end(); it++)
+    {
+        if (it->name == name)
+        {
+            glDeleteBuffers(1, &(it->vbo));
+            m_vbos.erase(it);
+            return;
+        }
+    }
+}
+
+bool View::CreateVBO(std::string name, float32* vertices, uint32 usage)
+{
+    LogInfo("Creating VBO: %s.", name.c_str());
+
+    if (!vertices)
+    {
+        LogFatal("Vertices is nullptr.");
+        return false;
+    }
+
+    VBO v;
+    v.name = name;
+    v.usage = usage;
+    glGenBuffers(1, &v.vbo);
+
+    glBindBuffer(GL_ARRAY_BUFFER, v.vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, usage);
+
+    m_vbos.push_back(v);
+    return true;
+}
+
+bool View::UseVBO(std::string name)
+{
+    uint32 v;
+    if (!RetrieveVBO(name, v))
+    {
+        LogFatal("Tried to use non-existant VBO: %s.", name.c_str());
+        return false;
+    }
+
+    glBindBuffer(GL_ARRAY_BUFFER, v);
     return true;
 }
