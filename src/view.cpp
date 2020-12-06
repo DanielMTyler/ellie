@@ -112,7 +112,8 @@ void View::Cleanup()
 
 bool View::Update(DeltaTime dt)
 {
-    // @todo Deal with being minimized, toggling fullscreen, exiting, etc.
+    // @todo Deal with being minimized, toggling fullscreen, etc.
+
     bool quit = false;
     SDL_Event e;
     while (SDL_PollEvent(&e) != 0)
@@ -131,6 +132,18 @@ bool View::Update(DeltaTime dt)
             uint32 h = e.window.data2;
             glViewport(0, 0, w, h);
             LogInfo("Window resized to %ux%u; viewport set.", w, h);
+        }
+        else if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_w)
+        {
+            static bool wireframe = false;
+            wireframe = !wireframe;
+
+            if (wireframe)
+                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+            else
+                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+            LogInfo("Wireframe: %s.", OnOffBoolToStr(wireframe));
         }
     }
 
