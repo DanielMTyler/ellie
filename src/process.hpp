@@ -17,6 +17,8 @@ class Process
 {
 protected:
     virtual void OnInit() { m_state = State::Running; }
+    // Called by destructor.
+    virtual void OnCleanup() {}
     virtual void OnUpdate(DeltaTime dt) = 0;
     virtual void OnSuccess() {}
     virtual void OnFail() {}
@@ -49,6 +51,8 @@ public:
                 m_child->OnAbort();
             m_child.reset();
         }
+
+        OnCleanup();
     }
 
     State State()    const { return m_state; }

@@ -64,10 +64,19 @@ bool App::Init()
         return false;
     }
 
-    if (!InitLog_())
+    #ifndef NDEBUG
+        // Set app log priority to show all messages; debug/verbose are hidden by default.
+        SDL_LogSetPriority(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_VERBOSE);
+        LogWarning("Debug Build.");
+    #endif
+
+    if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
+    {
+        LogFatal("Failed to initialize SDL: %s", SDL_GetError());
         return false;
-    if (!InitSDL_())
-        return false;
+    }
+    LogInfo("Initalized SDL.");
+
     if (!InitSavePath_())
         return false;
     if (!InitCWD_())
@@ -165,56 +174,8 @@ int App::Loop()
 
 #endif // OS_WINDOWS.
 
-#if 0
-#include <iostream>
-
-void LogOutputFunction(void* /*userdata*/, int /*category*/, SDL_LogPriority priority, const char* message)
-{
-    std::string prefix;
-    switch (priority)
-    {
-    case SDL_LOG_PRIORITY_DEBUG:    prefix = "DEBUG: "; break;
-    case SDL_LOG_PRIORITY_WARN:     prefix = "WARNING: "; break;
-    case SDL_LOG_PRIORITY_CRITICAL: prefix = "FATAL: "; break;
-    default: break;
-    }
-    std::cerr << prefix << message << std::endl;
-}
-#endif // 0
-
-bool App::InitLog_()
-{
-    //SDL_LogSetOutputFunction(LogOutputFunction, nullptr);
-
-    #ifndef NDEBUG
-        // Set app log priority to show all messages; debug/verbose are hidden by default.
-        SDL_LogSetPriority(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_VERBOSE);
-        LogWarning("Debug Build.");
-    #endif
-
-    return true;
-}
-
-bool App::InitSDL_()
-{
-    if (SDL_Init(SDL_INIT_EVERYTHING) < 0)
-    {
-        LogFatal("Failed to initialize SDL: %s", SDL_GetError());
-        return false;
-    }
-    LogInfo("Initalized SDL.");
-    return true;
-}
-
 bool App::InitSavePath_()
 {
-    // Must SDL_Init before SDL_GetPrefPath.
-    if (SDL_Init(0) < 0)
-    {
-        LogFatal("Failed to initialze minimal SDL: %s.", SDL_GetError());
-        return false;
-    }
-
     char* prefPath = SDL_GetPrefPath(ORGANIZATION_NAME, APPLICATION_NAME);
     if (!prefPath)
     {
