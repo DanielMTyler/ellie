@@ -35,11 +35,7 @@ bool View::Init()
 
     glViewport(0, 0, DESIRED_WINDOW_WIDTH, DESIRED_WINDOW_HEIGHT);
 
-    ShaderList vertexShaders;
-    ShaderList fragmentShaders;
-    vertexShaders.push_back("default");
-    fragmentShaders.push_back("default");
-    if (!CreateShader("default", vertexShaders, fragmentShaders))
+    if (!CreateShader("default", "default", "default"))
         return false;
 
     float32 vertices[] = {
@@ -356,13 +352,18 @@ bool View::InitGLFunctions_()
     return true;
 }
 
-bool View::CreateShader(std::string name, ShaderList vertices, ShaderList fragments)
+bool View::CreateShader(std::string name, std::string vertex, std::string fragment)
 {
     LogInfo("Creating shader: %s.", name.c_str());
 
-    if (vertices.empty() && fragments.empty())
+    if (name.empty())
     {
-        LogFatal("No vertex or fragment shaders provided.");
+            LogFatal("Shader name is empty.");
+            return false;
+    }
+    if (vertex.empty() && fragment.empty())
+    {
+        LogFatal("No vertex or fragment shader provided.");
         return false;
     }
 
@@ -378,39 +379,25 @@ bool View::CreateShader(std::string name, ShaderList vertices, ShaderList fragme
     Shader s;
     s.name = name;
     s.program = glCreateProgram();
-    std::vector<uint32> shaders;
+    uint32 v;
+    uint32 f;
 
-    for (auto it = vertices.begin(); it != vertices.end(); it++)
+    if (!LoadShader_(vertex, true, v))
     {
-        uint32 shader;
-        if (!LoadShader_(*it, true, shader))
-        {
-            for (auto its = shaders.begin(); its != shaders.end(); its++)
-                glDeleteShader(*its);
-            shaders.clear();
-            glDeleteProgram(s.program);
-            return false;
-        }
-
-        shaders.push_back(shader);
-        glAttachShader(s.program, shader);
+        glDeleteShader(v);
+        glDeleteProgram(s.program);
+        return false;
     }
+    glAttachShader(s.program, v);
 
-    for (auto it = fragments.begin(); it != fragments.end(); it++)
+    if (!LoadShader_(fragment, false, f))
     {
-        uint32 shader;
-        if (!LoadShader_(*it, false, shader))
-        {
-            for (auto its = shaders.begin(); its != shaders.end(); its++)
-                glDeleteShader(*its);
-            shaders.clear();
-            glDeleteProgram(s.program);
-            return false;
-        }
-
-        shaders.push_back(shader);
-        glAttachShader(s.program, shader);
+        glDeleteShader(f);
+        glDeleteShader(v);
+        glDeleteProgram(s.program);
+        return false;
     }
+    glAttachShader(s.program, f);
 
     glLinkProgram(s.program);
 
@@ -423,18 +410,14 @@ bool View::CreateShader(std::string name, ShaderList vertices, ShaderList fragme
         glGetProgramInfoLog(s.program, infoLogSize, nullptr, infoLog);
         LogFatal("Failed to link shader: %s.", infoLog);
 
-        for (auto its = shaders.begin(); its != shaders.end(); its++)
-            glDeleteShader(*its);
-        shaders.clear();
-
+        glDeleteShader(f);
+        glDeleteShader(v);
         glDeleteProgram(s.program);
         return false;
     }
 
-    for (auto its = shaders.begin(); its != shaders.end(); its++)
-        glDeleteShader(*its);
-    shaders.clear();
-
+    glDeleteShader(f);
+    glDeleteShader(v);
     m_shaders.push_back(s);
     return true;
 }

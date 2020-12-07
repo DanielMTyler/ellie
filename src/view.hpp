@@ -51,9 +51,11 @@ private:
     };
 
     std::vector<Shader> m_shaders;
-    typedef std::vector<std::string> ShaderList;
 
-    bool CreateShader(std::string name, ShaderList vertices, ShaderList fragments);
+    // @note Sometimes multiple vertex or multiple fragment shaders can be used in
+    //       a single program, but OpenGL ES and some others don't support it, so
+    //       just don't allow it. Use preprocessing for shader source combination.
+    bool CreateShader(std::string name, std::string vertex, std::string fragment);
     void DeleteShader(std::string name);
     bool UseShader(std::string name);
     bool ShaderSetBool  (std::string shader, std::string name, bool    value) const;
