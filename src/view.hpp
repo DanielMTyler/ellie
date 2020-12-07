@@ -55,10 +55,12 @@ private:
     bool CreateShader(std::string name, std::string vertex, std::string fragment);
     void DeleteShader(std::string name);
     bool UseShader(std::string name);
-    bool ShaderSetBool  (std::string shader, std::string name, bool    value) const;
-    bool ShaderSetInt   (std::string shader, std::string name, int     value) const;
-    bool ShaderSetFloat (std::string shader, std::string name, float32 value) const;
-    bool ShaderSet3Float(std::string shader, std::string name, float32 x, float32 y, float32 z) const;
+    bool ShaderSetBool (std::string shader, std::string name, bool    value) const;
+    bool ShaderSetInt  (std::string shader, std::string name, int     value) const;
+    bool ShaderSetFloat(std::string shader, std::string name, float32 value) const;
+    bool ShaderSetVec2f(std::string shader, std::string name, float32 x, float32 y) const;
+    bool ShaderSetVec3f(std::string shader, std::string name, float32 x, float32 y, float32 z) const;
+    bool ShaderSetVec4f(std::string shader, std::string name, float32 x, float32 y, float32 z, float32 w) const;
 
     bool LoadShader_(std::string name, bool vertex, uint32& shader);
 };

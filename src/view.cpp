@@ -502,27 +502,75 @@ bool View::ShaderSetFloat(std::string shader, std::string name, float32 value) c
     return true;
 }
 
-bool View::ShaderSet3Float(std::string shader, std::string name, float32 x, float32 y, float32 z) const
+bool View::ShaderSetVec2f(std::string shader, std::string name, float32 x, float32 y) const
 {
     if (shader.empty())
     {
-        LogFatal("Tried to set shader 3 float with no shader name.");
+        LogFatal("Tried to set shader Vec2f with no shader name.");
         return false;
     }
     if (name.empty())
     {
-        LogFatal("Tried to set unnamed shader (%s) 3 float.", shader.c_str());
+        LogFatal("Tried to set unnamed shader (%s) Vec2f.", shader.c_str());
         return false;
     }
 
     auto s = m_shaders.find(name);
     if (s == m_shaders.end())
     {
-        LogFatal("Tried to set shader (%s) 3 float (%s), but shader doesn't exist.", shader.c_str(), name.c_str());
+        LogFatal("Tried to set shader (%s) Vec2f (%s), but shader doesn't exist.", shader.c_str(), name.c_str());
+        return false;
+    }
+
+    glUniform2f(glGetUniformLocation(s->second, name.c_str()), x, y);
+    return true;
+}
+
+bool View::ShaderSetVec3f(std::string shader, std::string name, float32 x, float32 y, float32 z) const
+{
+    if (shader.empty())
+    {
+        LogFatal("Tried to set shader Vec3f with no shader name.");
+        return false;
+    }
+    if (name.empty())
+    {
+        LogFatal("Tried to set unnamed shader (%s) Vec3f.", shader.c_str());
+        return false;
+    }
+
+    auto s = m_shaders.find(name);
+    if (s == m_shaders.end())
+    {
+        LogFatal("Tried to set shader (%s) Vec3f (%s), but shader doesn't exist.", shader.c_str(), name.c_str());
         return false;
     }
 
     glUniform3f(glGetUniformLocation(s->second, name.c_str()), x, y, z);
+    return true;
+}
+
+bool View::ShaderSetVec4f(std::string shader, std::string name, float32 x, float32 y, float32 z, float32 w) const
+{
+    if (shader.empty())
+    {
+        LogFatal("Tried to set shader Vec4f with no shader name.");
+        return false;
+    }
+    if (name.empty())
+    {
+        LogFatal("Tried to set unnamed shader (%s) Vec4f.", shader.c_str());
+        return false;
+    }
+
+    auto s = m_shaders.find(name);
+    if (s == m_shaders.end())
+    {
+        LogFatal("Tried to set shader (%s) Vec4f (%s), but shader doesn't exist.", shader.c_str(), name.c_str());
+        return false;
+    }
+
+    glUniform4f(glGetUniformLocation(s->second, name.c_str()), x, y, z, w);
     return true;
 }
 
