@@ -88,7 +88,7 @@ void View::Cleanup()
     if (!m_shaders.empty())
     {
         for (auto it = m_shaders.begin(); it != m_shaders.end(); it++)
-            glDeleteProgram(it->program);
+            glDeleteProgram(it->second);
 
         m_shaders.clear();
     }
@@ -367,58 +367,54 @@ bool View::CreateShader(std::string name, std::string vertex, std::string fragme
         return false;
     }
 
-    for (auto it = m_shaders.begin(); it != m_shaders.end(); it++)
+    auto exists = m_shaders.find(name);
+    if (exists != m_shaders.end())
     {
-        if (it->name == name)
-        {
-            LogFatal("Shader already exists.");
-            return false;
-        }
+        LogFatal("Shader already exists.");
+        return false;
     }
 
-    Shader s;
-    s.name = name;
-    s.program = glCreateProgram();
-    uint32 v;
-    uint32 f;
+    Shader s = glCreateProgram();
+    Shader v;
+    Shader f;
 
     if (!LoadShader_(vertex, true, v))
     {
         glDeleteShader(v);
-        glDeleteProgram(s.program);
+        glDeleteProgram(s);
         return false;
     }
-    glAttachShader(s.program, v);
+    glAttachShader(s, v);
 
     if (!LoadShader_(fragment, false, f))
     {
         glDeleteShader(f);
         glDeleteShader(v);
-        glDeleteProgram(s.program);
+        glDeleteProgram(s);
         return false;
     }
-    glAttachShader(s.program, f);
+    glAttachShader(s, f);
 
-    glLinkProgram(s.program);
+    glLinkProgram(s);
 
     int success;
     const uint32 infoLogSize = KIBIBYTES(1);
     char infoLog[infoLogSize];
-    glGetProgramiv(s.program, GL_LINK_STATUS, &success);
+    glGetProgramiv(s, GL_LINK_STATUS, &success);
     if (!success)
     {
-        glGetProgramInfoLog(s.program, infoLogSize, nullptr, infoLog);
+        glGetProgramInfoLog(s, infoLogSize, nullptr, infoLog);
         LogFatal("Failed to link shader: %s.", infoLog);
 
         glDeleteShader(f);
         glDeleteShader(v);
-        glDeleteProgram(s.program);
+        glDeleteProgram(s);
         return false;
     }
 
     glDeleteShader(f);
     glDeleteShader(v);
-    m_shaders.push_back(s);
+    m_shaders[name] = s;
     return true;
 }
 
@@ -426,14 +422,11 @@ void View::DeleteShader(std::string name)
 {
     LogInfo("Deleting shader if exists: %s.", name.c_str());
 
-    for (auto it = m_shaders.begin(); it != m_shaders.end(); it++)
+    auto s = m_shaders.find(name);
+    if (s != m_shaders.end())
     {
-        if (it->name == name)
-        {
-            glDeleteProgram(it->program);
-            m_shaders.erase(it);
-            break;
-        }
+        glDeleteProgram(s->second);
+        m_shaders.erase(name);
     }
 }
 
@@ -445,23 +438,14 @@ bool View::UseShader(std::string name)
         return false;
     }
 
-    Shader* s = nullptr;
-    for (auto it = m_shaders.begin(); it != m_shaders.end(); it++)
-    {
-        if (it->name == name)
-        {
-            s = &(*it);
-            break;
-        }
-    }
-
-    if (!s)
+    auto s = m_shaders.find(name);
+    if (s == m_shaders.end())
     {
         LogFatal("Tried to use non-existant shader: %s.", name.c_str());
         return false;
     }
 
-    glUseProgram(s->program);
+    glUseProgram(s->second);
     return true;
 }
 
@@ -483,18 +467,15 @@ bool View::ShaderSetInt(std::string shader, std::string name, int value) const
         return false;
     }
 
-    for (auto it = m_shaders.begin(); it != m_shaders.end(); it++)
+    auto s = m_shaders.find(name);
+    if (s == m_shaders.end())
     {
-        if (it->name == shader)
-        {
-            uint32 s = it->program;
-            glUniform1i(glGetUniformLocation(s, name.c_str()), value);
-            return true;
-        }
+        LogFatal("Tried to set shader (%s) int (%s), but shader doesn't exist.", shader.c_str(), name.c_str());
+        return false;
     }
 
-    LogFatal("Tried to set shader (%s) int (%s), but shader doesn't exist.", shader.c_str(), name.c_str());
-    return false;
+    glUniform1i(glGetUniformLocation(s->second, name.c_str()), value);
+    return true;
 }
 
 bool View::ShaderSetFloat(std::string shader, std::string name, float32 value) const
@@ -510,18 +491,15 @@ bool View::ShaderSetFloat(std::string shader, std::string name, float32 value) c
         return false;
     }
 
-    for (auto it = m_shaders.begin(); it != m_shaders.end(); it++)
+    auto s = m_shaders.find(name);
+    if (s == m_shaders.end())
     {
-        if (it->name == shader)
-        {
-            uint32 s = it->program;
-            glUniform1f(glGetUniformLocation(s, name.c_str()), value);
-            return true;
-        }
+        LogFatal("Tried to set shader (%s) float (%s), but shader doesn't exist.", shader.c_str(), name.c_str());
+        return false;
     }
 
-    LogFatal("Tried to set shader (%s) float (%s), but shader doesn't exist.", shader.c_str(), name.c_str());
-    return false;
+    glUniform1f(glGetUniformLocation(s->second, name.c_str()), value);
+    return true;
 }
 
 bool View::ShaderSet3Float(std::string shader, std::string name, float32 x, float32 y, float32 z) const
@@ -537,18 +515,15 @@ bool View::ShaderSet3Float(std::string shader, std::string name, float32 x, floa
         return false;
     }
 
-    for (auto it = m_shaders.begin(); it != m_shaders.end(); it++)
+    auto s = m_shaders.find(name);
+    if (s == m_shaders.end())
     {
-        if (it->name == shader)
-        {
-            uint32 s = it->program;
-            glUniform3f(glGetUniformLocation(s, name.c_str()), x, y, z);
-            return true;
-        }
+        LogFatal("Tried to set shader (%s) 3 float (%s), but shader doesn't exist.", shader.c_str(), name.c_str());
+        return false;
     }
 
-    LogFatal("Tried to set shader (%s) 3 float (%s), but shader doesn't exist.", shader.c_str(), name.c_str());
-    return false;
+    glUniform3f(glGetUniformLocation(s->second, name.c_str()), x, y, z);
+    return true;
 }
 
 bool View::LoadShader_(std::string name, bool vertex, uint32& shader)

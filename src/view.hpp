@@ -10,12 +10,14 @@
 
 #include "global.hpp"
 #include "SDL.h"
+#include <map>
 #include <string>
-#include <vector>
 
 class View
 {
 public:
+    typedef uint32 Shader;
+
     bool Init();
     void Cleanup();
     bool Update(DeltaTime dt); // Returns false when time to exit.
@@ -45,12 +47,7 @@ private:
     bool InitGLFunctions_();
     // @todo Log Graphics Information.
 
-    struct Shader {
-        std::string name;
-        uint program;
-    };
-
-    std::vector<Shader> m_shaders;
+    std::map<std::string, Shader> m_shaders;
 
     // @note Sometimes multiple vertex or multiple fragment shaders can be used in
     //       a single program, but OpenGL ES and some others don't support it, so
