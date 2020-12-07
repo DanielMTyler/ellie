@@ -16,42 +16,13 @@ App& App::Get()
     return a;
 }
 
-std::string App::LastError()
-{
-    std::string r = m_lastError;
-    m_lastError.clear();
-    return r;
-}
-
-void App::SetError(std::string e)
-{
-    m_lastError = e;
-}
-
-bool App::HasError()
-{
-    return m_lastError.empty();
-}
-
-void App::ClearError()
-{
-    m_lastError.clear();
-}
-
 bool App::FolderExists(std::string folder)
 {
-    std::error_code ec;
+    std::error_code ec; // @note ignored; set if the folder doesn't exist.
     if (std::filesystem::is_directory(folder, ec))
-    {
         return true;
-    }
     else
-    {
-        if (ec)
-            SetError(ec.message());
-
         return false;
-    }
 }
 
 bool App::LoadFile(std::string file, std::string& contents)
@@ -80,11 +51,7 @@ bool App::Init()
 {
     if (!ForceSingleInstanceInit_())
     {
-        if (HasError())
-            LogWarning("Failed while checking for other running instances: %s.", LastError().c_str());
-        else
-            LogWarning("Another instance is already running.");
-
+        LogWarning("Another instance is already running.");
         return false;
     }
 

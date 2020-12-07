@@ -40,12 +40,11 @@ private:
     SDL_Window* m_window = nullptr;
     SDL_GLContext m_glContext = nullptr;
 
-    uint64 m_fpsTimer = 0;
+    uint64 m_fpsLastTime = 0;
     uint32 m_fpsCounter = 0;
 
     bool InitWindowAndGLContext_();
     bool InitGLFunctions_();
-    // @todo Log Graphics Information.
 
     std::map<std::string, Shader> m_shaders;
 
@@ -61,7 +60,6 @@ private:
     bool ShaderSetVec2f(std::string shader, std::string name, float32 x, float32 y) const;
     bool ShaderSetVec3f(std::string shader, std::string name, float32 x, float32 y, float32 z) const;
     bool ShaderSetVec4f(std::string shader, std::string name, float32 x, float32 y, float32 z, float32 w) const;
-
     bool LoadShader_(std::string name, bool vertex, uint32& shader);
 };
 

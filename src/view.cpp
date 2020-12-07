@@ -30,8 +30,10 @@ bool View::Init()
     if (!InitGLFunctions_())
         return false;
 
+    // @todo Log Graphics Information.
+
     m_shaderPath = App::Get().DataPath() + "shaders" + PATH_SEPARATOR;
-    m_fpsTimer = SDL_GetPerformanceCounter();
+    m_fpsLastTime = SDL_GetPerformanceCounter();
 
     glViewport(0, 0, DESIRED_WINDOW_WIDTH, DESIRED_WINDOW_HEIGHT);
 
@@ -143,11 +145,11 @@ bool View::Update(DeltaTime dt)
         }
     }
 
-    if (((DeltaTime)(SDL_GetPerformanceCounter() - m_fpsTimer) / (DeltaTime)SDL_GetPerformanceFrequency()) >= 1.0f)
+    if (((DeltaTime)(SDL_GetPerformanceCounter() - m_fpsLastTime) / (DeltaTime)SDL_GetPerformanceFrequency()) >= 1.0f)
     {
         LogDebug("FPS: %u, DT: %f.", m_fpsCounter, dt);
         m_fpsCounter = 0;
-        m_fpsTimer = SDL_GetPerformanceCounter();
+        m_fpsLastTime = SDL_GetPerformanceCounter();
     }
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);

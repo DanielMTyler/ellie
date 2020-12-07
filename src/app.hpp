@@ -34,12 +34,6 @@ public:
 
     static App& Get();
 
-    // Returns the last error (may be "") and clears it.
-    std::string LastError();
-    void SetError(std::string e);
-    bool HasError();
-    void ClearError();
-
     bool FolderExists(std::string folder);
     bool LoadFile(std::string file, std::string& contents);
 
@@ -48,8 +42,6 @@ public:
     int Loop();
 
 private:
-    std::string m_lastError;
-
     std::string m_savePath;
     std::string m_dataPath;
     std::string m_executablePath;
