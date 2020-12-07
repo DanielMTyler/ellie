@@ -66,7 +66,7 @@ bool View::Init()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float32), nullptr);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float32), 0);
     glEnableVertexAttribArray(0);
     return true;
 }
