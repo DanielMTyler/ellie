@@ -32,6 +32,10 @@ bool View::Init()
 
     // @todo Log Graphics Information.
 
+    int glNumVertexAttribs;
+    glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &glNumVertexAttribs);
+    LogInfo("OpenGL maximum number of vertex attributes supported: %i.", glNumVertexAttribs);
+
     m_shaderPath = App::Get().DataPath() + "shaders" + PATH_SEPARATOR;
     m_fpsLastTime = SDL_GetPerformanceCounter();
 
