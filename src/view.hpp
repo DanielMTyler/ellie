@@ -22,6 +22,7 @@ public:
     void Cleanup();
     bool Update(DeltaTime dt); // Returns false when time to exit.
 
+// @todo Use IView to hide implementation details.
 private:
     // @todo Resource Manager.
 

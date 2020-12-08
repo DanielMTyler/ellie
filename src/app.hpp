@@ -40,6 +40,7 @@ public:
     void Cleanup();
     int Loop();
 
+// @todo Use IApp to hide implementation details.
 private:
     std::string m_savePath;
     std::string m_dataPath;
