@@ -15,7 +15,9 @@
 
 class App {
 public:
-    // @todo Game Logic (with Time Dilation).
+    // @todo Game Logic.
+    // @todo Game Logic: Time Dilation; modify dt to speed/slow time.
+    // @todo Game Logic: Entity Component System (requires Event Manager).
     // @todo Event Manager.
     // @todo Memory Manager.
 
@@ -32,8 +34,8 @@ public:
 
     static App& Get();
 
-    bool FolderExists(std::string folder);
-    bool LoadFile(std::string file, std::string& contents);
+    bool FolderExists(std::string folder) const;
+    bool LoadFile(std::string file, std::string& contents) const;
 
     bool Init();
     void Cleanup();

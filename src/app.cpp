@@ -16,7 +16,7 @@ App& App::Get()
     return a;
 }
 
-bool App::FolderExists(std::string folder)
+bool App::FolderExists(std::string folder) const
 {
     std::error_code ec; // @note ignored; set if the folder doesn't exist.
     if (std::filesystem::is_directory(folder, ec))
@@ -25,7 +25,7 @@ bool App::FolderExists(std::string folder)
         return false;
 }
 
-bool App::LoadFile(std::string file, std::string& contents)
+bool App::LoadFile(std::string file, std::string& contents) const
 {
     LogInfo("Loading file: %s.", file.c_str());
 
