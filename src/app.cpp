@@ -66,7 +66,7 @@ bool App::Init()
 {
     if (!ForceSingleInstanceInit_())
     {
-        LogWarning("Another instance is already running.");
+        LogFatal("Another instance is already running.");
         return false;
     }
 
