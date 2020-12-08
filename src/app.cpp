@@ -21,6 +21,9 @@ bool App::FolderExists(std::string folder) const
 
 bool App::LoadFile(std::string file, std::string& contents) const
 {
+    // Failing to load a file might not be fatal, but we do provide warning
+    // messages to provide information on the actual failure.
+
     std::FILE* f = std::fopen(file.c_str(), "rb");
     if (!f)
     {
@@ -28,14 +31,34 @@ bool App::LoadFile(std::string file, std::string& contents) const
         return false;
     }
 
-    // @todo Add error checking.
-    std::fseek(f, 0, SEEK_END);
+    if (std::fseek(f, 0, SEEK_END))
+    {
+        LogWarning("Failed to seek to end of file: %s.", file.c_str());
+        std::fclose(f);
+        return false;
+    }
+
+    int32 t = std::ftell(f);
+    if (t == -1)
+    {
+        LogWarning("Failed to get current position in file: %s.", file.c_str());
+        std::fclose(f);
+        return false;
+    }
+
     contents.clear();
-    contents.resize(std::ftell(f));
+    contents.resize(t);
     std::rewind(f);
+
     std::fread(&contents[0], 1, contents.size(), f);
+    if (std::ferror(f))
+    {
+        LogWarning("Failed to read file: %s.", file.c_str());
+        std::fclose(f);
+        return false;
+    }
+
     std::fclose(f);
-    f = nullptr;
     return true;
 }
 
