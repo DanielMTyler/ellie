@@ -25,14 +25,13 @@ public:
     const char* ORGANIZATION_NAME = "DanielMTyler";
     const char* APPLICATION_NAME  = "Ellie";
 
-    View m_view;
+    static App& Get();
+    View& GetView() { return m_view; }
 
     std::string SavePath() const { return m_savePath; }
     std::string DataPath() const { return m_dataPath; }
     std::string ExecutablePath() const { return m_executablePath; }
     std::string CWD() const { return m_cwd; }
-
-    static App& Get();
 
     bool FolderExists(std::string folder) const;
     bool LoadFile(std::string file, std::string& contents) const;
@@ -47,6 +46,9 @@ private:
     std::string m_executablePath;
     std::string m_cwd;
 
+    View m_view;
+
+    // Creation by Get() only.
     App() {};
 
     // Returns true if we're the only running instance or false if we're not; returns false after SetError() on failure.
