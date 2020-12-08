@@ -10,12 +10,6 @@
 #include <cstdio>
 #include <filesystem>
 
-App& App::Get()
-{
-    static App a;
-    return a;
-}
-
 bool App::FolderExists(std::string folder) const
 {
     std::error_code ec; // @note ignored; set if the folder doesn't exist.
@@ -27,12 +21,10 @@ bool App::FolderExists(std::string folder) const
 
 bool App::LoadFile(std::string file, std::string& contents) const
 {
-    LogInfo("Loading file: %s.", file.c_str());
-
     std::FILE* f = std::fopen(file.c_str(), "rb");
     if (!f)
     {
-        LogWarning("Failed to open file.");
+        LogWarning("Failed to open file: %s.", file.c_str());
         return false;
     }
 

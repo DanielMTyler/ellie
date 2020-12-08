@@ -103,4 +103,9 @@ inline const char* YesNoBoolToStr(bool b)
 #define LogDebug(...)   SDL_LogDebug(SDL_LOG_CATEGORY_APPLICATION, __VA_ARGS__)
 #define LogFatal(...)   SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, __VA_ARGS__)
 
+
+// These are used to name the saves folder among other things, so ASCII without spaces best.
+#define ORGANIZATION_NAME "DanielMTyler"
+#define APPLICATION_NAME  "Ellie"
+
 #endif // GLOBAL_HPP

@@ -11,46 +11,38 @@
 #include "global.hpp"
 #include "SDL.h"
 #include <string>
+#include "app_interface.hpp"
 #include "view.hpp"
 
-class App {
+class App : public IApp {
 public:
-    // @todo Game Logic.
-    // @todo Game Logic: Time Dilation; modify dt to speed/slow time.
-    // @todo Game Logic: Entity Component System (requires Event Manager).
-    // @todo Event Manager.
-    // @todo Memory Manager.
+    // @todo View& View() { return m_view; }
 
-    // These are used to name the saves folder among other things, so ASCII without spaces is probably best.
-    const char* ORGANIZATION_NAME = "DanielMTyler";
-    const char* APPLICATION_NAME  = "Ellie";
+    std::string SavePath() const override { return m_savePath; }
+    std::string DataPath() const override { return m_dataPath; }
+    std::string ExecutablePath() const override { return m_executablePath; }
+    std::string CWD() const override { return m_cwd; }
 
-    static App& Get();
-    View& GetView() { return m_view; }
+    bool FolderExists(std::string folder) const override;
+    bool LoadFile(std::string file, std::string& contents) const override;
 
-    std::string SavePath() const { return m_savePath; }
-    std::string DataPath() const { return m_dataPath; }
-    std::string ExecutablePath() const { return m_executablePath; }
-    std::string CWD() const { return m_cwd; }
+    bool Init()    override;
+    void Cleanup() override;
+    int  Loop()    override;
 
-    bool FolderExists(std::string folder) const;
-    bool LoadFile(std::string file, std::string& contents) const;
+protected:
+    friend IApp;
 
-    bool Init();
-    void Cleanup();
-    int Loop();
+    // Creation by IApp::Get() only.
+    App() {};
 
-// @todo Use IApp to hide implementation details.
 private:
     std::string m_savePath;
     std::string m_dataPath;
     std::string m_executablePath;
     std::string m_cwd;
 
-    View m_view;
-
-    // Creation by Get() only.
-    App() {};
+    class View m_view;
 
     // Returns true if we're the only running instance or false if we're not; returns false after SetError() on failure.
     bool ForceSingleInstanceInit_() const;

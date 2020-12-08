@@ -36,7 +36,7 @@ bool View::Init()
     glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &glNumVertexAttribs);
     LogInfo("OpenGL maximum number of vertex attributes supported: %i.", glNumVertexAttribs);
 
-    m_shaderPath = App::Get().DataPath() + "shaders" + PATH_SEPARATOR;
+    m_shaderPath = IApp::Get()->DataPath() + "shaders" + PATH_SEPARATOR;
     m_fpsLastTime = SDL_GetPerformanceCounter();
 
     glViewport(0, 0, DESIRED_WINDOW_WIDTH, DESIRED_WINDOW_HEIGHT);
@@ -219,7 +219,7 @@ bool View::InitWindowAndGLContext_()
         LogInfo("Multisampling requested: No.");
     }
 
-    m_window = SDL_CreateWindow(App::Get().APPLICATION_NAME,
+    m_window = SDL_CreateWindow(APPLICATION_NAME,
                                 SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                                 DESIRED_WINDOW_WIDTH, DESIRED_WINDOW_HEIGHT,
                                 SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
@@ -592,7 +592,7 @@ bool View::LoadShader_(std::string name, bool vertex, uint32& shader)
 
     std::string file = m_shaderPath + name + (vertex ? ".vert" : ".frag");
     std::string shaderStr;
-    if (!App::Get().LoadFile(file, shaderStr))
+    if (!IApp::Get()->LoadFile(file, shaderStr))
     {
         LogFatal("Failed to load file.");
         return false;
