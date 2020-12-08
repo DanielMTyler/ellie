@@ -5,26 +5,27 @@
     ==================================
 */
 
-#ifndef VIEW_HPP
-#define VIEW_HPP
+#ifndef VIEW_OPENGL_HPP
+#define VIEW_OPENGL_HPP
 
 #include "global.hpp"
 #include "SDL.h"
 #include <map>
 #include <string>
+#include "app_interface.hpp"
+#include "view_interface.hpp"
 
-class View
+class ViewOpenGL : public IView
 {
 public:
-    typedef uint32 Shader;
+    bool Init()               override;
+    void Cleanup()            override;
+    bool Update(DeltaTime dt) override;
 
-    bool Init();
-    void Cleanup();
-    bool Update(DeltaTime dt); // Returns false when time to exit.
-
-// @todo Use IView to hide implementation details.
 private:
     // @todo Resource Manager.
+
+    typedef uint32 Shader;
 
     const uint MINIMUM_OPENGL_MAJOR = 3;
     const uint MINIMUM_OPENGL_MINOR = 3;
@@ -38,6 +39,7 @@ private:
     const bool MULTISAMPLING = true;
     const uint MULTISAMPLING_NUMSAMPLES = 4; // 2 or 4.
 
+    IApp* m_app = nullptr;
     std::string m_shaderPath;
 
     SDL_Window* m_window = nullptr;
@@ -66,4 +68,4 @@ private:
     bool LoadShader_(std::string name, bool vertex, uint32& shader);
 };
 
-#endif // VIEW_HPP
+#endif // VIEW_OPENGL_HPP

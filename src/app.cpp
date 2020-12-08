@@ -9,6 +9,8 @@
 #include "SDL_syswm.h"
 #include <cstdio>
 #include <filesystem>
+#include <new>
+#include "view_opengl.hpp"
 
 bool App::FolderExists(std::string folder) const
 {
@@ -93,8 +95,17 @@ bool App::Init()
         return false;
     if (!InitDataPath_())
         return false;
-    if (!m_view.Init())
+
+    m_view = new (std::nothrow) ViewOpenGL;
+    if (!m_view)
+    {
+        LogFatal("Failed to allocate memory for view.");
         return false;
+    }
+    else if (!m_view->Init())
+    {
+        return false;
+    }
 
     LogInfo("Initialized.");
     return true;
@@ -103,7 +114,14 @@ bool App::Init()
 void App::Cleanup()
 {
     LogInfo("Cleaning up.");
-    m_view.Cleanup();
+
+    if (m_view)
+    {
+        m_view->Cleanup();
+        delete m_view;
+        m_view = nullptr;
+    }
+
     SDL_Quit();
     ForceSingleInstanceCleanup_();
 }
@@ -119,7 +137,7 @@ int App::Loop()
         dtLast = dtNow;
         dtNow = SDL_GetPerformanceCounter();
         dt = (DeltaTime)(dtNow - dtLast) * 1000.0f / (DeltaTime)SDL_GetPerformanceFrequency();
-        if (!m_view.Update(dt))
+        if (!m_view->Update(dt))
             quit = true;
     }
 

@@ -5,8 +5,8 @@
     ==================================
 */
 
-#ifndef IAPP_HPP
-#define IAPP_HPP
+#ifndef APP_INTERFACE_HPP
+#define APP_INTERFACE_HPP
 
 #include "global.hpp"
 #include <string>
@@ -23,8 +23,6 @@ public:
 
     static IApp* Get();
 
-    // @todo IView* View() = 0;
-
     virtual std::string SavePath() const = 0;
     virtual std::string DataPath() const = 0;
     virtual std::string ExecutablePath() const = 0;
@@ -38,4 +36,4 @@ public:
     virtual int  Loop()    = 0;
 };
 
-#endif // IAPP_HPP
+#endif // APP_INTERFACE_HPP

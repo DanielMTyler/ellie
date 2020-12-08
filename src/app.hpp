@@ -12,12 +12,10 @@
 #include "SDL.h"
 #include <string>
 #include "app_interface.hpp"
-#include "view.hpp"
+#include "view_interface.hpp"
 
 class App : public IApp {
 public:
-    // @todo View& View() { return m_view; }
-
     std::string SavePath() const override { return m_savePath; }
     std::string DataPath() const override { return m_dataPath; }
     std::string ExecutablePath() const override { return m_executablePath; }
@@ -42,7 +40,7 @@ private:
     std::string m_executablePath;
     std::string m_cwd;
 
-    class View m_view;
+    IView* m_view = nullptr;
 
     // Returns true if we're the only running instance or false if we're not; returns false after SetError() on failure.
     bool ForceSingleInstanceInit_() const;

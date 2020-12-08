@@ -5,18 +5,19 @@
     ==================================
 */
 
-#include "view.hpp"
+#include "view_opengl.hpp"
 #include "SDL.h"
 #include "../thirdparty/glad/include/glad/glad.h"
 #include "../thirdparty/glad/include/KHR/khrplatform.h"
-#include "app.hpp"
 
 global_variable uint32 g_vbo = 0;
 global_variable uint32 g_vao = 0;
 global_variable uint32 g_ebo = 0;
 
-bool View::Init()
+bool ViewOpenGL::Init()
 {
+    m_app = IApp::Get();
+
     if (SDL_GL_LoadLibrary(nullptr))
     {
         LogFatal("Failed to load OpenGL library: %s.", SDL_GetError());
@@ -36,7 +37,7 @@ bool View::Init()
     glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &glNumVertexAttribs);
     LogInfo("OpenGL maximum number of vertex attributes supported: %i.", glNumVertexAttribs);
 
-    m_shaderPath = IApp::Get()->DataPath() + "shaders" + PATH_SEPARATOR;
+    m_shaderPath = m_app->DataPath() + "shaders" + PATH_SEPARATOR;
     m_fpsLastTime = SDL_GetPerformanceCounter();
 
     glViewport(0, 0, DESIRED_WINDOW_WIDTH, DESIRED_WINDOW_HEIGHT);
@@ -71,7 +72,7 @@ bool View::Init()
     return true;
 }
 
-void View::Cleanup()
+void ViewOpenGL::Cleanup()
 {
     if (g_ebo)
     {
@@ -112,7 +113,7 @@ void View::Cleanup()
     }
 }
 
-bool View::Update(DeltaTime dt)
+bool ViewOpenGL::Update(DeltaTime dt)
 {
     // @todo Deal with being minimized, toggling fullscreen, etc.
 
@@ -174,7 +175,7 @@ bool View::Update(DeltaTime dt)
     return !quit;
 }
 
-bool View::InitWindowAndGLContext_()
+bool ViewOpenGL::InitWindowAndGLContext_()
 {
     if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, MINIMUM_OPENGL_MAJOR))
     {
@@ -337,7 +338,7 @@ bool View::InitWindowAndGLContext_()
     return true;
 }
 
-bool View::InitGLFunctions_()
+bool ViewOpenGL::InitGLFunctions_()
 {
     // @warning This requires an OpenGL Context.
     if (!gladLoadGLLoader(SDL_GL_GetProcAddress))
@@ -358,7 +359,7 @@ bool View::InitGLFunctions_()
     return true;
 }
 
-bool View::CreateShader(std::string name, std::string vertex, std::string fragment)
+bool ViewOpenGL::CreateShader(std::string name, std::string vertex, std::string fragment)
 {
     LogInfo("Creating shader: %s.", name.c_str());
 
@@ -424,7 +425,7 @@ bool View::CreateShader(std::string name, std::string vertex, std::string fragme
     return true;
 }
 
-void View::DeleteShader(std::string name)
+void ViewOpenGL::DeleteShader(std::string name)
 {
     LogInfo("Deleting shader if exists: %s.", name.c_str());
 
@@ -436,7 +437,7 @@ void View::DeleteShader(std::string name)
     }
 }
 
-bool View::UseShader(std::string name)
+bool ViewOpenGL::UseShader(std::string name)
 {
     if (name.empty())
     {
@@ -455,12 +456,12 @@ bool View::UseShader(std::string name)
     return true;
 }
 
-bool View::ShaderSetBool(std::string shader, std::string name, bool value) const
+bool ViewOpenGL::ShaderSetBool(std::string shader, std::string name, bool value) const
 {
     return ShaderSetInt(shader, name, (int)value);
 }
 
-bool View::ShaderSetInt(std::string shader, std::string name, int value) const
+bool ViewOpenGL::ShaderSetInt(std::string shader, std::string name, int value) const
 {
     if (shader.empty())
     {
@@ -484,7 +485,7 @@ bool View::ShaderSetInt(std::string shader, std::string name, int value) const
     return true;
 }
 
-bool View::ShaderSetFloat(std::string shader, std::string name, float32 value) const
+bool ViewOpenGL::ShaderSetFloat(std::string shader, std::string name, float32 value) const
 {
     if (shader.empty())
     {
@@ -508,7 +509,7 @@ bool View::ShaderSetFloat(std::string shader, std::string name, float32 value) c
     return true;
 }
 
-bool View::ShaderSetVec2f(std::string shader, std::string name, float32 x, float32 y) const
+bool ViewOpenGL::ShaderSetVec2f(std::string shader, std::string name, float32 x, float32 y) const
 {
     if (shader.empty())
     {
@@ -532,7 +533,7 @@ bool View::ShaderSetVec2f(std::string shader, std::string name, float32 x, float
     return true;
 }
 
-bool View::ShaderSetVec3f(std::string shader, std::string name, float32 x, float32 y, float32 z) const
+bool ViewOpenGL::ShaderSetVec3f(std::string shader, std::string name, float32 x, float32 y, float32 z) const
 {
     if (shader.empty())
     {
@@ -556,7 +557,7 @@ bool View::ShaderSetVec3f(std::string shader, std::string name, float32 x, float
     return true;
 }
 
-bool View::ShaderSetVec4f(std::string shader, std::string name, float32 x, float32 y, float32 z, float32 w) const
+bool ViewOpenGL::ShaderSetVec4f(std::string shader, std::string name, float32 x, float32 y, float32 z, float32 w) const
 {
     if (shader.empty())
     {
@@ -580,7 +581,7 @@ bool View::ShaderSetVec4f(std::string shader, std::string name, float32 x, float
     return true;
 }
 
-bool View::LoadShader_(std::string name, bool vertex, uint32& shader)
+bool ViewOpenGL::LoadShader_(std::string name, bool vertex, uint32& shader)
 {
     LogInfo("Loading %s shader: %s.", (vertex ? "vertex" : "fragment"), name.c_str());
 
@@ -592,7 +593,7 @@ bool View::LoadShader_(std::string name, bool vertex, uint32& shader)
 
     std::string file = m_shaderPath + name + (vertex ? ".vert" : ".frag");
     std::string shaderStr;
-    if (!IApp::Get()->LoadFile(file, shaderStr))
+    if (!m_app->LoadFile(file, shaderStr))
     {
         LogFatal("Failed to load file.");
         return false;
