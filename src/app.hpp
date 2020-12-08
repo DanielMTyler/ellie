@@ -15,17 +15,15 @@
 
 class App {
 public:
+    // @todo Game Logic (with Time Dilation).
+    // @todo Event Manager.
+    // @todo Memory Manager.
+
     // These are used to name the saves folder among other things, so ASCII without spaces is probably best.
     const char* ORGANIZATION_NAME = "DanielMTyler";
     const char* APPLICATION_NAME  = "Ellie";
 
-    const std::string PATH_SEP = PATH_SEPARATOR;
-
     View m_view;
-
-    // @todo Event Manager.
-    // @todo Resource Manager / Memory Manager.
-    // @todo Game Logic (with Time Dilation [simply multiply dt by it]).
 
     std::string SavePath() const { return m_savePath; }
     std::string DataPath() const { return m_dataPath; }

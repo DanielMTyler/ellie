@@ -316,7 +316,7 @@ bool App::InitCWD_()
         return false;
     }
 
-    m_cwd = p.string() + PATH_SEP;
+    m_cwd = p.string() + PATH_SEPARATOR;
     LogInfo("CWD: %s.", m_cwd.c_str());
     return true;
 }
@@ -341,19 +341,19 @@ bool App::InitDataPath_()
 {
     // Find the data folder in cwd, executable path, or "<cwd>/../../release/".
     std::string releasePath = m_cwd;
-    m_dataPath = releasePath + "data" + PATH_SEP;
+    m_dataPath = releasePath + "data" + PATH_SEPARATOR;
     if (!FolderExists(m_dataPath))
     {
         releasePath = m_executablePath;
-        m_dataPath = releasePath + "data" + PATH_SEP;
+        m_dataPath = releasePath + "data" + PATH_SEPARATOR;
         if (!FolderExists(m_dataPath))
         {
             // Move cwd up 2 directories.
             releasePath = m_cwd.substr(0, m_cwd.size()-1);
-            releasePath = releasePath.substr(0, releasePath.find_last_of(PATH_SEP));
-            releasePath = releasePath.substr(0, releasePath.find_last_of(PATH_SEP));
-            releasePath += PATH_SEP + "release" + PATH_SEP;
-            m_dataPath = releasePath + "data" + PATH_SEP;
+            releasePath = releasePath.substr(0, releasePath.find_last_of(PATH_SEPARATOR));
+            releasePath = releasePath.substr(0, releasePath.find_last_of(PATH_SEPARATOR));
+            releasePath += std::string(PATH_SEPARATOR) + "release" + PATH_SEPARATOR;
+            m_dataPath = releasePath + "data" + PATH_SEPARATOR;
             if (!FolderExists(m_dataPath))
             {
                 LogFatal("The data folder wasn't found in the current working directory (%s), the executable directory (%s), or \"<cwd>../../release/\" (%s).", m_cwd.c_str(), m_executablePath.c_str(), releasePath.c_str());

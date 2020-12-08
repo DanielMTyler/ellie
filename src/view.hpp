@@ -23,6 +23,8 @@ public:
     bool Update(DeltaTime dt); // Returns false when time to exit.
 
 private:
+    // @todo Resource Manager.
+
     const uint MINIMUM_OPENGL_MAJOR = 3;
     const uint MINIMUM_OPENGL_MINOR = 3;
 
