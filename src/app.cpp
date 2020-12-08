@@ -110,8 +110,6 @@ void App::Cleanup()
 
 int App::Loop()
 {
-    LogInfo("Main loop.");
-
     bool quit = false;
     uint64 dtNow = SDL_GetPerformanceCounter();
     uint64 dtLast;
@@ -166,14 +164,14 @@ int App::Loop()
     bool App::ForceSingleInstanceInit_() const
     {
         // @todo
-        LogWarning("TODO: ForceSingleInstanceInit.");
+        LogWarning("TODO: ForceSingleInstanceInit_.");
         return true;
     }
 
     void App::ForceSingleInstanceCleanup_() const
     {
         // @todo
-        LogWarning("TODO: ForceSingleInstanceCleanup.");
+        LogWarning("TODO: ForceSingleInstanceCleanup_.");
     }
 
 #else
@@ -184,21 +182,19 @@ int App::Loop()
 
 void App::InitLogSystemInfo_() const
 {
-    LogInfo("System Information:");
-
     // SDL version
     {
         SDL_version c;
         SDL_version l;
         SDL_VERSION(&c);
         SDL_GetVersion(&l);
-        LogInfo("- SDL version: %u.%u.%u compiled & %u.%u.%u linked.",
+        LogInfo("SDL version: %u.%u.%u compiled & %u.%u.%u linked.",
                 c.major, c.minor, c.patch, l.major, l.minor, l.patch);
     }
 
-    LogInfo("- Platform: %s.", SDL_GetPlatform());
-    LogInfo("- RAM: %i MiB.", SDL_GetSystemRAM());
-    LogInfo("- CPU: %i logical cores, L1 cache: %i bytes, 3DNow!: %s, AVX: %s, AVX2: %s, AltiVec: %s, MMX: %s, RDTSC: %s, SSE: %s, SSE2: %s, SSE3: %s, SSE4.1: %s, SSE4.2: %s.",
+    LogInfo("Platform: %s.", SDL_GetPlatform());
+    LogInfo("RAM: %i MiB.", SDL_GetSystemRAM());
+    LogInfo("CPU: %i logical cores, L1 cache: %i bytes, 3DNow!: %s, AVX: %s, AVX2: %s, AltiVec: %s, MMX: %s, RDTSC: %s, SSE: %s, SSE2: %s, SSE3: %s, SSE4.1: %s, SSE4.2: %s.",
             SDL_GetCPUCount(), SDL_GetCPUCacheLineSize(), YesNoBoolToStr(SDL_Has3DNow()), YesNoBoolToStr(SDL_HasAVX()), YesNoBoolToStr(SDL_HasAVX2()),
             YesNoBoolToStr(SDL_HasAltiVec()), YesNoBoolToStr(SDL_HasMMX()), YesNoBoolToStr(SDL_HasRDTSC()),
             YesNoBoolToStr(SDL_HasSSE()), YesNoBoolToStr(SDL_HasSSE2()), YesNoBoolToStr(SDL_HasSSE3()), YesNoBoolToStr(SDL_HasSSE41()), YesNoBoolToStr(SDL_HasSSE42()));
@@ -236,23 +232,23 @@ void App::InitLogSystemInfo_() const
                     time = std::to_string(seconds) + "s";
             }
 
-            LogInfo("- Power Source: Battery with %s and %s remaining.", charge.c_str(), time.c_str());
+            LogInfo("Power: Battery with %s and %s remaining.", charge.c_str(), time.c_str());
         }
         else if (s == SDL_POWERSTATE_NO_BATTERY)
         {
-            LogInfo("- Power Source: AC with no battery.");
+            LogInfo("Power: AC with no battery.");
         }
         else if (s == SDL_POWERSTATE_CHARGING)
         {
-            LogInfo("- Power Source: AC with a charging battery.");
+            LogInfo("Power: AC with a charging battery.");
         }
         else if (s == SDL_POWERSTATE_CHARGED)
         {
-            LogInfo("- Power Source: AC with a fully charged battery.");
+            LogInfo("Power: AC with a fully charged battery.");
         }
         else
         {
-            LogInfo("- Power Source: Unknown.");
+            LogInfo("Power: Unknown.");
         }
     }
 
@@ -262,21 +258,20 @@ void App::InitLogSystemInfo_() const
         SDL_SysWMinfo i;
         SDL_VERSION(&i.version);
 
-        w = SDL_CreateWindow("App::LogSystemInfo",
+        w = SDL_CreateWindow("App::InitLogSystemInfo_",
                              SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
                              1, 1, SDL_WINDOW_HIDDEN);
         if (!w)
         {
-            LogInfo("- Window Manager: Unknown (failed to create window: %s).", SDL_GetError());
+            LogInfo("Window Manager: Unknown (failed to create window: %s).", SDL_GetError());
             return;
         }
         else
         {
             if (!SDL_GetWindowWMInfo(w, &i))
             {
-                LogInfo("- Window Manager: Unknown (%s).", SDL_GetError());
+                LogInfo("Window Manager: Unknown (%s).", SDL_GetError());
                 SDL_DestroyWindow(w);
-                w = nullptr;
                 return;
             }
             else
@@ -302,7 +297,7 @@ void App::InitLogSystemInfo_() const
         default: break;
         }
 
-        LogInfo("- Window Manager: %s.", wm);
+        LogInfo("Window Manager: %s.", wm);
     }
 }
 
