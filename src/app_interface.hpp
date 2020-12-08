@@ -18,6 +18,7 @@ public:
     // @todo Game Logic: Entity Component System (requires Event Manager).
     // @todo Event Manager.
     // @todo Memory Manager.
+    // @todo CVar/Config/Settings System/Manager.
 
     virtual ~IApp() {}
 

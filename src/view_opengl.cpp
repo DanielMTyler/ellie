@@ -31,11 +31,11 @@ bool ViewOpenGL::Init()
     if (!InitGLFunctions_())
         return false;
 
-    // @todo Log Graphics Information.
+    // @todo Log more graphics information.
 
     int glNumVertexAttribs;
     glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &glNumVertexAttribs);
-    LogInfo("OpenGL maximum number of vertex attributes supported: %i.", glNumVertexAttribs);
+    LogInfo("OpenGL max vertex attributes supported: %i.", glNumVertexAttribs);
 
     m_shaderPath = m_app->DataPath() + "shaders" + PATH_SEPARATOR;
     m_fpsLastTime = SDL_GetPerformanceCounter();
@@ -80,16 +80,16 @@ void ViewOpenGL::Cleanup()
         g_ebo = 0;
     }
 
-    if (g_vao)
-    {
-        glDeleteVertexArrays(1, &g_vao);
-        g_vao = 0;
-    }
-
     if (g_vbo)
     {
         glDeleteBuffers(1, &g_vbo);
         g_vbo = 0;
+    }
+
+    if (g_vao)
+    {
+        glDeleteVertexArrays(1, &g_vao);
+        g_vao = 0;
     }
 
     if (!m_shaders.empty())
@@ -294,9 +294,11 @@ bool ViewOpenGL::InitWindowAndGLContext_()
     }
     LogInfo("Multisampling: %s with %i samples.", OnOffBoolToStr(multisampling), multisampling_numSamples);
 
-    // @note Sometimes SDL_GL_SetSwapInterval isn't allowed, but SDL_GL_GetSwapInterval works fine.
     if (ENABLE_VYSNC)
     {
+        // @note Sometimes SDL_GL_SetSwapInterval isn't allowed, but SDL_GL_GetSwapInterval works fine;
+        //       SDL_GL_SetSwapInterval will fail, but SDL_GetError() == "".
+
         if (ADAPTIVE_VSYNC)
         {
             if (!SDL_GL_SetSwapInterval(-1))
@@ -346,7 +348,6 @@ bool ViewOpenGL::InitGLFunctions_()
         LogFatal("Failed to load OpenGL functions.");
         return false;
     }
-    LogInfo("Loaded OpenGL functions.");
 
     if (GLVersion.major < (int)MINIMUM_OPENGL_MAJOR ||
         (GLVersion.major == (int)MINIMUM_OPENGL_MAJOR && GLVersion.minor < (int)MINIMUM_OPENGL_MINOR))
@@ -355,19 +356,23 @@ bool ViewOpenGL::InitGLFunctions_()
                  MINIMUM_OPENGL_MAJOR, MINIMUM_OPENGL_MINOR);
         return false;
     }
-
-    return true;
+    else
+    {
+        LogInfo("Loaded OpenGL v%i.%i functions.", GLVersion.major, GLVersion.minor);
+        return true;
+    }
 }
 
 bool ViewOpenGL::CreateShader(std::string name, std::string vertex, std::string fragment)
 {
-    LogInfo("Creating shader: %s.", name.c_str());
-
     if (name.empty())
     {
-            LogFatal("Shader name is empty.");
-            return false;
+        LogFatal("Tried to create shader with no name.");
+        return false;
     }
+
+    LogInfo("Creating shader: %s.", name.c_str());
+
     if (vertex.empty() && fragment.empty())
     {
         LogFatal("No vertex or fragment shader provided.");
@@ -581,21 +586,21 @@ bool ViewOpenGL::ShaderSetVec4f(std::string shader, std::string name, float32 x,
     return true;
 }
 
-bool ViewOpenGL::LoadShader_(std::string name, bool vertex, uint32& shader)
+bool ViewOpenGL::LoadShader_(std::string name, bool vertex, Shader& shader)
 {
-    LogInfo("Loading %s shader: %s.", (vertex ? "vertex" : "fragment"), name.c_str());
-
     if (name.empty())
     {
-        LogFatal("No name given.");
+        LogFatal("Tried to load %s shader with no name.", (vertex ? "vertex" : "fragment"));
         return false;
     }
+
+    LogInfo("Loading %s shader: %s.", (vertex ? "vertex" : "fragment"), name.c_str());
 
     std::string file = m_shaderPath + name + (vertex ? ".vert" : ".frag");
     std::string shaderStr;
     if (!m_app->LoadFile(file, shaderStr))
     {
-        LogFatal("Failed to load file.");
+        LogFatal("Failed to load shader file.");
         return false;
     }
 

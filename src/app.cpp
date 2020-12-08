@@ -290,6 +290,7 @@ void App::InitLogSystemInfo_() const
             {
                 LogInfo("Window Manager: Unknown (%s).", SDL_GetError());
                 SDL_DestroyWindow(w);
+                w = nullptr;
                 return;
             }
             else
