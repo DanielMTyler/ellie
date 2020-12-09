@@ -7,8 +7,8 @@
 
 #include "view_opengl.hpp"
 #include "SDL.h"
-#include "../thirdparty/glad/include/glad/glad.h"
-#include "../thirdparty/glad/include/KHR/khrplatform.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
 global_variable uint32 g_vbo = 0;
 global_variable uint32 g_vao = 0;
@@ -31,25 +31,29 @@ bool ViewOpenGL::Init()
     if (!InitGLFunctions_())
         return false;
 
-    // @todo Log more graphics information.
-
-    int glNumVertexAttribs;
-    glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &glNumVertexAttribs);
-    LogInfo("OpenGL max vertex attributes supported: %i.", glNumVertexAttribs);
+    InitLogGraphicsInfo_();
 
     m_shaderPath = m_app->DataPath() + "shaders" + PATH_SEPARATOR;
+    m_texturePath = m_app->DataPath() + "textures" + PATH_SEPARATOR;
     m_fpsLastTime = SDL_GetPerformanceCounter();
+
+    stbi_set_flip_vertically_on_load(true);
 
     glViewport(0, 0, DESIRED_WINDOW_WIDTH, DESIRED_WINDOW_HEIGHT);
 
     if (!CreateShader("default", "default", "default"))
         return false;
+    if (!CreateTexture("wall.jpg", false))
+        return false;
+    if (!CreateTexture("awesomeface.png", true))
+        return false;
 
     float32 vertices[] = {
-         0.5f,  0.5f, 0.0f,  // top right
-         0.5f, -0.5f, 0.0f,  // bottom right
-        -0.5f, -0.5f, 0.0f,  // bottom left
-        -0.5f,  0.5f, 0.0f   // top left
+        // positions          // texture coords
+         0.5f,  0.5f, 0.0f,   1.0f, 1.0f,   // top right
+         0.5f, -0.5f, 0.0f,   1.0f, 0.0f,   // bottom right
+        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f,   // bottom left
+        -0.5f,  0.5f, 0.0f,   0.0f, 1.0f    // top left
     };
     uint32 indices[] = {  // note that we start from 0!
         0, 1, 3,   // first triangle
@@ -67,8 +71,18 @@ bool ViewOpenGL::Init()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float32), 0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float32), (void*)0);
     glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float32), (void*)(3 * sizeof(float32)));
+    glEnableVertexAttribArray(1);
+
+    if (!UseShader("default"))
+        return false;
+    if (!ShaderSetInt("default", "texture1", 0))
+        return false;
+    if (!ShaderSetInt("default", "texture2", 1))
+        return false;
+
     return true;
 }
 
@@ -90,6 +104,14 @@ void ViewOpenGL::Cleanup()
     {
         glDeleteVertexArrays(1, &g_vao);
         g_vao = 0;
+    }
+
+    if (!m_textures.empty())
+    {
+        for (auto it = m_textures.begin(); it != m_textures.end(); it++)
+            glDeleteTextures(1, &it->second);
+
+        m_textures.clear();
     }
 
     if (!m_shaders.empty())
@@ -161,6 +183,12 @@ bool ViewOpenGL::Update(DeltaTime dt)
     glClear(GL_COLOR_BUFFER_BIT);
 
     if (!UseShader("default"))
+        return false;
+    glActiveTexture(GL_TEXTURE0);
+    if (!UseTexture("wall.jpg"))
+        return false;
+    glActiveTexture(GL_TEXTURE1);
+    if (!UseTexture("awesomeface.png"))
         return false;
 
     glBindVertexArray(g_vao);
@@ -363,6 +391,27 @@ bool ViewOpenGL::InitGLFunctions_()
     }
 }
 
+void ViewOpenGL::InitLogGraphicsInfo_()
+{
+    int v;
+    glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &v);
+    LogInfo("OpenGL max vertex attributes supported: %i.", v);
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &v);
+    LogInfo("OpenGL max 1D/2D texture size: %ix%i.", v, v);
+    glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &v);
+    LogInfo("OpenGL max 3D texture size: %ix%ix%i.", v, v, v);
+    glGetIntegerv(GL_MAX_CUBE_MAP_TEXTURE_SIZE, &v);
+    LogInfo("OpenGL max cube map texture size: %ix%ix%i.", v, v, v);
+    glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &v);
+    LogInfo("OpenGL max fragment texture image units: %i.", v);
+    glGetIntegerv(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS, &v);
+    LogInfo("OpenGL max vertex texture image units: %i.", v);
+    glGetIntegerv(GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS, &v);
+    LogInfo("OpenGL max geometry texture image units: %i.", v);
+    glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &v);
+    LogInfo("OpenGL max combined texture image units: %i.", v);
+}
+
 bool ViewOpenGL::CreateShader(std::string name, std::string vertex, std::string fragment)
 {
     if (name.empty())
@@ -479,7 +528,7 @@ bool ViewOpenGL::ShaderSetInt(std::string shader, std::string name, int value) c
         return false;
     }
 
-    auto s = m_shaders.find(name);
+    auto s = m_shaders.find(shader);
     if (s == m_shaders.end())
     {
         LogFatal("Tried to set shader (%s) int (%s), but shader doesn't exist.", shader.c_str(), name.c_str());
@@ -503,7 +552,7 @@ bool ViewOpenGL::ShaderSetFloat(std::string shader, std::string name, float32 va
         return false;
     }
 
-    auto s = m_shaders.find(name);
+    auto s = m_shaders.find(shader);
     if (s == m_shaders.end())
     {
         LogFatal("Tried to set shader (%s) float (%s), but shader doesn't exist.", shader.c_str(), name.c_str());
@@ -527,7 +576,7 @@ bool ViewOpenGL::ShaderSetVec2f(std::string shader, std::string name, float32 x,
         return false;
     }
 
-    auto s = m_shaders.find(name);
+    auto s = m_shaders.find(shader);
     if (s == m_shaders.end())
     {
         LogFatal("Tried to set shader (%s) Vec2f (%s), but shader doesn't exist.", shader.c_str(), name.c_str());
@@ -551,7 +600,7 @@ bool ViewOpenGL::ShaderSetVec3f(std::string shader, std::string name, float32 x,
         return false;
     }
 
-    auto s = m_shaders.find(name);
+    auto s = m_shaders.find(shader);
     if (s == m_shaders.end())
     {
         LogFatal("Tried to set shader (%s) Vec3f (%s), but shader doesn't exist.", shader.c_str(), name.c_str());
@@ -575,7 +624,7 @@ bool ViewOpenGL::ShaderSetVec4f(std::string shader, std::string name, float32 x,
         return false;
     }
 
-    auto s = m_shaders.find(name);
+    auto s = m_shaders.find(shader);
     if (s == m_shaders.end())
     {
         LogFatal("Tried to set shader (%s) Vec4f (%s), but shader doesn't exist.", shader.c_str(), name.c_str());
@@ -626,5 +675,94 @@ bool ViewOpenGL::LoadShader_(std::string name, bool vertex, Shader& shader)
         return false;
     }
 
+    return true;
+}
+
+bool ViewOpenGL::CreateTexture(std::string name,
+                               bool hasAlpha,
+                               uint32 wrapS,
+                               uint32 wrapT,
+                               uint32 minFilter,
+                               uint32 magFilter,
+                               const float32* rgbaBorderColor)
+{
+    if (name.empty())
+    {
+        LogFatal("Tried to create texture with no filename.");
+        return false;
+    }
+
+    LogInfo("Creating texture from image: %s.", name.c_str());
+
+    auto exists = m_textures.find(name);
+    if (exists != m_textures.end())
+    {
+        LogFatal("Texture already exists.");
+        return false;
+    }
+
+    int width;
+    int height;
+    int numChannels;
+    unsigned char* data = stbi_load((m_texturePath + name).c_str(), &width, &height, &numChannels, 0);
+    if (!data)
+    {
+        LogFatal("Failed to load image: %s.", stbi_failure_reason());
+        return false;
+    }
+
+    Texture texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, wrapS);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, wrapT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
+    if (rgbaBorderColor)
+        glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, rgbaBorderColor);
+
+    int internalFormat = GL_RGB;
+    if (hasAlpha)
+        internalFormat = GL_RGBA;
+    int imageFormat = internalFormat;
+    glTexImage2D(GL_TEXTURE_2D, 0, internalFormat, width, height, 0, imageFormat, GL_UNSIGNED_BYTE, data);
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    stbi_image_free(data);
+    data = nullptr;
+
+    m_textures[name] = texture;
+    return true;
+}
+
+void ViewOpenGL::DeleteTexture(std::string name)
+{
+    LogInfo("Deleting texture if exists: %s.", name.c_str());
+
+    auto s = m_textures.find(name);
+    if (s != m_textures.end())
+    {
+        glDeleteTextures(1, &s->second);
+        m_textures.erase(name);
+    }
+}
+
+bool ViewOpenGL::UseTexture(std::string name)
+{
+    if (name.empty())
+    {
+        LogFatal("Tried to use texture with no name.");
+        return false;
+    }
+
+    auto s = m_textures.find(name);
+    if (s == m_textures.end())
+    {
+        LogFatal("Tried to use non-existant texture: %s.", name.c_str());
+        return false;
+    }
+
+    glBindTexture(GL_TEXTURE_2D, s->second);
     return true;
 }

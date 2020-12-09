@@ -10,6 +10,8 @@
 
 #include "global.hpp"
 #include "SDL.h"
+#include <glad/glad.h>
+#include <KHR/khrplatform.h>
 #include <map>
 #include <string>
 #include "app_interface.hpp"
@@ -26,6 +28,7 @@ private:
     // @todo Resource Manager.
 
     typedef uint32 Shader;
+    typedef uint32 Texture;
 
     const uint MINIMUM_OPENGL_MAJOR = 3;
     const uint MINIMUM_OPENGL_MINOR = 3;
@@ -41,6 +44,7 @@ private:
 
     IApp* m_app = nullptr;
     std::string m_shaderPath;
+    std::string m_texturePath;
 
     SDL_Window* m_window = nullptr;
     SDL_GLContext m_glContext = nullptr;
@@ -50,8 +54,10 @@ private:
 
     bool InitWindowAndGLContext_();
     bool InitGLFunctions_();
+    void InitLogGraphicsInfo_();
 
     std::map<std::string, Shader> m_shaders;
+    std::map<std::string, Texture> m_textures;
 
     // @note Sometimes multiple vertex or multiple fragment shaders can be used in
     //       a single program, but OpenGL ES and some others don't support it, so
@@ -66,6 +72,16 @@ private:
     bool ShaderSetVec3f(std::string shader, std::string name, float32 x, float32 y, float32 z) const;
     bool ShaderSetVec4f(std::string shader, std::string name, float32 x, float32 y, float32 z, float32 w) const;
     bool LoadShader_(std::string name, bool vertex, Shader& shader);
+
+    bool CreateTexture(std::string name,
+                       bool hasAlpha,
+                       uint32 wrapS = GL_REPEAT,
+                       uint32 wrapT = GL_REPEAT,
+                       uint32 minFilter = GL_LINEAR_MIPMAP_LINEAR,
+                       uint32 magFilter = GL_LINEAR,
+                       const float32* rgbaBorderColor = nullptr);
+    void DeleteTexture(std::string name);
+    bool UseTexture   (std::string name);
 };
 
 #endif // VIEW_OPENGL_HPP
