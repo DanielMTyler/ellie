@@ -1,6 +1,6 @@
 #include "global.hpp"
 #include "app_interface.hpp"
-#include "SDL.h" // main -> SDL_main redefinition.
+#include <SDL.h> // main -> SDL_main redefinition.
 
 // @warning SDL 2 requires this function signature to avoid SDL_main linker errors.
 int main(int /*argc*/, char* /*argv*/[])

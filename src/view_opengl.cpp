@@ -6,7 +6,6 @@
 */
 
 #include "view_opengl.hpp"
-#include "SDL.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
@@ -191,8 +190,28 @@ bool ViewOpenGL::Update(DeltaTime dt)
     if (!UseTexture("awesomeface.png"))
         return false;
 
+    static glm::mat4 identityMatrix = glm::mat4(1.0f);
+    static glm::mat4 transformMatrix;
+    static float32 rotation = 0.0f;
+
+    rotation += 0.001f * dt;
+
     glBindVertexArray(g_vao);
+
+    transformMatrix = identityMatrix;
+    transformMatrix = glm::translate(transformMatrix, glm::vec3(0.5f, -0.5f, 0.0f));
+    transformMatrix = glm::rotate(transformMatrix, rotation, glm::vec3(0.0f, 0.0f, 1.0f));
+    if (!ShaderSetMat4("default", "transform", transformMatrix))
+        return false;
     glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+
+    transformMatrix = identityMatrix;
+    transformMatrix = glm::translate(transformMatrix, glm::vec3(-0.5f, 0.5f, 0.0f));
+    transformMatrix = glm::rotate(transformMatrix, -rotation, glm::vec3(0.0f, 0.0f, 1.0f));
+    if (!ShaderSetMat4("default", "transform", transformMatrix))
+        return false;
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+
     glBindVertexArray(0);
 
     SDL_GL_SwapWindow(m_window);
@@ -632,6 +651,102 @@ bool ViewOpenGL::ShaderSetVec4f(std::string shader, std::string name, float32 x,
     }
 
     glUniform4f(glGetUniformLocation(s->second, name.c_str()), x, y, z, w);
+    return true;
+}
+
+bool ViewOpenGL::ShaderSetVec2(std::string shader, std::string name, glm::vec2 v) const
+{
+    if (shader.empty())
+    {
+        LogFatal("Tried to set shader glm::vec2 with no shader name.");
+        return false;
+    }
+    if (name.empty())
+    {
+        LogFatal("Tried to set unnamed shader (%s) glm::vec2.", shader.c_str());
+        return false;
+    }
+
+    auto s = m_shaders.find(shader);
+    if (s == m_shaders.end())
+    {
+        LogFatal("Tried to set shader (%s) glm::vec2 (%s), but shader doesn't exist.", shader.c_str(), name.c_str());
+        return false;
+    }
+
+    glUniform2fv(glGetUniformLocation(s->second, name.c_str()), 1, glm::value_ptr(v));
+    return true;
+}
+
+bool ViewOpenGL::ShaderSetVec3(std::string shader, std::string name, glm::vec3 v) const
+{
+    if (shader.empty())
+    {
+        LogFatal("Tried to set shader glm::vec3 with no shader name.");
+        return false;
+    }
+    if (name.empty())
+    {
+        LogFatal("Tried to set unnamed shader (%s) glm::vec3.", shader.c_str());
+        return false;
+    }
+
+    auto s = m_shaders.find(shader);
+    if (s == m_shaders.end())
+    {
+        LogFatal("Tried to set shader (%s) glm::vec3 (%s), but shader doesn't exist.", shader.c_str(), name.c_str());
+        return false;
+    }
+
+    glUniform3fv(glGetUniformLocation(s->second, name.c_str()), 1, glm::value_ptr(v));
+    return true;
+}
+
+bool ViewOpenGL::ShaderSetVec4(std::string shader, std::string name, glm::vec4 v) const
+{
+    if (shader.empty())
+    {
+        LogFatal("Tried to set shader glm::vec4 with no shader name.");
+        return false;
+    }
+    if (name.empty())
+    {
+        LogFatal("Tried to set unnamed shader (%s) glm::vec4.", shader.c_str());
+        return false;
+    }
+
+    auto s = m_shaders.find(shader);
+    if (s == m_shaders.end())
+    {
+        LogFatal("Tried to set shader (%s) glm::vec4 (%s), but shader doesn't exist.", shader.c_str(), name.c_str());
+        return false;
+    }
+
+    glUniform4fv(glGetUniformLocation(s->second, name.c_str()), 1, glm::value_ptr(v));
+    return true;
+}
+
+bool ViewOpenGL::ShaderSetMat4(std::string shader, std::string name, glm::mat4 m) const
+{
+    if (shader.empty())
+    {
+        LogFatal("Tried to set shader glm::mat4 with no shader name.");
+        return false;
+    }
+    if (name.empty())
+    {
+        LogFatal("Tried to set unnamed shader (%s) glm::mat4.", shader.c_str());
+        return false;
+    }
+
+    auto s = m_shaders.find(shader);
+    if (s == m_shaders.end())
+    {
+        LogFatal("Tried to set shader (%s) glm::mat4 (%s), but shader doesn't exist.", shader.c_str(), name.c_str());
+        return false;
+    }
+
+    glUniformMatrix4fv(glGetUniformLocation(s->second, name.c_str()), 1, GL_FALSE, glm::value_ptr(m));
     return true;
 }
 

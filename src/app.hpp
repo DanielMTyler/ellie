@@ -9,7 +9,7 @@
 #define APP_HPP
 
 #include "global.hpp"
-#include "SDL.h"
+#include <SDL.h>
 #include <string>
 #include "app_interface.hpp"
 #include "view_interface.hpp"

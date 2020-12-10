@@ -25,4 +25,4 @@ find_package(SDL2 2.0.12 REQUIRED)
 target_link_libraries(ellie-bin SDL2::SDL2 SDL2::SDL2main)
 
 # @note thirdparty is indicated as SYSTEM to ignore warnings/errors.
-target_include_directories(ellie-bin SYSTEM PUBLIC ${CMAKE_SOURCE_DIR}/thirdparty/glad/include ${CMAKE_SOURCE_DIR}/thirdparty/glad/src ${CMAKE_SOURCE_DIR}/thirdparty/stb)
+target_include_directories(ellie-bin SYSTEM PUBLIC ${CMAKE_SOURCE_DIR}/thirdparty/glad/include ${CMAKE_SOURCE_DIR}/thirdparty/glad/src ${CMAKE_SOURCE_DIR}/thirdparty/glm ${CMAKE_SOURCE_DIR}/thirdparty/stb)

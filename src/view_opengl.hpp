@@ -9,9 +9,12 @@
 #define VIEW_OPENGL_HPP
 
 #include "global.hpp"
-#include "SDL.h"
+#include <SDL.h>
 #include <glad/glad.h>
 #include <KHR/khrplatform.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <map>
 #include <string>
 #include "app_interface.hpp"
@@ -33,8 +36,8 @@ private:
     const uint MINIMUM_OPENGL_MAJOR = 3;
     const uint MINIMUM_OPENGL_MINOR = 3;
 
-    const uint DESIRED_WINDOW_WIDTH  = 1280;
-    const uint DESIRED_WINDOW_HEIGHT = 720;
+    const uint DESIRED_WINDOW_WIDTH  = 600;
+    const uint DESIRED_WINDOW_HEIGHT = 600;
 
     const bool ENABLE_VYSNC = true;
     const bool ADAPTIVE_VSYNC = true; // Classic or Adaptive VSync?
@@ -71,6 +74,10 @@ private:
     bool ShaderSetVec2f(std::string shader, std::string name, float32 x, float32 y) const;
     bool ShaderSetVec3f(std::string shader, std::string name, float32 x, float32 y, float32 z) const;
     bool ShaderSetVec4f(std::string shader, std::string name, float32 x, float32 y, float32 z, float32 w) const;
+    bool ShaderSetVec2(std::string shader, std::string name, glm::vec2 v) const;
+    bool ShaderSetVec3(std::string shader, std::string name, glm::vec3 v) const;
+    bool ShaderSetVec4(std::string shader, std::string name, glm::vec4 v) const;
+    bool ShaderSetMat4(std::string shader, std::string name, glm::mat4 m) const;
     bool LoadShader_(std::string name, bool vertex, Shader& shader);
 
     bool CreateTexture(std::string name,

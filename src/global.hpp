@@ -96,7 +96,7 @@ inline const char* YesNoBoolToStr(bool b)
 }
 
 
-#include "SDL.h"
+#include <SDL.h>
 // @note SDL logging works without initialization, so it can be used anytime :).
 #define LogInfo(...)    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, __VA_ARGS__)
 #define LogWarning(...) SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, __VA_ARGS__)
