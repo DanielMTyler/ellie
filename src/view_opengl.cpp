@@ -38,7 +38,8 @@ bool ViewOpenGL::Init()
 
     stbi_set_flip_vertically_on_load(true);
 
-    glViewport(0, 0, DESIRED_WINDOW_WIDTH, DESIRED_WINDOW_HEIGHT);
+    glViewport(0, 0, m_windowWidth, m_windowHeight);
+    glEnable(GL_DEPTH_TEST);
 
     if (!CreateShader("default", "default", "default"))
         return false;
@@ -48,15 +49,78 @@ bool ViewOpenGL::Init()
         return false;
 
     float32 vertices[] = {
-        // positions          // texture coords
-         0.5f,  0.5f, 0.0f,   1.0f, 1.0f,   // top right
-         0.5f, -0.5f, 0.0f,   1.0f, 0.0f,   // bottom right
-        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f,   // bottom left
-        -0.5f,  0.5f, 0.0f,   0.0f, 1.0f    // top left
+        // back
+        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // 0
+         0.5f, -0.5f, -0.5f,  1.0f, 0.0f, // 1
+         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // 2
+         //0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // 2
+        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // 3
+        //-0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // 0
+
+        // front
+        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // 4
+         0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // 5
+         0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // 6
+         //0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // 6
+        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f, // 7
+        //-0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // 4
+
+        // left
+        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // 8
+        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // 9
+        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // 10
+        //-0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // 10
+        //-0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // 4
+        //-0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // 8
+
+        // right
+         0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // 11
+         //0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // 2
+         0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // 12
+         //0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // 12
+         0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // 13
+         //0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // 11
+
+        // bottom
+        //-0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // 10
+         0.5f, -0.5f, -0.5f,  1.0f, 1.0f, // 14
+         //0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // 5
+         //0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // 5
+        //-0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // 4
+        //-0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // 10
+
+        // top
+        //-0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // 3
+         //0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // 2
+         //0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // 11
+         //0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // 11
+        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f // 15
+        //-0.5f,  0.5f, -0.5f,  0.0f, 1.0f  // 3
     };
-    uint32 indices[] = {  // note that we start from 0!
-        0, 1, 3,   // first triangle
-        1, 2, 3    // second triangle
+    uint32 indices[] = {
+        // back
+        0, 1, 2,
+        2, 3, 0,
+
+        // front
+        4, 5, 6,
+        6, 7, 4,
+
+        // left
+        8, 9, 10,
+        10, 4, 8,
+
+        // right
+        11, 2, 12,
+        12, 13, 11,
+
+        // bottom
+        10, 14, 5,
+        5, 4, 10,
+
+        // top
+        3, 2, 11,
+        11, 15, 3
     };
 
     glGenVertexArrays(1, &g_vao);
@@ -70,8 +134,10 @@ bool ViewOpenGL::Init()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
+    // Position
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float32), (void*)0);
     glEnableVertexAttribArray(0);
+    // Texture Coordinate
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float32), (void*)(3 * sizeof(float32)));
     glEnableVertexAttribArray(1);
 
@@ -152,10 +218,10 @@ bool ViewOpenGL::Update(DeltaTime dt)
             // @note SDL_WINDOWEVENT_RESIZED only fires if the window size
             //       changed due to an external event, i.e., not an SDL call;
             //       Also, initial window creation doesn't cause this either.
-            uint32 w = e.window.data1;
-            uint32 h = e.window.data2;
-            glViewport(0, 0, w, h);
-            LogInfo("Window resized to %ux%u; viewport set.", w, h);
+            m_windowWidth  = e.window.data1;
+            m_windowHeight = e.window.data2;
+            glViewport(0, 0, m_windowWidth, m_windowHeight);
+            LogInfo("Window resized to %ux%u; viewport set.", m_windowWidth, m_windowHeight);
         }
         else if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_w)
         {
@@ -179,7 +245,7 @@ bool ViewOpenGL::Update(DeltaTime dt)
     }
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     if (!UseShader("default"))
         return false;
@@ -190,27 +256,46 @@ bool ViewOpenGL::Update(DeltaTime dt)
     if (!UseTexture("awesomeface.png"))
         return false;
 
-    static glm::mat4 identityMatrix = glm::mat4(1.0f);
-    static glm::mat4 transformMatrix;
-    static float32 rotation = 0.0f;
-
-    rotation += 0.001f * dt;
+    static glm::mat4 identity = glm::mat4(1.0f);
 
     glBindVertexArray(g_vao);
 
-    transformMatrix = identityMatrix;
-    transformMatrix = glm::translate(transformMatrix, glm::vec3(0.5f, -0.5f, 0.0f));
-    transformMatrix = glm::rotate(transformMatrix, rotation, glm::vec3(0.0f, 0.0f, 1.0f));
-    if (!ShaderSetMat4("default", "transform", transformMatrix))
-        return false;
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+    glm::mat4 view = identity;
+    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
 
-    transformMatrix = identityMatrix;
-    transformMatrix = glm::translate(transformMatrix, glm::vec3(-0.5f, 0.5f, 0.0f));
-    transformMatrix = glm::rotate(transformMatrix, -rotation, glm::vec3(0.0f, 0.0f, 1.0f));
-    if (!ShaderSetMat4("default", "transform", transformMatrix))
+    glm::mat4 projection = glm::perspective(glm::radians(m_fov), (float32)m_windowWidth/(float32)m_windowHeight, m_nearPlane, m_farPlane);
+
+    if (!ShaderSetMat4("default", "view", view))
         return false;
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
+    if (!ShaderSetMat4("default", "projection", projection))
+        return false;
+
+    glm::vec3 cubePositions[] = {
+        glm::vec3( 0.0f,  0.0f,  0.0f),
+        glm::vec3( 2.0f,  5.0f, -15.0f),
+        glm::vec3(-1.5f, -2.2f, -2.5f),
+        glm::vec3(-3.8f, -2.0f, -12.3f),
+        glm::vec3( 2.4f, -0.4f, -3.5f),
+        glm::vec3(-1.7f,  3.0f, -7.5f),
+        glm::vec3( 1.3f, -2.0f, -2.5f),
+        glm::vec3( 1.5f,  2.0f, -2.5f),
+        glm::vec3( 1.5f,  0.2f, -1.5f),
+        glm::vec3(-1.3f,  1.0f, -1.5f)
+    };
+    static float32 rotation = 0.0f;
+    rotation += 0.02f * dt;
+    for (uint32 i = 0; i < 10; i++)
+    {
+        glm::mat4 model = identity;
+        model = glm::translate(model, cubePositions[i]);
+        float32 angle = 20.0f * i;
+        model = glm::rotate(model, glm::radians(angle + rotation), glm::vec3(1.0f, 0.3f, 0.5f));
+
+        if (!ShaderSetMat4("default", "model", model))
+            return false;
+
+        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
+    }
 
     glBindVertexArray(0);
 
@@ -269,7 +354,7 @@ bool ViewOpenGL::InitWindowAndGLContext_()
 
     m_window = SDL_CreateWindow(APPLICATION_NAME,
                                 SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                                DESIRED_WINDOW_WIDTH, DESIRED_WINDOW_HEIGHT,
+                                m_windowWidth, m_windowHeight,
                                 SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
     if (!m_window)
     {

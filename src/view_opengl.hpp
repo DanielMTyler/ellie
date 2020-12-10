@@ -36,9 +36,6 @@ private:
     const uint MINIMUM_OPENGL_MAJOR = 3;
     const uint MINIMUM_OPENGL_MINOR = 3;
 
-    const uint DESIRED_WINDOW_WIDTH  = 600;
-    const uint DESIRED_WINDOW_HEIGHT = 600;
-
     const bool ENABLE_VYSNC = true;
     const bool ADAPTIVE_VSYNC = true; // Classic or Adaptive VSync?
 
@@ -54,6 +51,13 @@ private:
 
     uint64 m_fpsLastTime = 0;
     uint32 m_fpsCounter = 0;
+
+    uint32 m_windowWidth  = 800;
+    uint32 m_windowHeight = 600;
+
+    float32 m_fov = 45.0f;
+    float32 m_nearPlane = 0.1f;
+    float32 m_farPlane  = 100.0f;
 
     bool InitWindowAndGLContext_();
     bool InitGLFunctions_();
