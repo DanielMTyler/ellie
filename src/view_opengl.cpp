@@ -428,15 +428,12 @@ bool ViewOpenGL::InitWindowAndGLContext_()
 
     if (ENABLE_VYSNC)
     {
-        // @note Sometimes SDL_GL_SetSwapInterval isn't allowed, but SDL_GL_GetSwapInterval works fine;
-        //       SDL_GL_SetSwapInterval will fail, but SDL_GetError() == "".
-
         if (ADAPTIVE_VSYNC)
         {
-            if (!SDL_GL_SetSwapInterval(-1))
+            if (SDL_GL_SetSwapInterval(-1))
             {
                 LogWarning("Failed to set Adaptive VSync: %s.", SDL_GetError());
-                if (!SDL_GL_SetSwapInterval(1))
+                if (SDL_GL_SetSwapInterval(1))
                     LogWarning("Failed to set Standard VSync: %s.", SDL_GetError());
                 else
                     LogInfo("Set VSync: On.");
@@ -448,7 +445,7 @@ bool ViewOpenGL::InitWindowAndGLContext_()
         }
         else
         {
-            if (!SDL_GL_SetSwapInterval(1))
+            if (SDL_GL_SetSwapInterval(1))
                 LogWarning("Failed to set Standard VSync: %s.", SDL_GetError());
             else
                 LogInfo("Set VSync: On.");
@@ -456,7 +453,7 @@ bool ViewOpenGL::InitWindowAndGLContext_()
     }
     else
     {
-        if (!SDL_GL_SetSwapInterval(0))
+        if (SDL_GL_SetSwapInterval(0))
             LogWarning("Failed to set VSync off: %s.", SDL_GetError());
         LogInfo("Set VSync: Off.");
     }
