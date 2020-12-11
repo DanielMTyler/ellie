@@ -252,6 +252,11 @@ bool ViewOpenGL::Update(DeltaTime dt)
             m_cameraYaw   += (m_cameraInvertedYaw   ? -e.motion.xrel : e.motion.xrel) * m_cameraSensitivityYaw;
             m_cameraPitch -= (m_cameraInvertedPitch ? -e.motion.yrel : e.motion.yrel) * m_cameraSensitivityPitch;
 
+            if (m_cameraYaw > 360.0f)
+                m_cameraYaw -= 360.0f;
+            else if (m_cameraYaw < 0.0f)
+                m_cameraYaw += 360.0f;
+
             if (m_cameraPitch > 89.0f)
                 m_cameraPitch = 89.0f;
             else if (m_cameraPitch < -89.0f)
@@ -261,7 +266,6 @@ bool ViewOpenGL::Update(DeltaTime dt)
         }
         else if (e.type == SDL_MOUSEWHEEL)
         {
-            float32 lastZoom = m_cameraZoom;
             bool up = (e.wheel.y > 0 ? true : false);
 
             if (e.wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
@@ -276,8 +280,6 @@ bool ViewOpenGL::Update(DeltaTime dt)
                 m_cameraZoom = m_cameraZoomMin;
             else if (m_cameraZoom > m_cameraZoomMax)
                 m_cameraZoom = m_cameraZoomMax;
-
-            LogInfo("Zoomed from %f to %f.", lastZoom, m_cameraZoom);
         }
     }
 

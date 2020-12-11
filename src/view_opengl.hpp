@@ -47,7 +47,7 @@ private:
     const float32 m_cameraSensitivityPitch = 0.1f;
     const float32 m_cameraZoomMin = 1.0f;
     const float32 m_cameraZoomMax = 45.0f;
-    const float32 m_cameraZoomStep = 1.0f;
+    const float32 m_cameraZoomStep = 3.0f;
     const bool m_cameraInvertedYaw   = false;
     const bool m_cameraInvertedPitch = false;
 
