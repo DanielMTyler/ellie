@@ -8,6 +8,7 @@
 #include "view_opengl.hpp"
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+#include <cmath> // std::sin/std::cos
 
 global_variable uint32 g_vbo = 0;
 global_variable uint32 g_vao = 0;
@@ -37,6 +38,14 @@ bool ViewOpenGL::Init()
     m_fpsLastTime = SDL_GetPerformanceCounter();
 
     stbi_set_flip_vertically_on_load(true);
+
+    if (SDL_SetRelativeMouseMode(SDL_TRUE))
+    {
+        LogFatal("Failed to set SDL relative mouse mode: %s.", SDL_GetError());
+        return false;
+    }
+
+    UpdateCamera();
 
     glViewport(0, 0, m_windowWidth, m_windowHeight);
     glEnable(GL_DEPTH_TEST);
@@ -223,19 +232,73 @@ bool ViewOpenGL::Update(DeltaTime dt)
             glViewport(0, 0, m_windowWidth, m_windowHeight);
             LogInfo("Window resized to %ux%u; viewport set.", m_windowWidth, m_windowHeight);
         }
-        else if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_w)
+        else if (e.type == SDL_KEYDOWN)
         {
-            static bool wireframe = false;
-            wireframe = !wireframe;
+            if (e.key.keysym.scancode == SDL_SCANCODE_T)
+            {
+                static bool wireframe = false;
+                wireframe = !wireframe;
 
-            if (wireframe)
-                glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+                if (wireframe)
+                    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+                else
+                    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+                LogInfo("Wireframe: %s.", OnOffBoolToStr(wireframe));
+            }
+        }
+        else if (e.type == SDL_MOUSEMOTION)
+        {
+            m_cameraYaw   += (m_cameraInvertedYaw   ? -e.motion.xrel : e.motion.xrel) * m_cameraSensitivityYaw;
+            m_cameraPitch -= (m_cameraInvertedPitch ? -e.motion.yrel : e.motion.yrel) * m_cameraSensitivityPitch;
+
+            if (m_cameraPitch > 89.0f)
+                m_cameraPitch = 89.0f;
+            else if (m_cameraPitch < -89.0f)
+                m_cameraPitch = -89.0f;
+
+            UpdateCamera();
+        }
+        else if (e.type == SDL_MOUSEWHEEL)
+        {
+            float32 lastZoom = m_cameraZoom;
+            bool up = (e.wheel.y > 0 ? true : false);
+
+            if (e.wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
+                up = -up;
+
+            if (up)
+                m_cameraZoom -= m_cameraZoomStep;
             else
-                glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+                m_cameraZoom += m_cameraZoomStep;
 
-            LogInfo("Wireframe: %s.", OnOffBoolToStr(wireframe));
+            if (m_cameraZoom < m_cameraZoomMin)
+                m_cameraZoom = m_cameraZoomMin;
+            else if (m_cameraZoom > m_cameraZoomMax)
+                m_cameraZoom = m_cameraZoomMax;
+
+            LogInfo("Zoomed from %f to %f.", lastZoom, m_cameraZoom);
         }
     }
+
+    const uint8* kbState = SDL_GetKeyboardState(nullptr);
+    if (kbState[SDL_SCANCODE_W])
+    {
+        m_cameraPosition += m_cameraFront * m_cameraSpeed * dt;
+    }
+    if (kbState[SDL_SCANCODE_S])
+    {
+        m_cameraPosition -= m_cameraFront * m_cameraSpeed * dt;
+    }
+    if (kbState[SDL_SCANCODE_A])
+    {
+        m_cameraPosition -= m_cameraRight * m_cameraSpeed * dt;
+    }
+    if (kbState[SDL_SCANCODE_D])
+    {
+        m_cameraPosition += m_cameraRight * m_cameraSpeed * dt;
+    }
+    m_cameraPosition.y = 0.0f;
 
     if (((DeltaTime)(SDL_GetPerformanceCounter() - m_fpsLastTime) / (DeltaTime)SDL_GetPerformanceFrequency()) >= 1.0f)
     {
@@ -261,9 +324,8 @@ bool ViewOpenGL::Update(DeltaTime dt)
     glBindVertexArray(g_vao);
 
     glm::mat4 view = identity;
-    view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-
-    glm::mat4 projection = glm::perspective(glm::radians(m_fov), (float32)m_windowWidth/(float32)m_windowHeight, m_nearPlane, m_farPlane);
+    view = glm::lookAt(m_cameraPosition, m_cameraPosition + m_cameraFront, m_cameraUp);
+    glm::mat4 projection = glm::perspective(glm::radians(m_cameraZoom), (float32)m_windowWidth/(float32)m_windowHeight, m_nearPlane, m_farPlane);
 
     if (!ShaderSetMat4("default", "view", view))
         return false;
@@ -305,6 +367,17 @@ bool ViewOpenGL::Update(DeltaTime dt)
     m_fpsCounter++;
 
     return !quit;
+}
+
+void ViewOpenGL::UpdateCamera()
+{
+    m_cameraFront.x = std::cos(glm::radians(m_cameraYaw)) * std::cos(glm::radians(m_cameraPitch));
+    m_cameraFront.y = std::sin(glm::radians(m_cameraPitch));
+    m_cameraFront.z = std::sin(glm::radians(m_cameraYaw)) * std::cos(glm::radians(m_cameraPitch));
+    m_cameraFront = glm::normalize(m_cameraFront);
+
+    m_cameraRight = glm::normalize(glm::cross(m_cameraFront, m_cameraWorldUp));
+    m_cameraUp    = glm::normalize(glm::cross(m_cameraRight, m_cameraFront));
 }
 
 bool ViewOpenGL::InitWindowAndGLContext_()
