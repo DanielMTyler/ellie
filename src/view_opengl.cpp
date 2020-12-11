@@ -283,22 +283,16 @@ bool ViewOpenGL::Update(DeltaTime dt)
 
     const uint8* kbState = SDL_GetKeyboardState(nullptr);
     if (kbState[SDL_SCANCODE_W])
-    {
         m_cameraPosition += m_cameraFront * m_cameraSpeed * dt;
-    }
     if (kbState[SDL_SCANCODE_S])
-    {
         m_cameraPosition -= m_cameraFront * m_cameraSpeed * dt;
-    }
     if (kbState[SDL_SCANCODE_A])
-    {
         m_cameraPosition -= m_cameraRight * m_cameraSpeed * dt;
-    }
     if (kbState[SDL_SCANCODE_D])
-    {
         m_cameraPosition += m_cameraRight * m_cameraSpeed * dt;
-    }
-    m_cameraPosition.y = 0.0f;
+    // @todo This keeps the camera grounded FPS style, but it also makes
+    //       forward/backward movement slow when at an extreme pitch. Why?
+    //m_cameraPosition.y = 0.0f;
 
     if (((DeltaTime)(SDL_GetPerformanceCounter() - m_fpsLastTime) / (DeltaTime)SDL_GetPerformanceFrequency()) >= 1.0f)
     {
