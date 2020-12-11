@@ -11,28 +11,29 @@
 #include "global.hpp"
 #include <SDL.h>
 #include <string>
-#include "app_interface.hpp"
+#include "logic.hpp"
 #include "view_interface.hpp"
 
-class App : public IApp {
+class App {
 public:
-    std::string SavePath() const override { return m_savePath; }
-    std::string DataPath() const override { return m_dataPath; }
-    std::string ExecutablePath() const override { return m_executablePath; }
-    std::string CWD() const override { return m_cwd; }
+    // @todo Game Logic.
+    // @todo Event Manager.
+    // @todo Memory Manager.
+    // @todo CVar/Config/Settings System/Manager.
 
-    bool FolderExists(std::string folder) const override;
-    bool LoadFile(std::string file, std::string& contents) const override;
+    static App& Get();
 
-    bool Init()    override;
-    void Cleanup() override;
-    int  Loop()    override;
+    std::string SavePath() const { return m_savePath; }
+    std::string DataPath() const { return m_dataPath; }
+    std::string ExecutablePath() const { return m_executablePath; }
+    std::string CWD() const { return m_cwd; }
 
-protected:
-    friend IApp;
+    bool FolderExists(std::string folder) const;
+    bool LoadFile(std::string file, std::string& contents) const;
 
-    // Creation by IApp::Get() only.
-    App() {};
+    bool Init();
+    void Cleanup();
+    int  Loop();
 
 private:
     std::string m_savePath;
@@ -41,6 +42,10 @@ private:
     std::string m_cwd;
 
     IView* m_view = nullptr;
+    Logic m_logic;
+
+    // Creation by App::Get() only.
+    App() {};
 
     // Returns true if we're the only running instance or false if we're not; returns false after SetError() on failure.
     bool ForceSingleInstanceInit_() const;

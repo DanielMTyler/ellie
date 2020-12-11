@@ -5,11 +5,18 @@
     ==================================
 */
 
-#include "app_interface.hpp"
-#include "app.hpp"
+#include "logic.hpp"
 
-IApp* IApp::Get()
+bool Logic::Init()
 {
-    static App a;
-    return &a;
+    return true;
+}
+
+void Logic::Cleanup()
+{
+}
+
+bool Logic::Update(DeltaTime /*dt*/)
+{
+    return true;
 }

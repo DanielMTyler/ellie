@@ -16,7 +16,7 @@ global_variable uint32 g_ebo = 0;
 
 bool ViewOpenGL::Init()
 {
-    m_app = IApp::Get();
+    m_app = &App::Get();
 
     if (SDL_GL_LoadLibrary(nullptr))
     {

@@ -17,7 +17,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <map>
 #include <string>
-#include "app_interface.hpp"
+#include "app.hpp"
 #include "view_interface.hpp"
 
 class ViewOpenGL : public IView
@@ -51,7 +51,7 @@ private:
     const bool m_cameraInvertedYaw   = false;
     const bool m_cameraInvertedPitch = false;
 
-    IApp* m_app = nullptr;
+    App* m_app = nullptr;
     std::string m_shaderPath;
     std::string m_texturePath;
 

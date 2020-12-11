@@ -12,6 +12,12 @@
 #include <new>
 #include "view_opengl.hpp"
 
+App& App::Get()
+{
+    static App a;
+    return a;
+}
+
 bool App::FolderExists(std::string folder) const
 {
     std::error_code ec; // @note ignored; set if the folder doesn't exist.
@@ -107,6 +113,9 @@ bool App::Init()
         return false;
     }
 
+    if (!m_logic.Init())
+        return false;
+
     LogInfo("Initialized.");
     return true;
 }
@@ -114,6 +123,8 @@ bool App::Init()
 void App::Cleanup()
 {
     LogInfo("Cleaning up.");
+
+    m_logic.Cleanup();
 
     if (m_view)
     {
@@ -137,7 +148,7 @@ int App::Loop()
         dtLast = dtNow;
         dtNow = SDL_GetPerformanceCounter();
         dt = (DeltaTime)(dtNow - dtLast) * 1000.0f / (DeltaTime)SDL_GetPerformanceFrequency();
-        if (!m_view->Update(dt))
+        if (!m_logic.Update(dt) || !m_view->Update(dt))
             quit = true;
     }
 
