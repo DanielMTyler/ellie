@@ -6,7 +6,8 @@
 */
 
 #include "app.hpp"
-#include "SDL_syswm.h"
+#include <SDL.h>
+#include <SDL_syswm.h>
 #include <cstdio>
 #include <filesystem>
 #include <new>
@@ -20,7 +21,7 @@ App& App::Get()
 
 bool App::FolderExists(std::string folder) const
 {
-    std::error_code ec; // @note ignored; set if the folder doesn't exist.
+    std::error_code ec; // ignored; set if the folder doesn't exist.
     if (std::filesystem::is_directory(folder, ec))
         return true;
     else
@@ -75,11 +76,15 @@ bool App::Init()
     if (!ForceSingleInstanceInit_())
     {
         LogFatal("Another instance is already running.");
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR,
+                                 APPLICATION_NAME,
+                                 "Another instance is already running.",
+                                 nullptr);
         return false;
     }
 
     #ifndef NDEBUG
-        // Set app log priority to show all messages; debug/verbose are hidden by default.
+        // Show all messages; debug/verbose are hidden by default.
         SDL_LogSetPriority(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_VERBOSE);
         LogWarning("Debug Build.");
     #endif
@@ -102,6 +107,9 @@ bool App::Init()
     if (!InitDataPath_())
         return false;
 
+    if (!m_logic.Init())
+        return false;
+
     m_view = new (std::nothrow) ViewOpenGL;
     if (!m_view)
     {
@@ -113,9 +121,6 @@ bool App::Init()
         return false;
     }
 
-    if (!m_logic.Init())
-        return false;
-
     LogInfo("Initialized.");
     return true;
 }
@@ -124,8 +129,6 @@ void App::Cleanup()
 {
     LogInfo("Cleaning up.");
 
-    m_logic.Cleanup();
-
     if (m_view)
     {
         m_view->Cleanup();
@@ -133,23 +136,35 @@ void App::Cleanup()
         m_view = nullptr;
     }
 
+    m_logic.Cleanup();
+
     SDL_Quit();
     ForceSingleInstanceCleanup_();
 }
 
 int App::Loop()
 {
-    bool quit = false;
     uint64 dtNow = SDL_GetPerformanceCounter();
     uint64 dtLast;
     DeltaTime dt;
-    while (!quit)
+    while (true)
     {
         dtLast = dtNow;
         dtNow = SDL_GetPerformanceCounter();
         dt = (DeltaTime)(dtNow - dtLast) * 1000.0f / (DeltaTime)SDL_GetPerformanceFrequency();
-        if (!m_logic.Update(dt) || !m_view->Update(dt))
-            quit = true;
+
+        if (!m_view->ProcessEvents(dt))
+            break;
+        // @todo Dynamically adjust update timelimit to maintain framerate
+        //       and avoid spiral of death.
+        m_events.Update();
+
+        // true == ready to quit.
+        if (m_logic.Update(dt))
+            break;
+
+        if (!m_view->Render(dt))
+            break;
     }
 
     return 0;

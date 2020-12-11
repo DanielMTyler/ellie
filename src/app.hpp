@@ -9,19 +9,21 @@
 #define APP_HPP
 
 #include "global.hpp"
-#include <SDL.h>
 #include <string>
+#include "events.hpp"
 #include "logic.hpp"
 #include "view_interface.hpp"
 
 class App {
 public:
-    // @todo Game Logic.
-    // @todo Event Manager.
+    // @todo Resource Manager.
     // @todo Memory Manager.
-    // @todo CVar/Config/Settings System/Manager.
+    // @todo CVar System and or Options System.
 
     static App& Get();
+
+    EventManager& Events() { return m_events; }
+    class Logic&  Logic()  { return m_logic; }
 
     std::string SavePath() const { return m_savePath; }
     std::string DataPath() const { return m_dataPath; }
@@ -33,7 +35,7 @@ public:
 
     bool Init();
     void Cleanup();
-    int  Loop();
+    int  Loop(); // Returns main() return code.
 
 private:
     std::string m_savePath;
@@ -41,8 +43,9 @@ private:
     std::string m_executablePath;
     std::string m_cwd;
 
+    EventManager m_events;
+    class Logic m_logic;
     IView* m_view = nullptr;
-    Logic m_logic;
 
     // Creation by App::Get() only.
     App() {};

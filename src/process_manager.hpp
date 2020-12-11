@@ -17,12 +17,12 @@
 class ProcessManager
 {
 public:
-    ~ProcessManager() { m_processList.clear(); }
+    ~ProcessManager() { AbortAll(true); }
 
     void Update(DeltaTime dt)
     {
         m_lastSuccessCount = 0;
-        m_lastFailCount = 0;
+        m_lastFailCount    = 0;
 
         auto it = m_processList.begin();
         while (it != m_processList.end())
@@ -88,7 +88,7 @@ public:
             Process::StrongPtr p = *tempIt;
             if (p->IsAlive())
             {
-                p->SetState(Process::State::Aborted);
+                p->m_state = Process::State::Aborted;
                 if (immediate)
                 {
                     p->OnAbort();
@@ -98,15 +98,15 @@ public:
         }
     }
 
-    uint Count() const { return m_processList.size(); }
-    uint LastSuccessCount() const { return m_lastSuccessCount; }
-    uint LastFailCount() const { return m_lastFailCount; }
+    uint32 Count()            const { return m_processList.size(); }
+    uint32 LastSuccessCount() const { return m_lastSuccessCount;   }
+    uint32 LastFailCount()    const { return m_lastFailCount;      }
 
 private:
     typedef std::list<Process::StrongPtr> ProcessList;
     ProcessList m_processList;
-    uint m_lastSuccessCount;
-    uint m_lastFailCount;
+    uint32 m_lastSuccessCount;
+    uint32 m_lastFailCount;
 };
 
 #endif // PROCESS_MANAGER_HPP

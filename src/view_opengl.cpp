@@ -6,9 +6,12 @@
 */
 
 #include "view_opengl.hpp"
+#include "app.hpp"
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
-#include <cmath> // std::sin/std::cos
+#include <memory> // make_shared
 
 global_variable uint32 g_vbo = 0;
 global_variable uint32 g_vao = 0;
@@ -16,7 +19,8 @@ global_variable uint32 g_ebo = 0;
 
 bool ViewOpenGL::Init()
 {
-    m_app = &App::Get();
+    m_app   = &App::Get();
+    m_logic = &m_app->Logic();
 
     if (SDL_GL_LoadLibrary(nullptr))
     {
@@ -45,10 +49,11 @@ bool ViewOpenGL::Init()
         return false;
     }
 
-    UpdateCamera();
-
     glViewport(0, 0, m_windowWidth, m_windowHeight);
     glEnable(GL_DEPTH_TEST);
+
+    if (!m_app->Events().AddListener(EVENT_BIND_MEMBER_FUNCTION(ViewOpenGL::OnWindowResized), EventData_WindowResized::TYPE))
+        return false;
 
     if (!CreateShader("default", "default", "default"))
         return false;
@@ -196,6 +201,8 @@ void ViewOpenGL::Cleanup()
         m_shaders.clear();
     }
 
+    // @todo Remove event listeners.
+
     if (m_glContext)
     {
         SDL_GL_DeleteContext(m_glContext);
@@ -209,28 +216,25 @@ void ViewOpenGL::Cleanup()
     }
 }
 
-bool ViewOpenGL::Update(DeltaTime dt)
+bool ViewOpenGL::ProcessEvents(DeltaTime /*dt*/)
 {
     // @todo Deal with being minimized, toggling fullscreen, etc.
 
-    bool quit = false;
     SDL_Event e;
     while (SDL_PollEvent(&e) != 0)
     {
         if (e.type == SDL_QUIT || (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE))
         {
-            quit = true;
-            LogInfo("User requested quit.");
+            LogDebug("User requested quit.");
+            m_app->Events().TriggerEvent(std::make_shared<EventData_Quit>());
+            return true;
         }
         else if (e.type == SDL_WINDOWEVENT && e.window.event == SDL_WINDOWEVENT_RESIZED)
         {
             // @note SDL_WINDOWEVENT_RESIZED only fires if the window size
             //       changed due to an external event, i.e., not an SDL call;
             //       Also, initial window creation doesn't cause this either.
-            m_windowWidth  = e.window.data1;
-            m_windowHeight = e.window.data2;
-            glViewport(0, 0, m_windowWidth, m_windowHeight);
-            LogInfo("Window resized to %ux%u; viewport set.", m_windowWidth, m_windowHeight);
+            m_app->Events().QueueEvent(std::make_shared<EventData_WindowResized>(e.window.data1, e.window.data2));
         }
         else if (e.type == SDL_KEYDOWN)
         {
@@ -249,53 +253,40 @@ bool ViewOpenGL::Update(DeltaTime dt)
         }
         else if (e.type == SDL_MOUSEMOTION)
         {
-            m_cameraYaw   += (m_cameraInvertedYaw   ? -e.motion.xrel : e.motion.xrel) * m_cameraSensitivityYaw;
-            m_cameraPitch -= (m_cameraInvertedPitch ? -e.motion.yrel : e.motion.yrel) * m_cameraSensitivityPitch;
-
-            if (m_cameraYaw > 360.0f)
-                m_cameraYaw -= 360.0f;
-            else if (m_cameraYaw < 0.0f)
-                m_cameraYaw += 360.0f;
-
-            if (m_cameraPitch > 89.0f)
-                m_cameraPitch = 89.0f;
-            else if (m_cameraPitch < -89.0f)
-                m_cameraPitch = -89.0f;
-
-            UpdateCamera();
+            m_app->Events().QueueEvent(std::make_shared<EventData_RotateCamera>(e.motion.xrel, e.motion.yrel));
         }
         else if (e.type == SDL_MOUSEWHEEL)
         {
-            bool up = (e.wheel.y > 0 ? true : false);
-
+            // scroll up == zoom in
+            bool in = (e.wheel.y > 0 ? true : false);
             if (e.wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
-                up = -up;
-
-            if (up)
-                m_cameraZoom -= m_cameraZoomStep;
-            else
-                m_cameraZoom += m_cameraZoomStep;
-
-            if (m_cameraZoom < m_cameraZoomMin)
-                m_cameraZoom = m_cameraZoomMin;
-            else if (m_cameraZoom > m_cameraZoomMax)
-                m_cameraZoom = m_cameraZoomMax;
+                in = -in;
+            m_app->Events().QueueEvent(std::make_shared<EventData_ZoomCamera>(in));
         }
     }
 
+    bool moveCameraForward  = false;
+    bool moveCameraBackward = false;
+    bool moveCameraLeft     = false;
+    bool moveCameraRight    = false;
     const uint8* kbState = SDL_GetKeyboardState(nullptr);
     if (kbState[SDL_SCANCODE_W])
-        m_cameraPosition += m_cameraFront * m_cameraSpeed * dt;
+        moveCameraForward = true;
     if (kbState[SDL_SCANCODE_S])
-        m_cameraPosition -= m_cameraFront * m_cameraSpeed * dt;
+        moveCameraBackward = true;
     if (kbState[SDL_SCANCODE_A])
-        m_cameraPosition -= m_cameraRight * m_cameraSpeed * dt;
+        moveCameraLeft = true;
     if (kbState[SDL_SCANCODE_D])
-        m_cameraPosition += m_cameraRight * m_cameraSpeed * dt;
-    // @todo This keeps the camera grounded FPS style, but it also makes
-    //       forward/backward movement slow when at an extreme pitch. Why?
-    //m_cameraPosition.y = 0.0f;
+        moveCameraRight = true;
 
+    if (moveCameraForward || moveCameraBackward || moveCameraLeft || moveCameraRight)
+        m_app->Events().QueueEvent(std::make_shared<EventData_MoveCamera>(moveCameraForward, moveCameraBackward, moveCameraLeft, moveCameraRight));
+
+    return true;
+}
+
+bool ViewOpenGL::Render(DeltaTime dt)
+{
     if (((DeltaTime)(SDL_GetPerformanceCounter() - m_fpsLastTime) / (DeltaTime)SDL_GetPerformanceFrequency()) >= 1.0f)
     {
         LogDebug("FPS: %u, DT: %f.", m_fpsCounter, dt);
@@ -320,8 +311,8 @@ bool ViewOpenGL::Update(DeltaTime dt)
     glBindVertexArray(g_vao);
 
     glm::mat4 view = identity;
-    view = glm::lookAt(m_cameraPosition, m_cameraPosition + m_cameraFront, m_cameraUp);
-    glm::mat4 projection = glm::perspective(glm::radians(m_cameraZoom), (float32)m_windowWidth/(float32)m_windowHeight, m_nearPlane, m_farPlane);
+    view = glm::lookAt(m_logic->m_cameraPosition, m_logic->m_cameraPosition + m_logic->m_cameraFront, m_logic->m_cameraUp);
+    glm::mat4 projection = glm::perspective(glm::radians(m_logic->m_cameraFOV), (float32)m_windowWidth/(float32)m_windowHeight, m_logic->m_nearPlane, m_logic->m_farPlane);
 
     if (!ShaderSetMat4("default", "view", view))
         return false;
@@ -362,18 +353,7 @@ bool ViewOpenGL::Update(DeltaTime dt)
 
     m_fpsCounter++;
 
-    return !quit;
-}
-
-void ViewOpenGL::UpdateCamera()
-{
-    m_cameraFront.x = std::cos(glm::radians(m_cameraYaw)) * std::cos(glm::radians(m_cameraPitch));
-    m_cameraFront.y = std::sin(glm::radians(m_cameraPitch));
-    m_cameraFront.z = std::sin(glm::radians(m_cameraYaw)) * std::cos(glm::radians(m_cameraPitch));
-    m_cameraFront = glm::normalize(m_cameraFront);
-
-    m_cameraRight = glm::normalize(glm::cross(m_cameraFront, m_cameraWorldUp));
-    m_cameraUp    = glm::normalize(glm::cross(m_cameraRight, m_cameraFront));
+    return true;
 }
 
 bool ViewOpenGL::InitWindowAndGLContext_()
@@ -1031,4 +1011,15 @@ bool ViewOpenGL::UseTexture(std::string name)
 
     glBindTexture(GL_TEXTURE_2D, s->second);
     return true;
+}
+
+void ViewOpenGL::OnWindowResized(IEventDataPtr e)
+{
+    EventData_WindowResized* d = dynamic_cast<EventData_WindowResized*>(e.get());
+    uint32 w = d->w;
+    uint32 h = d->h;
+    m_windowWidth  = w;
+    m_windowHeight = h;
+    glViewport(0, 0, w, h);
+    LogInfo("Window resized to %ux%u; viewport set.", w, h);
 }

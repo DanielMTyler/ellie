@@ -9,26 +9,28 @@
 #define VIEW_OPENGL_HPP
 
 #include "global.hpp"
-#include <SDL.h>
 #include <glad/glad.h>
 #include <KHR/khrplatform.h>
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
+#include <SDL.h>
 #include <map>
 #include <string>
-#include "app.hpp"
+#include "events.hpp"
+#include "logic.hpp"
 #include "view_interface.hpp"
+
+class App;
 
 class ViewOpenGL : public IView
 {
 public:
     bool Init()               override;
     void Cleanup()            override;
-    bool Update(DeltaTime dt) override;
+    bool ProcessEvents(DeltaTime dt) override;
+    bool Render(DeltaTime dt) override;
 
 private:
-    // @todo Resource Manager.
+    // @todo View-specific Resource Manager (shaders, textures, audio, etc)?
 
     typedef uint32 Shader;
     typedef uint32 Texture;
@@ -42,16 +44,9 @@ private:
     const bool   MULTISAMPLING = true;
     const uint32 MULTISAMPLING_NUMSAMPLES = 4; // 2 or 4.
 
-    const float32 m_cameraSpeed = 0.01f;
-    const float32 m_cameraSensitivityYaw   = 0.1f;
-    const float32 m_cameraSensitivityPitch = 0.1f;
-    const float32 m_cameraZoomMin = 1.0f;
-    const float32 m_cameraZoomMax = 45.0f;
-    const float32 m_cameraZoomStep = 3.0f;
-    const bool m_cameraInvertedYaw   = false;
-    const bool m_cameraInvertedPitch = false;
+    App*   m_app   = nullptr;
+    Logic* m_logic = nullptr;
 
-    App* m_app = nullptr;
     std::string m_shaderPath;
     std::string m_texturePath;
 
@@ -63,20 +58,6 @@ private:
 
     uint32 m_windowWidth  = 800;
     uint32 m_windowHeight = 600;
-
-    float32 m_cameraZoom = m_cameraZoomMax;
-    float32 m_nearPlane = 0.1f;
-    float32 m_farPlane  = 100.0f;
-
-    glm::vec3 m_cameraPosition = glm::vec3(0.0f, 0.0f,  3.0f);
-    glm::vec3 m_cameraFront;
-    glm::vec3 m_cameraUp;
-    glm::vec3 m_cameraRight;
-    glm::vec3 m_cameraWorldUp  = glm::vec3(0.0f, 1.0f,  0.0f);
-    float32 m_cameraYaw   = -90.0f;
-    float32 m_cameraPitch =   0.0f;
-
-    void UpdateCamera();
 
     bool InitWindowAndGLContext_();
     bool InitGLFunctions_();
@@ -112,6 +93,8 @@ private:
                        const float32* rgbaBorderColor = nullptr);
     void DeleteTexture(std::string name);
     bool UseTexture   (std::string name);
+
+    void OnWindowResized(IEventDataPtr e);
 };
 
 #endif // VIEW_OPENGL_HPP

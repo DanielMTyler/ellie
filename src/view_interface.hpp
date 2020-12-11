@@ -15,9 +15,14 @@ class IView
 public:
     virtual ~IView() {}
 
-    virtual bool Init()               = 0;
-    virtual void Cleanup()            = 0;
-    virtual bool Update(DeltaTime dt) = 0; // Returns false when time to exit.
+    virtual bool Init()                      = 0;
+    virtual void Cleanup()                   = 0;
+
+    // Returns false on failure.
+    virtual bool ProcessEvents(DeltaTime dt) = 0;
+
+    // Returns false on failure.
+    virtual bool Render(DeltaTime dt)        = 0;
 };
 
 #endif // VIEW_INTERFACE_HPP

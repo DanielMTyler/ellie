@@ -11,22 +11,22 @@
 // Cooperative Multitasking from Game Coding Complete, Fourth Edition
 
 #include "global.hpp"
-#include <memory> // std::shared_ptr/weak_ptr.
+#include <memory> // shared_ptr/weak_ptr.
 
 class Process
 {
 protected:
-    virtual void OnInit() { m_state = State::Running; }
+    virtual void OnInit()    { m_state = State::Running; }
     // Called by destructor.
     virtual void OnCleanup() {}
     virtual void OnUpdate(DeltaTime dt) = 0;
     virtual void OnSuccess() {}
-    virtual void OnFail() {}
-    virtual void OnAbort() {}
+    virtual void OnFail()    {}
+    virtual void OnAbort()   {}
 
 public:
     typedef std::shared_ptr<Process> StrongPtr;
-    typedef std::weak_ptr<Process> WeakPtr;
+    typedef std::weak_ptr<Process>   WeakPtr;
 
     enum class State
     {
@@ -91,14 +91,11 @@ public:
     bool HasChild() const { return m_child != nullptr; }
     StrongPtr PeekChild() { return m_child; }
 
-
 private:
     friend class ProcessManager;
 
     enum State m_state;
-    StrongPtr m_child;
-
-    void SetState(enum State state) { m_state = state; }
+    StrongPtr  m_child;
 };
 
 #endif // PROCESS_HPP
