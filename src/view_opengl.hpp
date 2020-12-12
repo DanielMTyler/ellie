@@ -8,6 +8,8 @@
 #ifndef VIEW_OPENGL_HPP
 #define VIEW_OPENGL_HPP
 
+// @todo This should really be split into HumanView and OpenGLRenderer.
+
 #include "global.hpp"
 #include <glad/glad.h>
 #include <KHR/khrplatform.h>

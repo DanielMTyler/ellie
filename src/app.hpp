@@ -73,6 +73,7 @@ public:
 
     static App& Get();
 
+    EventManager& Commands() { return m_commands; }
     EventManager& Events() { return m_events; }
     class Logic&  Logic()  { return m_logic; }
 
@@ -84,7 +85,8 @@ public:
     int  Loop(); // Returns main() return code.
 
 private:
-    EventManager m_events;
+    EventManager m_commands; // "Critical" events; process ASAP.
+    EventManager m_events;   // Non-critical events; process when possible.
     class Logic m_logic;
     IView* m_view = nullptr;
 

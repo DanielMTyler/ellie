@@ -15,7 +15,7 @@ bool Logic::Init()
 
     UpdateCamera();
 
-    if (!m_app->Events().AddListener(EVENT_BIND_MEMBER_FUNCTION(Logic::OnQuit), EventData_Quit::TYPE))
+    if (!m_app->Commands().AddListener(EVENT_BIND_MEMBER_FUNCTION(Logic::OnQuit), EventData_Quit::TYPE))
         return false;
     if (!m_app->Events().AddListener(EVENT_BIND_MEMBER_FUNCTION(Logic::OnMoveCamera), EventData_MoveCamera::TYPE))
         return false;

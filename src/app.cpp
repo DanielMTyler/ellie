@@ -158,9 +158,10 @@ int App::Loop()
 
         if (!m_view->ProcessEvents(dt))
             break;
+        m_commands.Update();
         // @todo Dynamically adjust update timelimit to maintain framerate
-        //       and avoid spiral of death.
-        m_events.Update();
+        //       and avoid spiral of death; try to maintain ~30 FPS for now.
+        m_events.Update(true, 1000.0f/30.0f);
 
         // true == ready to quit.
         if (m_logic.Update(dt))

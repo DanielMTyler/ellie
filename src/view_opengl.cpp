@@ -50,7 +50,7 @@ bool ViewOpenGL::Init()
     glViewport(0, 0, m_app->m_options.graphics.windowWidth, m_app->m_options.graphics.windowHeight);
     glEnable(GL_DEPTH_TEST);
 
-    if (!m_app->Events().AddListener(EVENT_BIND_MEMBER_FUNCTION(ViewOpenGL::OnWindowResized), EventData_WindowResized::TYPE))
+    if (!m_app->Commands().AddListener(EVENT_BIND_MEMBER_FUNCTION(ViewOpenGL::OnWindowResized), EventData_WindowResized::TYPE))
         return false;
 
     if (!CreateShader("default", "default", "default"))
@@ -223,7 +223,7 @@ bool ViewOpenGL::ProcessEvents(DeltaTime /*dt*/)
     {
         if (e.type == SDL_QUIT || (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE))
         {
-            m_app->Events().TriggerEvent(std::make_shared<EventData_Quit>());
+            m_app->Commands().TriggerEvent(std::make_shared<EventData_Quit>());
             return true;
         }
         else if (e.type == SDL_WINDOWEVENT && e.window.event == SDL_WINDOWEVENT_RESIZED)
@@ -231,7 +231,7 @@ bool ViewOpenGL::ProcessEvents(DeltaTime /*dt*/)
             // @note SDL_WINDOWEVENT_RESIZED only fires if the window size
             //       changed due to an external event, i.e., not an SDL call;
             //       Also, initial window creation doesn't cause this either.
-            m_app->Events().QueueEvent(std::make_shared<EventData_WindowResized>(e.window.data1, e.window.data2));
+            m_app->Commands().QueueEvent(std::make_shared<EventData_WindowResized>(e.window.data1, e.window.data2));
         }
         else if (e.type == SDL_KEYDOWN)
         {
