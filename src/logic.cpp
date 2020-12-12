@@ -18,13 +18,13 @@ bool Logic::Init()
 
     UpdateCameraVectors();
 
-    if (!m_app->Commands()->AddListener(EVENT_BIND_MEMBER_FUNCTION(Logic::OnQuit), EventData_Quit::TYPE))
+    if (!m_app->Commands()->AddListener(EVENT_BIND_MEMBER_FUNCTION(Logic::OnQuit), EventQuit::TYPE))
         return false;
-    if (!m_app->Events()->AddListener(EVENT_BIND_MEMBER_FUNCTION(Logic::OnMoveCamera),   EventData_MoveCamera::TYPE))
+    if (!m_app->Events()->AddListener(EVENT_BIND_MEMBER_FUNCTION(Logic::OnMoveCamera),   EventMoveCamera::TYPE))
         return false;
-    if (!m_app->Events()->AddListener(EVENT_BIND_MEMBER_FUNCTION(Logic::OnRotateCamera), EventData_RotateCamera::TYPE))
+    if (!m_app->Events()->AddListener(EVENT_BIND_MEMBER_FUNCTION(Logic::OnRotateCamera), EventRotateCamera::TYPE))
         return false;
-    if (!m_app->Events()->AddListener(EVENT_BIND_MEMBER_FUNCTION(Logic::OnZoomCamera),   EventData_ZoomCamera::TYPE))
+    if (!m_app->Events()->AddListener(EVENT_BIND_MEMBER_FUNCTION(Logic::OnZoomCamera),   EventZoomCamera::TYPE))
         return false;
 
     return true;
@@ -54,31 +54,31 @@ void Logic::UpdateCameraVectors()
     m_app->m_options.camera.up    = glm::normalize(glm::cross(m_app->m_options.camera.right, m_app->m_options.camera.front));
 }
 
-void Logic::OnQuit(IEventDataPtr /*e*/)
+void Logic::OnQuit(EventPtr /*e*/)
 {
     m_quit = true;
 }
 
-void Logic::OnMoveCamera(IEventDataPtr e)
+void Logic::OnMoveCamera(EventPtr e)
 {
-    EventData_MoveCamera* d = dynamic_cast<EventData_MoveCamera*>(e.get());
+    EventMoveCamera* d = dynamic_cast<EventMoveCamera*>(e.get());
     if (d->f)
-        m_app->m_options.camera.position += m_app->m_options.camera.front * m_app->m_options.camera.speed * d->dt;
+        m_app->m_options.camera.position += m_app->m_options.camera.front * m_app->m_options.camera.speed * d->dt();
     else if (d->b)
-        m_app->m_options.camera.position -= m_app->m_options.camera.front * m_app->m_options.camera.speed * d->dt;
+        m_app->m_options.camera.position -= m_app->m_options.camera.front * m_app->m_options.camera.speed * d->dt();
     if (d->l)
-        m_app->m_options.camera.position -= m_app->m_options.camera.right * m_app->m_options.camera.speed * d->dt;
+        m_app->m_options.camera.position -= m_app->m_options.camera.right * m_app->m_options.camera.speed * d->dt();
     else if (d->r)
-        m_app->m_options.camera.position += m_app->m_options.camera.right * m_app->m_options.camera.speed * d->dt;
+        m_app->m_options.camera.position += m_app->m_options.camera.right * m_app->m_options.camera.speed * d->dt();
 
     // @todo This keeps the camera grounded FPS style, but it also makes
     //       forward/backward movement slow when at an extreme pitch. Why?
     //m_cameraPosition.y = 0.0f;
 }
 
-void Logic::OnRotateCamera(IEventDataPtr e)
+void Logic::OnRotateCamera(EventPtr e)
 {
-    EventData_RotateCamera* d = dynamic_cast<EventData_RotateCamera*>(e.get());
+    EventRotateCamera* d = dynamic_cast<EventRotateCamera*>(e.get());
     m_app->m_options.camera.yaw   += (m_app->m_options.camera.yawInverted   ? -d->xrel : d->xrel) * m_app->m_options.camera.yawSensitivity;
     m_app->m_options.camera.pitch -= (m_app->m_options.camera.pitchInverted ? -d->yrel : d->yrel) * m_app->m_options.camera.pitchSensitivity;
 
@@ -95,9 +95,9 @@ void Logic::OnRotateCamera(IEventDataPtr e)
     UpdateCameraVectors();
 }
 
-void Logic::OnZoomCamera(IEventDataPtr e)
+void Logic::OnZoomCamera(EventPtr e)
 {
-    EventData_ZoomCamera* d = dynamic_cast<EventData_ZoomCamera*>(e.get());
+    EventZoomCamera* d = dynamic_cast<EventZoomCamera*>(e.get());
     if (d->in)
         m_app->m_options.camera.fov -= m_app->m_options.camera.fovStep;
     else

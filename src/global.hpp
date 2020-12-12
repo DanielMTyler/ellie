@@ -80,6 +80,8 @@ typedef float32 DeltaTime;
 // Stores a value from the high-res counter / App::Time().
 typedef uint64 TimeStamp;
 
+typedef uint32 UUID;
+
 #define global_variable static
 
 

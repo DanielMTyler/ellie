@@ -7,8 +7,8 @@
 
 // @todo This whole file needs cleaning up and refactoring.
 
-#ifndef EVENTS_HPP
-#define EVENTS_HPP
+#ifndef EVENTS_OLD_HPP
+#define EVENTS_OLD_HPP
 
 #include "global.hpp"
 #include "app.hpp"
@@ -20,119 +20,64 @@
 #include <map>
 #include <memory> // shared_ptr
 
-typedef uint32 EventType;
+typedef UUID EventType;
 
-class IEventData
+class Event
 {
 public:
-    DeltaTime dt; // Set by EventManager when calling listeners.
-
-    virtual ~IEventData() {}
-
-    virtual EventType Type()      const = 0;
-    virtual TimeStamp Timestamp() const = 0;
+    virtual EventType   Type()    const = 0;
     virtual const char* Name()    const = 0;
-};
 
-typedef std::shared_ptr<IEventData> IEventDataPtr;
-typedef void EventListenerDelegateSignature(IEventDataPtr event);
-//typedef std::function<void(IEventDataPtr)> EventListenerDelegate;
-typedef std::function<EventListenerDelegateSignature> EventListenerDelegate;
-
-#define EVENT_BIND_MEMBER_FUNCTION(x) std::bind(&x, this, std::placeholders::_1)
-
-class BaseEventData : public IEventData
-{
-public:
-    BaseEventData()
+    Event()
     {
         m_time = App::Time();
     }
 
-    TimeStamp Timestamp() const override { return m_time; }
+    virtual ~Event() {}
+
+    TimeStamp Timestamp() const { return m_time; }
+    DeltaTime dt() const { return m_dt; }
 
 private:
+    friend class EventManager;
+
     TimeStamp m_time;
+    DeltaTime m_dt; // Set by EventManager when calling listeners.
 };
 
-class EventData_Quit : public BaseEventData
-{
-public:
-    //d23d065b-4425-4b6c-b9a5-bfb158119177
-    static const EventType TYPE = 0xd23d065b;
+typedef std::shared_ptr<Event> EventPtr;
+typedef void EventListenerDelegateSignature(EventPtr event);
+//typedef std::function<void(EventPtr)> EventListenerDelegate;
+typedef std::function<EventListenerDelegateSignature> EventListenerDelegate;
 
-    EventType Type() const override { return TYPE; }
-    const char* Name() const override { return "EventData_Quit"; }
-};
-
-class EventData_MoveCamera : public BaseEventData
-{
-public:
-    //1d9aac2e-4ca7-4ea8-819e-53808e56523c
-    static const EventType TYPE = 0x1d9aac2e;
-
-    bool f;
-    bool b;
-    bool l;
-    bool r;
-
-    EventData_MoveCamera(bool forward, bool backward, bool left, bool right) : f(forward), b(backward), l(left), r(right) {}
-    EventType Type() const override { return TYPE; }
-    const char* Name() const override { return "EventData_MoveCamera"; }
-};
-
-class EventData_RotateCamera : public BaseEventData
-{
-public:
-    //28ad68fb-b171-470b-89a9-5964aa2ed9d1
-    static const EventType TYPE = 0x28ad68fb;
-
-    int32 xrel;
-    int32 yrel;
-
-    EventData_RotateCamera(int32 xrel, int32 yrel) : xrel(xrel), yrel(yrel) {}
-    EventType Type() const override { return TYPE; }
-    const char* Name() const override { return "EventData_RotateCamera"; }
-};
-
-class EventData_ZoomCamera : public BaseEventData
-{
-public:
-    //474c31fd-54bf-44c9-a3e9-a837fa324b51
-    static const EventType TYPE = 0x474c31fd;
-
-    bool in; // in or out?
-
-    EventData_ZoomCamera(bool in_) : in(in_) {}
-    EventType Type() const override { return TYPE; }
-    const char* Name() const override { return "EventData_ZoomCamera"; }
-};
+#define EVENT_BIND_MEMBER_FUNCTION(x) std::bind(&x, this, std::placeholders::_1)
 
 class EventManager
 {
 public:
     bool AddListener(const EventListenerDelegate& delegate, EventType type)
     {
-        void (*const* t)(IEventDataPtr) = delegate.target<void(*)(IEventDataPtr)>();
+        void (*const* t)(EventPtr) = delegate.target<void(*)(EventPtr)>();
         ListenerList& l = m_listeners[type];
         for (auto it = l.begin(); it != l.end(); it++)
         {
-            void (*const* tThis)(IEventDataPtr) = it->target<void(*)(IEventDataPtr)>();
+            void (*const* tThis)(EventPtr) = it->target<void(*)(EventPtr)>();
             if (t == tThis)
             {
-                LogWarning("Tried to register an existing event delegate.");
+                // @todo
+                LogWarning("Tried to re-register event listener %s for event type 0x%08X.", "TODO", type);
                 return false;
             }
         }
 
-        LogDebug("Registered event delegate %p for %u.", (void*)t, type);
+        LogDebug("Added event listener %s for 0x%08X.", "TODO", type);
         l.push_back(delegate);
         return true;
     }
 
     void RemoveListener(const EventListenerDelegate& delegate, EventType type)
     {
-        void (*const* t)(IEventDataPtr) = delegate.target<void(*)(IEventDataPtr)>();
+        void (*const* t)(EventPtr) = delegate.target<void(*)(EventPtr)>();
 
         auto findIt = m_listeners.find(type);
         if (findIt == m_listeners.end())
@@ -141,7 +86,7 @@ public:
         ListenerList& l = findIt->second;
         for (auto it = l.begin(); it != l.end(); it++)
         {
-            void (*const* tThis)(IEventDataPtr) = it->target<void(*)(IEventDataPtr)>();
+            void (*const* tThis)(EventPtr) = it->target<void(*)(EventPtr)>();
             if (t == tThis)
             {
                 l.erase(it);
@@ -154,7 +99,7 @@ public:
     }
 
     // Bypass the queue and call all delegates immediately.
-    void TriggerEvent(DeltaTime dt, IEventDataPtr& event) const
+    void TriggerEvent(DeltaTime dt, EventPtr& event) const
     {
         auto findIt = m_listeners.find(event->Type());
         if (findIt == m_listeners.end())
@@ -164,12 +109,12 @@ public:
         for (auto it = l.begin(); it != l.end(); it++)
         {
             EventListenerDelegate listener = (*it);
-            event->dt = dt;
+            event->m_dt = dt;
             listener(event);
         }
     }
 
-    void QueueEvent(const IEventDataPtr& event)
+    void QueueEvent(const EventPtr& event)
     {
         auto findIt = m_listeners.find(event->Type());
         if (findIt != m_listeners.end())
@@ -210,8 +155,8 @@ public:
 
         while (!q.empty())
         {
-            IEventDataPtr e = q.front();
-            e->dt = dt;
+            EventPtr e = q.front();
+            e->m_dt = dt;
             q.pop_front();
 
             EventType t = e->Type();
@@ -253,14 +198,14 @@ private:
 
     typedef std::list<EventListenerDelegate> ListenerList;
     typedef std::map<EventType, ListenerList> ListenerMap;
-    typedef std::list<IEventDataPtr> Queue;
+    typedef std::list<EventPtr> Queue;
 
     ListenerMap m_listeners;
     Queue m_queues[NUM_QUEUES];
     uint32 m_activeQueue = 0;
 };
 
-// 495 UUIDs from https://www.uuidgenerator.net/; use as needed.
+// UUIDs from https://www.uuidgenerator.net/; use as needed.
 #if 0
 79574583-797b-45bf-93c6-ae74f5c792ce
 1d461bce-c233-42ab-a6c0-9ec9ee586d77
@@ -759,4 +704,58 @@ fb5d5ce5-c52f-4fb6-9753-2209f43b95fd
 975b42bd-da14-45d6-b6d2-332fd38ea79e
 #endif // 0
 
-#endif // EVENTS_HPP
+
+class EventQuit : public Event
+{
+public:
+    //d23d065b-4425-4b6c-b9a5-bfb158119177
+    static const EventType TYPE = 0xd23d065b;
+
+    EventType   Type() const override { return TYPE; }
+    const char* Name() const override { return "EventQuit"; }
+};
+
+class EventMoveCamera : public Event
+{
+public:
+    //1d9aac2e-4ca7-4ea8-819e-53808e56523c
+    static const EventType TYPE = 0x1d9aac2e;
+
+    bool f;
+    bool b;
+    bool l;
+    bool r;
+
+    EventMoveCamera(bool forward, bool backward, bool left, bool right) : f(forward), b(backward), l(left), r(right) {}
+    EventType   Type() const override { return TYPE; }
+    const char* Name() const override { return "EventMoveCamera"; }
+};
+
+class EventRotateCamera : public Event
+{
+public:
+    //28ad68fb-b171-470b-89a9-5964aa2ed9d1
+    static const EventType TYPE = 0x28ad68fb;
+
+    int32 xrel;
+    int32 yrel;
+
+    EventRotateCamera(int32 xrel, int32 yrel) : xrel(xrel), yrel(yrel) {}
+    EventType Type() const override { return TYPE; }
+    const char* Name() const override { return "EventRotateCamera"; }
+};
+
+class EventZoomCamera : public Event
+{
+public:
+    //474c31fd-54bf-44c9-a3e9-a837fa324b51
+    static const EventType TYPE = 0x474c31fd;
+
+    bool in; // in or out?
+
+    EventZoomCamera(bool in_) : in(in_) {}
+    EventType Type() const override { return TYPE; }
+    const char* Name() const override { return "EventZoomCamera"; }
+};
+
+#endif // EVENTS_OLD_HPP

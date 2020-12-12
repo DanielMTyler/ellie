@@ -6,7 +6,7 @@
 */
 
 #include "app.hpp"
-#include "events.hpp"
+#include "events_old.hpp"
 #include "logic.hpp"
 #include "view_interface.hpp"
 #include "view_opengl.hpp"

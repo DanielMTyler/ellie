@@ -9,7 +9,7 @@
 #define LOGIC_HPP
 
 #include "global.hpp"
-#include "events.hpp"
+#include "events_old.hpp"
 
 class App;
 
@@ -31,11 +31,11 @@ private:
     // @todo Replace with an ECS camera entity when possible.
     void UpdateCameraVectors();
 
-    void OnQuit(IEventDataPtr e);
+    void OnQuit(EventPtr e);
 
-    void OnMoveCamera  (IEventDataPtr e);
-    void OnRotateCamera(IEventDataPtr e);
-    void OnZoomCamera  (IEventDataPtr e);
+    void OnMoveCamera  (EventPtr e);
+    void OnRotateCamera(EventPtr e);
+    void OnZoomCamera  (EventPtr e);
 };
 
 #endif // LOGIC_HPP
