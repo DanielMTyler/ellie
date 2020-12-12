@@ -119,28 +119,10 @@ public:
     const char* Name() const override { return "EventData_ZoomCamera"; }
 };
 
-class IEventManager
+class EventManager
 {
 public:
-    virtual ~IEventManager() {};
-
-    virtual bool AddListener(const EventListenerDelegate& delegate, EventType type)    = 0;
-    virtual void RemoveListener(const EventListenerDelegate& delegate, EventType type) = 0;
-
-    // Bypass the queue and call all delegates immediately.
-    virtual void TriggerEvent(DeltaTime dt, IEventDataPtr& event) const = 0;
-
-    virtual void QueueEvent(const IEventDataPtr& event) = 0;
-
-    virtual void AbortEvent(EventType type, bool allOfType) = 0;
-
-    virtual void Update(DeltaTime dt, bool limit, DeltaTime max) = 0;
-};
-
-class EventManager : public IEventManager
-{
-public:
-    bool AddListener(const EventListenerDelegate& delegate, EventType type) override
+    bool AddListener(const EventListenerDelegate& delegate, EventType type)
     {
         void (*const* t)(IEventDataPtr) = delegate.target<void(*)(IEventDataPtr)>();
         ListenerList& l = m_listeners[type];
@@ -159,7 +141,7 @@ public:
         return true;
     }
 
-    void RemoveListener(const EventListenerDelegate& delegate, EventType type) override
+    void RemoveListener(const EventListenerDelegate& delegate, EventType type)
     {
         void (*const* t)(IEventDataPtr) = delegate.target<void(*)(IEventDataPtr)>();
 
@@ -182,7 +164,8 @@ public:
         LogDebug("Tried to remove non-existant event delegate: %p.", (void*)t);
     }
 
-    void TriggerEvent(DeltaTime dt, IEventDataPtr& event) const override
+    // Bypass the queue and call all delegates immediately.
+    void TriggerEvent(DeltaTime dt, IEventDataPtr& event) const
     {
         auto findIt = m_listeners.find(event->Type());
         if (findIt == m_listeners.end())
@@ -197,14 +180,14 @@ public:
         }
     }
 
-    void QueueEvent(const IEventDataPtr& event) override
+    void QueueEvent(const IEventDataPtr& event)
     {
         auto findIt = m_listeners.find(event->Type());
         if (findIt != m_listeners.end())
             m_queues[m_activeQueue].push_back(event);
     }
 
-    void AbortEvent(EventType type, bool allOfType = false) override
+    void AbortEvent(EventType type, bool allOfType = false)
     {
         auto findIt = m_listeners.find(type);
         if (findIt == m_listeners.end())
@@ -225,7 +208,7 @@ public:
         }
     }
 
-    void Update(DeltaTime dt, bool limit = false, DeltaTime max = 0.0f) override
+    void Update(DeltaTime dt, bool limit = false, DeltaTime max = 0.0f)
     {
         uint64 dtStart = SDL_GetPerformanceCounter();
         uint64 dtNow;
