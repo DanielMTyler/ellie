@@ -154,7 +154,7 @@ public:
             }
         }
 
-        LogDebug("Registered event delegate: %p.", (void*)t);
+        LogDebug("Registered event delegate %p for %u.", (void*)t, type);
         l.push_back(delegate);
         return true;
     }

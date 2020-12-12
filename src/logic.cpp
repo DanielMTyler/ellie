@@ -35,9 +35,6 @@ void Logic::Cleanup()
 
 bool Logic::Update(DeltaTime /*dt*/)
 {
-    if (m_quit)
-        LogDebug("Logic wants to quit.");
-
     return m_quit;
 }
 

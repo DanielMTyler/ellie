@@ -223,7 +223,6 @@ bool ViewOpenGL::ProcessEvents(DeltaTime /*dt*/)
     {
         if (e.type == SDL_QUIT || (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE))
         {
-            LogDebug("User requested quit.");
             m_app->Events().TriggerEvent(std::make_shared<EventData_Quit>());
             return true;
         }
