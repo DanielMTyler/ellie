@@ -37,8 +37,6 @@ bool ViewOpenGL::Init()
 
     InitLogGraphicsInfo_();
 
-    m_shaderPath = m_app->DataPath() + "shaders" + PATH_SEPARATOR;
-    m_texturePath = m_app->DataPath() + "textures" + PATH_SEPARATOR;
     m_fpsLastTime = SDL_GetPerformanceCounter();
 
     stbi_set_flip_vertically_on_load(true);
@@ -49,7 +47,7 @@ bool ViewOpenGL::Init()
         return false;
     }
 
-    glViewport(0, 0, m_windowWidth, m_windowHeight);
+    glViewport(0, 0, m_app->m_options.graphics.windowWidth, m_app->m_options.graphics.windowHeight);
     glEnable(GL_DEPTH_TEST);
 
     if (!m_app->Events().AddListener(EVENT_BIND_MEMBER_FUNCTION(ViewOpenGL::OnWindowResized), EventData_WindowResized::TYPE))
@@ -311,8 +309,8 @@ bool ViewOpenGL::Render(DeltaTime dt)
     glBindVertexArray(g_vao);
 
     glm::mat4 view = identity;
-    view = glm::lookAt(m_logic->m_cameraPosition, m_logic->m_cameraPosition + m_logic->m_cameraFront, m_logic->m_cameraUp);
-    glm::mat4 projection = glm::perspective(glm::radians(m_logic->m_cameraFOV), (float32)m_windowWidth/(float32)m_windowHeight, m_logic->m_nearPlane, m_logic->m_farPlane);
+    view = glm::lookAt(m_app->m_options.camera.position, m_app->m_options.camera.position + m_app->m_options.camera.front, m_app->m_options.camera.up);
+    glm::mat4 projection = glm::perspective(glm::radians(m_app->m_options.camera.fov), (float32)m_app->m_options.graphics.windowWidth/(float32)m_app->m_options.graphics.windowHeight, m_app->m_options.graphics.planeNear, m_app->m_options.graphics.planeFar);
 
     if (!ShaderSetMat4("default", "view", view))
         return false;
@@ -382,19 +380,19 @@ bool ViewOpenGL::InitWindowAndGLContext_()
     }
     LogInfo("Double Buffering requested.");
 
-    if (MULTISAMPLING)
+    if (m_app->m_options.graphics.multisampling)
     {
         if (SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1))
         {
             LogFatal("Failed to request OpenGL multisampling: %s.", SDL_GetError());
             return false;
         }
-        if (SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, MULTISAMPLING_NUMSAMPLES))
+        if (SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, m_app->m_options.graphics.multisamplingNumSamples))
         {
             LogFatal("Failed to request OpenGL multisampling num samples: %s.", SDL_GetError());
             return false;
         }
-        LogInfo("Multisampling requested: On with %i samples.", MULTISAMPLING_NUMSAMPLES);
+        LogInfo("Multisampling requested: On with %i samples.", m_app->m_options.graphics.multisamplingNumSamples);
     }
     else
     {
@@ -403,7 +401,7 @@ bool ViewOpenGL::InitWindowAndGLContext_()
 
     m_window = SDL_CreateWindow(APPLICATION_NAME,
                                 SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                                m_windowWidth, m_windowHeight,
+                                m_app->m_options.graphics.windowWidth, m_app->m_options.graphics.windowHeight,
                                 SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
     if (!m_window)
     {
@@ -475,9 +473,9 @@ bool ViewOpenGL::InitWindowAndGLContext_()
     }
     LogInfo("Multisampling: %s with %i samples.", OnOffBoolToStr(multisampling), multisampling_numSamples);
 
-    if (ENABLE_VYSNC)
+    if (m_app->m_options.graphics.vsync)
     {
-        if (ADAPTIVE_VSYNC)
+        if (m_app->m_options.graphics.vsyncAdaptive)
         {
             if (SDL_GL_SetSwapInterval(-1))
             {
@@ -891,7 +889,7 @@ bool ViewOpenGL::LoadShader_(std::string name, bool vertex, Shader& shader)
 
     LogInfo("Loading %s shader: %s.", (vertex ? "vertex" : "fragment"), name.c_str());
 
-    std::string file = m_shaderPath + name + (vertex ? ".vert" : ".frag");
+    std::string file = m_app->m_options.core.shaderPath + name + (vertex ? ".vert" : ".frag");
     std::string shaderStr;
     if (!m_app->LoadFile(file, shaderStr))
     {
@@ -950,7 +948,7 @@ bool ViewOpenGL::CreateTexture(std::string name,
     int width;
     int height;
     int numChannels;
-    unsigned char* data = stbi_load((m_texturePath + name).c_str(), &width, &height, &numChannels, 0);
+    unsigned char* data = stbi_load((m_app->m_options.core.texturePath + name).c_str(), &width, &height, &numChannels, 0);
     if (!data)
     {
         LogFatal("Failed to load image: %s.", stbi_failure_reason());
@@ -1018,8 +1016,8 @@ void ViewOpenGL::OnWindowResized(IEventDataPtr e)
     EventData_WindowResized* d = dynamic_cast<EventData_WindowResized*>(e.get());
     uint32 w = d->w;
     uint32 h = d->h;
-    m_windowWidth  = w;
-    m_windowHeight = h;
+    m_app->m_options.graphics.windowWidth  = w;
+    m_app->m_options.graphics.windowHeight = h;
     glViewport(0, 0, w, h);
     LogInfo("Window resized to %ux%u; viewport set.", w, h);
 }

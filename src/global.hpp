@@ -75,8 +75,11 @@ typedef std::uint64_t uint64;
 typedef float  float32;
 typedef double float64;
 
-// Milliseconds elapsed.
+// Milliseconds.
 typedef float32 DeltaTime;
+
+// Holds a value from SDL_GetPerformanceCounter().
+typedef uint64 TimeStamp;
 
 #define global_variable static
 

@@ -107,6 +107,9 @@ bool App::Init()
     if (!InitDataPath_())
         return false;
 
+    m_options.core.shaderPath  = m_options.core.dataPath + "shaders" + PATH_SEPARATOR;
+    m_options.core.texturePath = m_options.core.dataPath + "textures" + PATH_SEPARATOR;
+
     if (!m_logic.Init())
         return false;
 
@@ -144,8 +147,8 @@ void App::Cleanup()
 
 int App::Loop()
 {
-    uint64 dtNow = SDL_GetPerformanceCounter();
-    uint64 dtLast;
+    TimeStamp dtNow = SDL_GetPerformanceCounter();
+    TimeStamp dtLast;
     DeltaTime dt;
     while (true)
     {
@@ -354,10 +357,10 @@ bool App::InitSavePath_()
         LogFatal("Failed to get save path: %s.", SDL_GetError());
         return false;
     }
-    m_savePath = prefPath;
+    m_options.core.savePath = prefPath;
     SDL_free(prefPath);
     prefPath = nullptr;
-    LogInfo("Save path: %s.", m_savePath.c_str());
+    LogInfo("Save path: %s.", m_options.core.savePath.c_str());
     return true;
 }
 
@@ -371,8 +374,8 @@ bool App::InitCWD_()
         return false;
     }
 
-    m_cwd = p.string() + PATH_SEPARATOR;
-    LogInfo("CWD: %s.", m_cwd.c_str());
+    m_options.core.cwdPath = p.string() + PATH_SEPARATOR;
+    LogInfo("CWD: %s.", m_options.core.cwdPath.c_str());
     return true;
 }
 
@@ -385,38 +388,38 @@ bool App::InitExecutablePath_()
         LogFatal("Failed to get executable path: %s.", SDL_GetError());
         return false;
     }
-    m_executablePath = exePathBuf;
+    m_options.core.executablePath = exePathBuf;
     SDL_free(exePathBuf);
     exePathBuf = nullptr;
-    LogInfo("Executable path: %s.", m_executablePath.c_str());
+    LogInfo("Executable path: %s.", m_options.core.executablePath.c_str());
     return true;
 }
 
 bool App::InitDataPath_()
 {
     // Find the data folder in cwd, executable path, or "<cwd>/../../release/".
-    std::string releasePath = m_cwd;
-    m_dataPath = releasePath + "data" + PATH_SEPARATOR;
-    if (!FolderExists(m_dataPath))
+    std::string releasePath = m_options.core.cwdPath;
+    m_options.core.dataPath = releasePath + "data" + PATH_SEPARATOR;
+    if (!FolderExists(m_options.core.dataPath))
     {
-        releasePath = m_executablePath;
-        m_dataPath = releasePath + "data" + PATH_SEPARATOR;
-        if (!FolderExists(m_dataPath))
+        releasePath = m_options.core.executablePath;
+        m_options.core.dataPath = releasePath + "data" + PATH_SEPARATOR;
+        if (!FolderExists(m_options.core.dataPath))
         {
             // Move cwd up 2 directories.
-            releasePath = m_cwd.substr(0, m_cwd.size()-1);
+            releasePath = m_options.core.cwdPath.substr(0, m_options.core.cwdPath.size()-1);
             releasePath = releasePath.substr(0, releasePath.find_last_of(PATH_SEPARATOR));
             releasePath = releasePath.substr(0, releasePath.find_last_of(PATH_SEPARATOR));
             releasePath += std::string(PATH_SEPARATOR) + "release" + PATH_SEPARATOR;
-            m_dataPath = releasePath + "data" + PATH_SEPARATOR;
-            if (!FolderExists(m_dataPath))
+            m_options.core.dataPath = releasePath + "data" + PATH_SEPARATOR;
+            if (!FolderExists(m_options.core.dataPath))
             {
-                LogFatal("The data folder wasn't found in the current working directory (%s), the executable directory (%s), or \"<cwd>../../release/\" (%s).", m_cwd.c_str(), m_executablePath.c_str(), releasePath.c_str());
+                LogFatal("The data folder wasn't found in the current working directory (%s), the executable directory (%s), or \"<cwd>../../release/\" (%s).", m_options.core.cwdPath.c_str(), m_options.core.executablePath.c_str(), releasePath.c_str());
                 return false;
             }
         }
     }
 
-    LogInfo("Data path: %s.", m_dataPath.c_str());
+    LogInfo("Data path: %s.", m_options.core.dataPath.c_str());
     return true;
 }

@@ -18,7 +18,6 @@
 #include <SDL.h>
 
 typedef uint32 EventType;
-typedef uint64 TimeStamp;
 
 class IEventData
 {
@@ -37,15 +36,20 @@ typedef std::function<EventListenerDelegateSignature> EventListenerDelegate;
 
 #define EVENT_BIND_MEMBER_FUNCTION(x) std::bind(&x, this, std::placeholders::_1)
 
+#include <inttypes.h>
+
 class BaseEventData : public IEventData
 {
 public:
-    BaseEventData(TimeStamp timestamp) : m_timestamp(timestamp) {}
+    BaseEventData()
+    {
+        m_time = SDL_GetPerformanceCounter();
+    }
 
-    TimeStamp Timestamp() const override { return m_timestamp; }
+    TimeStamp Timestamp() const override { return m_time; }
 
 private:
-    const TimeStamp m_timestamp;
+    TimeStamp m_time;
 };
 
 class EventData_Quit : public BaseEventData
@@ -54,7 +58,6 @@ public:
     //d23d065b-4425-4b6c-b9a5-bfb158119177
     static const EventType TYPE = 0xd23d065b;
 
-    EventData_Quit(TimeStamp timestamp = 0) : BaseEventData(timestamp) {}
     EventType Type() const override { return TYPE; }
     const char* Name() const override { return "EventData_Quit"; }
 };
@@ -68,7 +71,7 @@ public:
     uint32 w;
     uint32 h;
 
-    EventData_WindowResized(uint32 width, uint32 height, TimeStamp timestamp = 0) : BaseEventData(timestamp), w(width), h(height) {}
+    EventData_WindowResized(uint32 width, uint32 height) : w(width), h(height) {}
     EventType Type() const override { return TYPE; }
     const char* Name() const override { return "EventData_WindowResized"; }
 };
@@ -84,7 +87,7 @@ public:
     bool l;
     bool r;
 
-    EventData_MoveCamera(bool forward, bool backward, bool left, bool right, TimeStamp timestamp = 0) : BaseEventData(timestamp), f(forward), b(backward), l(left), r(right) {}
+    EventData_MoveCamera(bool forward, bool backward, bool left, bool right) : f(forward), b(backward), l(left), r(right) {}
     EventType Type() const override { return TYPE; }
     const char* Name() const override { return "EventData_MoveCamera"; }
 };
@@ -98,7 +101,7 @@ public:
     int32 xrel;
     int32 yrel;
 
-    EventData_RotateCamera(int32 xrel, int32 yrel, TimeStamp timestamp = 0) : BaseEventData(timestamp), xrel(xrel), yrel(yrel) {}
+    EventData_RotateCamera(int32 xrel, int32 yrel) : xrel(xrel), yrel(yrel) {}
     EventType Type() const override { return TYPE; }
     const char* Name() const override { return "EventData_RotateCamera"; }
 };
@@ -111,7 +114,7 @@ public:
 
     bool in; // in or out?
 
-    EventData_ZoomCamera(bool in, TimeStamp timestamp = 0) : BaseEventData(timestamp), in(in) {}
+    EventData_ZoomCamera(bool in) : in(in) {}
     EventType Type() const override { return TYPE; }
     const char* Name() const override { return "EventData_ZoomCamera"; }
 };

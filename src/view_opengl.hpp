@@ -38,17 +38,8 @@ private:
     const uint32 MINIMUM_OPENGL_MAJOR = 3;
     const uint32 MINIMUM_OPENGL_MINOR = 3;
 
-    const bool ENABLE_VYSNC = true;
-    const bool ADAPTIVE_VSYNC = true; // Classic or Adaptive VSync?
-
-    const bool   MULTISAMPLING = true;
-    const uint32 MULTISAMPLING_NUMSAMPLES = 4; // 2 or 4.
-
     App*   m_app   = nullptr;
     Logic* m_logic = nullptr;
-
-    std::string m_shaderPath;
-    std::string m_texturePath;
 
     SDL_Window* m_window = nullptr;
     SDL_GLContext m_glContext = nullptr;
@@ -56,14 +47,11 @@ private:
     uint64 m_fpsLastTime = 0;
     uint32 m_fpsCounter = 0;
 
-    uint32 m_windowWidth  = 800;
-    uint32 m_windowHeight = 600;
-
     bool InitWindowAndGLContext_();
     bool InitGLFunctions_();
     void InitLogGraphicsInfo_();
 
-    std::map<std::string, Shader> m_shaders;
+    std::map<std::string, Shader>  m_shaders;
     std::map<std::string, Texture> m_textures;
 
     // @note Sometimes multiple vertex or multiple fragment shaders can be used in
