@@ -7,6 +7,7 @@
 
 #include "view_opengl.hpp"
 #include "app.hpp"
+#include "events.hpp"
 #include "logic.hpp"
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -50,9 +51,6 @@ bool ViewOpenGL::Init()
 
     glViewport(0, 0, m_app->m_options.graphics.windowWidth, m_app->m_options.graphics.windowHeight);
     glEnable(GL_DEPTH_TEST);
-
-    if (!m_app->Commands()->AddListener(EVENT_BIND_MEMBER_FUNCTION(ViewOpenGL::OnWindowResized), EventData_WindowResized::TYPE))
-        return false;
 
     if (!CreateShader("default", "default", "default"))
         return false;
@@ -202,8 +200,6 @@ void ViewOpenGL::Cleanup()
         m_shaders.clear();
     }
 
-    // @todo Commands.RemoveListener(ViewOpenGL::OnWindowResized).
-
     if (m_glContext)
     {
         SDL_GL_DeleteContext(m_glContext);
@@ -234,7 +230,10 @@ bool ViewOpenGL::ProcessEvents(DeltaTime /*dt*/)
             // @note SDL_WINDOWEVENT_RESIZED only fires if the window size
             //       changed due to an external event, i.e., not an SDL call;
             //       Also, initial window creation doesn't cause this either.
-            m_app->Commands()->QueueEvent(std::make_shared<EventData_WindowResized>(e.window.data1, e.window.data2));
+            m_app->m_options.graphics.windowWidth  = e.window.data1;
+            m_app->m_options.graphics.windowHeight = e.window.data2;
+            glViewport(0, 0, m_app->m_options.graphics.windowWidth, m_app->m_options.graphics.windowHeight);
+            LogInfo("Window resized to %ux%u; viewport set.", m_app->m_options.graphics.windowWidth, m_app->m_options.graphics.windowHeight);
         }
         else if (e.type == SDL_KEYDOWN)
         {
@@ -762,17 +761,6 @@ bool ViewOpenGL::UseTexture(std::string name)
 
     glBindTexture(GL_TEXTURE_2D, s->second);
     return true;
-}
-
-void ViewOpenGL::OnWindowResized(IEventDataPtr e)
-{
-    EventData_WindowResized* d = dynamic_cast<EventData_WindowResized*>(e.get());
-    uint32 w = d->w;
-    uint32 h = d->h;
-    m_app->m_options.graphics.windowWidth  = w;
-    m_app->m_options.graphics.windowHeight = h;
-    glViewport(0, 0, w, h);
-    LogInfo("Window resized to %ux%u; viewport set.", w, h);
 }
 
 bool ViewOpenGL::InitWindowAndGLContext_()

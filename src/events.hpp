@@ -65,20 +65,6 @@ public:
     const char* Name() const override { return "EventData_Quit"; }
 };
 
-class EventData_WindowResized : public BaseEventData
-{
-public:
-    //2fdfd573-11c1-41ef-9901-b3f3857dd532
-    static const EventType TYPE = 0x2fdfd573;
-
-    uint32 w;
-    uint32 h;
-
-    EventData_WindowResized(uint32 width, uint32 height) : w(width), h(height) {}
-    EventType Type() const override { return TYPE; }
-    const char* Name() const override { return "EventData_WindowResized"; }
-};
-
 class EventData_MoveCamera : public BaseEventData
 {
 public:

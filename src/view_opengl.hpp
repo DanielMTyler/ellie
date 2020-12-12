@@ -11,7 +11,6 @@
 // @todo Split into HumanView and OpenGLRenderer; cleanup.
 
 #include "global.hpp"
-#include "events.hpp"
 #include "view_interface.hpp"
 
 #include <glad/glad.h>
@@ -80,8 +79,6 @@ private:
                        const float32* rgbaBorderColor = nullptr);
     void DeleteTexture(std::string name);
     bool UseTexture   (std::string name);
-
-    void OnWindowResized(IEventDataPtr e);
 
     bool InitWindowAndGLContext_();
     bool InitGLFunctions_();
