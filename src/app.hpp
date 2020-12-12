@@ -85,8 +85,8 @@ public:
     int  Loop(); // Returns main() return code.
 
 private:
-    EventManager m_commands; // "Critical" events; process ASAP.
-    EventManager m_events;   // Non-critical events; process when possible.
+    EventManager m_commands; // Critical; WILL be processed ASAP.
+    EventManager m_events;   // Non-critical; process as possible; can be dropped.
     class Logic m_logic;
     IView* m_view = nullptr;
 

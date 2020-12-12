@@ -8,7 +8,7 @@
 #ifndef VIEW_OPENGL_HPP
 #define VIEW_OPENGL_HPP
 
-// @todo This should really be split into HumanView and OpenGLRenderer.
+// @todo Split into HumanView and OpenGLRenderer; cleanup.
 
 #include "global.hpp"
 #include <glad/glad.h>
@@ -18,10 +18,10 @@
 #include <map>
 #include <string>
 #include "events.hpp"
-#include "logic.hpp"
 #include "view_interface.hpp"
 
 class App;
+class Logic;
 
 class ViewOpenGL : public IView
 {

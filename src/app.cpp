@@ -158,15 +158,13 @@ int App::Loop()
 
         if (!m_view->ProcessEvents(dt))
             break;
-        m_commands.Update();
-        // @todo Dynamically adjust update timelimit to maintain framerate
-        //       and avoid spiral of death; try to maintain ~30 FPS for now.
-        m_events.Update(true, 1000.0f/30.0f);
+        m_commands.Update(dt);
+        // @todo Dynamically adjust timelimit and or drop events if needed to
+        //       maintain framerate and avoid the backlog growing forever.
+        m_events.Update(dt, true, 1000.0f/30.0f);
 
-        // true == ready to quit.
-        if (m_logic.Update(dt))
+        if (!m_logic.Update(dt))
             break;
-
         if (!m_view->Render(dt))
             break;
     }
@@ -211,14 +209,14 @@ int App::Loop()
 
     bool App::ForceSingleInstanceInit_() const
     {
-        // @todo
+        // @todo ForceSingleInstanceInit_
         LogWarning("TODO: ForceSingleInstanceInit_.");
         return true;
     }
 
     void App::ForceSingleInstanceCleanup_() const
     {
-        // @todo
+        // @todo ForceSingleInstanceCleanup_
         LogWarning("TODO: ForceSingleInstanceCleanup_.");
     }
 

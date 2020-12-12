@@ -22,21 +22,21 @@ typedef uint32 EventType;
 class IEventData
 {
 public:
+    DeltaTime dt; // Set by EventManager when calling listeners.
+
     virtual ~IEventData() {}
 
-    virtual EventType Type() const = 0;
+    virtual EventType Type()      const = 0;
     virtual TimeStamp Timestamp() const = 0;
-    virtual const char* Name() const = 0;
+    virtual const char* Name()    const = 0;
 };
 
 typedef std::shared_ptr<IEventData> IEventDataPtr;
-typedef void EventListenerDelegateSignature(IEventDataPtr eventData);
+typedef void EventListenerDelegateSignature(IEventDataPtr event);
 //typedef std::function<void(IEventDataPtr)> EventListenerDelegate;
 typedef std::function<EventListenerDelegateSignature> EventListenerDelegate;
 
 #define EVENT_BIND_MEMBER_FUNCTION(x) std::bind(&x, this, std::placeholders::_1)
-
-#include <inttypes.h>
 
 class BaseEventData : public IEventData
 {
@@ -114,7 +114,7 @@ public:
 
     bool in; // in or out?
 
-    EventData_ZoomCamera(bool in) : in(in) {}
+    EventData_ZoomCamera(bool in_) : in(in_) {}
     EventType Type() const override { return TYPE; }
     const char* Name() const override { return "EventData_ZoomCamera"; }
 };
@@ -128,13 +128,13 @@ public:
     virtual void RemoveListener(const EventListenerDelegate& delegate, EventType type) = 0;
 
     // Bypass the queue and call all delegates immediately.
-    virtual void TriggerEvent(const IEventDataPtr& event) const = 0;
+    virtual void TriggerEvent(DeltaTime dt, IEventDataPtr& event) const = 0;
 
     virtual void QueueEvent(const IEventDataPtr& event) = 0;
 
     virtual void AbortEvent(EventType type, bool allOfType) = 0;
 
-    virtual void Update(bool limit, DeltaTime max) = 0;
+    virtual void Update(DeltaTime dt, bool limit, DeltaTime max) = 0;
 };
 
 class EventManager : public IEventManager
@@ -182,7 +182,7 @@ public:
         LogDebug("Tried to remove non-existant event delegate: %p.", (void*)t);
     }
 
-    void TriggerEvent(const IEventDataPtr& event) const override
+    void TriggerEvent(DeltaTime dt, IEventDataPtr& event) const override
     {
         auto findIt = m_listeners.find(event->Type());
         if (findIt == m_listeners.end())
@@ -192,6 +192,7 @@ public:
         for (auto it = l.begin(); it != l.end(); it++)
         {
             EventListenerDelegate listener = (*it);
+            event->dt = dt;
             listener(event);
         }
     }
@@ -224,11 +225,11 @@ public:
         }
     }
 
-    void Update(bool limit = false, DeltaTime max = 0.0f) override
+    void Update(DeltaTime dt, bool limit = false, DeltaTime max = 0.0f) override
     {
         uint64 dtStart = SDL_GetPerformanceCounter();
         uint64 dtNow;
-        DeltaTime dt = 0.0f;
+        DeltaTime dtAccumulator = 0.0f;
 
         Queue& q = m_queues[m_activeQueue];
         m_activeQueue++;
@@ -239,6 +240,7 @@ public:
         while (!q.empty())
         {
             IEventDataPtr e = q.front();
+            e->dt = dt;
             q.pop_front();
 
             EventType t = e->Type();
@@ -257,8 +259,8 @@ public:
             if (limit && !q.empty())
             {
                 dtNow = SDL_GetPerformanceCounter();
-                dt += (DeltaTime)(dtNow - dtStart) * 1000.0f / (DeltaTime)SDL_GetPerformanceFrequency();
-                if (dt >= max)
+                dtAccumulator += (DeltaTime)(dtNow - dtStart) * 1000.0f / (DeltaTime)SDL_GetPerformanceFrequency();
+                if (dtAccumulator >= max)
                 {
                     LogWarning("Aborting event processing; ran out of time.");
                     Queue& nextQ = m_queues[m_activeQueue];

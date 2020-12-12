@@ -7,13 +7,14 @@
 
 #include "logic.hpp"
 #include "app.hpp"
-#include <cmath> // std::sin/std::cos
+#include <glm/glm.hpp>
+#include <cmath> // sin/cos
 
 bool Logic::Init()
 {
     m_app = &App::Get();
 
-    UpdateCamera();
+    UpdateCameraVectors();
 
     if (!m_app->Commands().AddListener(EVENT_BIND_MEMBER_FUNCTION(Logic::OnQuit), EventData_Quit::TYPE))
         return false;
@@ -29,16 +30,18 @@ bool Logic::Init()
 
 void Logic::Cleanup()
 {
-    // @todo
-    //m_app->Events().RemoveListener(OnEventQuit, EventData_Quit::TYPE);
+    // @todo Commands.RemoveListener(Logic::OnQuit).
+    // @todo Events.RemoveListener(Logic::OnMoveCamera).
+    // @todo Events.RemoveListener(Logic::OnRotateCamera).
+    // @todo Events.RemoveListener(Logic::OnZoomCamera).
 }
 
 bool Logic::Update(DeltaTime /*dt*/)
 {
-    return m_quit;
+    return !m_quit;
 }
 
-void Logic::UpdateCamera()
+void Logic::UpdateCameraVectors()
 {
     m_app->m_options.camera.front.x = std::cos(glm::radians(m_app->m_options.camera.yaw)) * std::cos(glm::radians(m_app->m_options.camera.pitch));
     m_app->m_options.camera.front.y = std::sin(glm::radians(m_app->m_options.camera.pitch));
@@ -49,7 +52,7 @@ void Logic::UpdateCamera()
     m_app->m_options.camera.up    = glm::normalize(glm::cross(m_app->m_options.camera.right, m_app->m_options.camera.front));
 }
 
-void Logic::OnQuit(IEventDataPtr)
+void Logic::OnQuit(IEventDataPtr /*e*/)
 {
     m_quit = true;
 }
@@ -57,16 +60,15 @@ void Logic::OnQuit(IEventDataPtr)
 void Logic::OnMoveCamera(IEventDataPtr e)
 {
     EventData_MoveCamera* d = dynamic_cast<EventData_MoveCamera*>(e.get());
-    // @todo This should move to logic.
-    DeltaTime dt = 16.0f;
     if (d->f)
-        m_app->m_options.camera.position += m_app->m_options.camera.front * m_app->m_options.camera.speed * dt;
+        m_app->m_options.camera.position += m_app->m_options.camera.front * m_app->m_options.camera.speed * d->dt;
     else if (d->b)
-        m_app->m_options.camera.position -= m_app->m_options.camera.front * m_app->m_options.camera.speed * dt;
+        m_app->m_options.camera.position -= m_app->m_options.camera.front * m_app->m_options.camera.speed * d->dt;
     if (d->l)
-        m_app->m_options.camera.position -= m_app->m_options.camera.right * m_app->m_options.camera.speed * dt;
+        m_app->m_options.camera.position -= m_app->m_options.camera.right * m_app->m_options.camera.speed * d->dt;
     else if (d->r)
-        m_app->m_options.camera.position += m_app->m_options.camera.right * m_app->m_options.camera.speed * dt;
+        m_app->m_options.camera.position += m_app->m_options.camera.right * m_app->m_options.camera.speed * d->dt;
+
     // @todo This keeps the camera grounded FPS style, but it also makes
     //       forward/backward movement slow when at an extreme pitch. Why?
     //m_cameraPosition.y = 0.0f;
@@ -88,7 +90,7 @@ void Logic::OnRotateCamera(IEventDataPtr e)
     else if (m_app->m_options.camera.pitch < m_app->m_options.camera.pitchMin)
         m_app->m_options.camera.pitch = m_app->m_options.camera.pitchMin;
 
-    UpdateCamera();
+    UpdateCameraVectors();
 }
 
 void Logic::OnZoomCamera(IEventDataPtr e)

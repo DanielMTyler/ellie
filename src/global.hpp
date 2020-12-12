@@ -63,7 +63,7 @@
 #define ZERO_STRUCT(s) std::memset(&(s), 0, sizeof(s))
 
 
-#include <cstdint> // std::(u)int(8/16/32/64)_t
+#include <cstdint> // (u)int(8/16/32/64)_t
 typedef std::int8_t    int8;
 typedef std::int16_t   int16;
 typedef std::int32_t   int32;

@@ -7,6 +7,7 @@
 
 #include "view_opengl.hpp"
 #include "app.hpp"
+#include "logic.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #define STB_IMAGE_IMPLEMENTATION
@@ -199,7 +200,7 @@ void ViewOpenGL::Cleanup()
         m_shaders.clear();
     }
 
-    // @todo Remove event listeners.
+    // @todo Commands.RemoveListener(ViewOpenGL::OnWindowResized).
 
     if (m_glContext)
     {
@@ -223,7 +224,7 @@ bool ViewOpenGL::ProcessEvents(DeltaTime /*dt*/)
     {
         if (e.type == SDL_QUIT || (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE))
         {
-            m_app->Commands().TriggerEvent(std::make_shared<EventData_Quit>());
+            m_app->Commands().QueueEvent(std::make_shared<EventData_Quit>());
             return true;
         }
         else if (e.type == SDL_WINDOWEVENT && e.window.event == SDL_WINDOWEVENT_RESIZED)
