@@ -1,5 +1,6 @@
 #include "global.hpp"
 #include "app.hpp"
+
 #include <SDL.h> // main -> SDL_main redefinition.
 
 // @warning SDL 2 requires this function signature to avoid SDL_main linker errors.

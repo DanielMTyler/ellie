@@ -6,12 +6,17 @@
 */
 
 #include "app.hpp"
+#include "events.hpp"
+#include "logic.hpp"
+#include "view_interface.hpp"
+#include "view_opengl.hpp"
+
 #include <SDL.h>
 #include <SDL_syswm.h>
+
 #include <cstdio>
 #include <filesystem>
 #include <new>
-#include "view_opengl.hpp"
 
 App& App::Get()
 {
@@ -19,7 +24,7 @@ App& App::Get()
     return a;
 }
 
-bool App::FolderExists(std::string folder) const
+bool App::FolderExists(std::string folder)
 {
     std::error_code ec; // ignored; set if the folder doesn't exist.
     if (std::filesystem::is_directory(folder, ec))
@@ -28,7 +33,7 @@ bool App::FolderExists(std::string folder) const
         return false;
 }
 
-bool App::LoadFile(std::string file, std::string& contents) const
+bool App::LoadFile(std::string file, std::string& contents)
 {
     // Failing to load a file might not be fatal, but we do provide warning
     // messages to provide information on the actual failure.
@@ -110,8 +115,30 @@ bool App::Init()
     m_options.core.shaderPath  = m_options.core.dataPath + "shaders" + PATH_SEPARATOR;
     m_options.core.texturePath = m_options.core.dataPath + "textures" + PATH_SEPARATOR;
 
-    if (!m_logic.Init())
+    m_commands = new (std::nothrow) EventManager;
+    if (!m_commands)
+    {
+        LogFatal("Failed to allocate memory for command event manager.");
         return false;
+    }
+
+    m_events = new (std::nothrow) EventManager;
+    if (!m_events)
+    {
+        LogFatal("Failed to allocate memory for non-command event manager.");
+        return false;
+    }
+
+    m_logic = new (std::nothrow) class Logic;
+    if (!m_logic)
+    {
+        LogFatal("Failed to allocate memory for logic.");
+        return false;
+    }
+    else if (!m_logic->Init())
+    {
+        return false;
+    }
 
     m_view = new (std::nothrow) ViewOpenGL;
     if (!m_view)
@@ -139,7 +166,24 @@ void App::Cleanup()
         m_view = nullptr;
     }
 
-    m_logic.Cleanup();
+    if (m_logic)
+    {
+        m_logic->Cleanup();
+        delete m_logic;
+        m_logic = nullptr;
+    }
+
+    if (m_events)
+    {
+        delete m_events;
+        m_events = nullptr;
+    }
+
+    if (m_commands)
+    {
+        delete m_commands;
+        m_commands = nullptr;
+    }
 
     SDL_Quit();
     ForceSingleInstanceCleanup_();
@@ -147,23 +191,23 @@ void App::Cleanup()
 
 int App::Loop()
 {
-    TimeStamp dtNow = SDL_GetPerformanceCounter();
+    TimeStamp dtNow = Time();
     TimeStamp dtLast;
     DeltaTime dt;
     while (true)
     {
         dtLast = dtNow;
-        dtNow = SDL_GetPerformanceCounter();
-        dt = (DeltaTime)(dtNow - dtLast) * 1000.0f / (DeltaTime)SDL_GetPerformanceFrequency();
+        dtNow = Time();
+        dt = App::MillisecondsBetween(dtLast, dtNow);
 
         if (!m_view->ProcessEvents(dt))
             break;
-        m_commands.Update(dt);
+        m_commands->Update(dt);
         // @todo Dynamically adjust timelimit and or drop events if needed to
         //       maintain framerate and avoid the backlog growing forever.
-        m_events.Update(dt, true, 1000.0f/30.0f);
+        m_events->Update(dt, true, 1000.0f/30.0f);
 
-        if (!m_logic.Update(dt))
+        if (!m_logic->Update(dt))
             break;
         if (!m_view->Render(dt))
             break;
@@ -179,7 +223,7 @@ int App::Loop()
 
     global_variable HANDLE g_windowsSingleInstanceMutex = nullptr;
 
-    bool App::ForceSingleInstanceInit_() const
+    bool App::ForceSingleInstanceInit_()
     {
         SDL_assert(!g_windowsSingleInstanceMutex);
 
@@ -196,7 +240,7 @@ int App::Loop()
         return true;
     }
 
-    void App::ForceSingleInstanceCleanup_() const
+    void App::ForceSingleInstanceCleanup_()
     {
         if (g_windowsSingleInstanceMutex)
         {
@@ -207,14 +251,14 @@ int App::Loop()
 
 #elif defined(OS_LINUX)
 
-    bool App::ForceSingleInstanceInit_() const
+    bool App::ForceSingleInstanceInit_()
     {
         // @todo ForceSingleInstanceInit_
         LogWarning("TODO: ForceSingleInstanceInit_.");
         return true;
     }
 
-    void App::ForceSingleInstanceCleanup_() const
+    void App::ForceSingleInstanceCleanup_()
     {
         // @todo ForceSingleInstanceCleanup_
         LogWarning("TODO: ForceSingleInstanceCleanup_.");
@@ -226,7 +270,7 @@ int App::Loop()
 
 #endif // OS_WINDOWS.
 
-void App::InitLogSystemInfo_() const
+void App::InitLogSystemInfo_()
 {
     // SDL version
     {

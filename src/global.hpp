@@ -77,8 +77,7 @@ typedef double float64;
 
 // Milliseconds.
 typedef float32 DeltaTime;
-
-// Holds a value from SDL_GetPerformanceCounter().
+// Stores a value from the high-res counter / App::Time().
 typedef uint64 TimeStamp;
 
 #define global_variable static

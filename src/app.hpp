@@ -9,11 +9,14 @@
 #define APP_HPP
 
 #include "global.hpp"
+
 #include <glm/glm.hpp>
+
 #include <string>
-#include "events.hpp"
-#include "logic.hpp"
-#include "view_interface.hpp"
+
+class IView;
+class EventManager;
+class Logic;
 
 class App {
 public:
@@ -21,6 +24,7 @@ public:
     // @todo Memory Manager.
     // @todo CVar/Console System.
 
+    // @todo Move to options.hpp?
     struct Options {
         struct Camera {
             float32 fov     = 45.0f;
@@ -73,31 +77,40 @@ public:
 
     static App& Get();
 
-    EventManager& Commands() { return m_commands; }
-    EventManager& Events() { return m_events; }
-    class Logic&  Logic()  { return m_logic; }
+    EventManager* Commands() { return m_commands; }
+    EventManager* Events()   { return m_events; }
+    class Logic*  Logic()    { return m_logic; }
 
-    bool FolderExists(std::string folder) const;
-    bool LoadFile(std::string file, std::string& contents) const;
+    // Current value from the high-res counter.
+    static TimeStamp Time() { return SDL_GetPerformanceCounter(); }
+    // Time() / TimePerSecond() == elapsed time in seconds.
+    static TimeStamp TimePerSecond() { return SDL_GetPerformanceFrequency(); }
+    static DeltaTime SecondsBetween(TimeStamp start, TimeStamp end) { return (DeltaTime)(end - start) / (DeltaTime)TimePerSecond(); }
+    static DeltaTime SecondsElapsed(TimeStamp start) { return SecondsBetween(start, Time()); }
+    static DeltaTime MillisecondsBetween(TimeStamp start, TimeStamp end) { return (DeltaTime)(end - start) * 1000.0f / (DeltaTime)TimePerSecond(); }
+    static DeltaTime MillisecondsElapsed(TimeStamp start) { return MillisecondsBetween(start, Time()); }
+
+    static bool FolderExists(std::string folder);
+    static bool LoadFile(std::string file, std::string& contents);
 
     bool Init();
     void Cleanup();
     int  Loop(); // Returns main() return code.
 
 private:
-    EventManager m_commands; // Critical; WILL be processed ASAP.
-    EventManager m_events;   // Non-critical; process as possible; can be dropped.
-    class Logic m_logic;
-    IView* m_view = nullptr;
+    EventManager* m_commands = nullptr; // Critical; WILL be processed ASAP.
+    EventManager* m_events   = nullptr; // Non-critical; can be dropped.
+    class Logic*  m_logic    = nullptr;
+    IView*        m_view     = nullptr;
 
     // Creation by App::Get() only.
     App() {};
 
     // Returns true if we're the only running instance or false if we're not; returns false after SetError() on failure.
-    bool ForceSingleInstanceInit_() const;
-    void ForceSingleInstanceCleanup_() const;
+    static bool ForceSingleInstanceInit_();
+    static void ForceSingleInstanceCleanup_();
 
-    void InitLogSystemInfo_() const;
+    static void InitLogSystemInfo_();
     bool InitSavePath_();
     bool InitCWD_();
     bool InitExecutablePath_();

@@ -7,7 +7,9 @@
 
 #include "logic.hpp"
 #include "app.hpp"
+
 #include <glm/glm.hpp>
+
 #include <cmath> // sin/cos
 
 bool Logic::Init()
@@ -16,13 +18,13 @@ bool Logic::Init()
 
     UpdateCameraVectors();
 
-    if (!m_app->Commands().AddListener(EVENT_BIND_MEMBER_FUNCTION(Logic::OnQuit), EventData_Quit::TYPE))
+    if (!m_app->Commands()->AddListener(EVENT_BIND_MEMBER_FUNCTION(Logic::OnQuit), EventData_Quit::TYPE))
         return false;
-    if (!m_app->Events().AddListener(EVENT_BIND_MEMBER_FUNCTION(Logic::OnMoveCamera), EventData_MoveCamera::TYPE))
+    if (!m_app->Events()->AddListener(EVENT_BIND_MEMBER_FUNCTION(Logic::OnMoveCamera), EventData_MoveCamera::TYPE))
         return false;
-    if (!m_app->Events().AddListener(EVENT_BIND_MEMBER_FUNCTION(Logic::OnRotateCamera), EventData_RotateCamera::TYPE))
+    if (!m_app->Events()->AddListener(EVENT_BIND_MEMBER_FUNCTION(Logic::OnRotateCamera), EventData_RotateCamera::TYPE))
         return false;
-    if (!m_app->Events().AddListener(EVENT_BIND_MEMBER_FUNCTION(Logic::OnZoomCamera), EventData_ZoomCamera::TYPE))
+    if (!m_app->Events()->AddListener(EVENT_BIND_MEMBER_FUNCTION(Logic::OnZoomCamera), EventData_ZoomCamera::TYPE))
         return false;
 
     return true;

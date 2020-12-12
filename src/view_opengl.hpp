@@ -11,14 +11,16 @@
 // @todo Split into HumanView and OpenGLRenderer; cleanup.
 
 #include "global.hpp"
+#include "events.hpp"
+#include "view_interface.hpp"
+
 #include <glad/glad.h>
 #include <KHR/khrplatform.h>
 #include <glm/glm.hpp>
 #include <SDL.h>
+
 #include <map>
 #include <string>
-#include "events.hpp"
-#include "view_interface.hpp"
 
 class App;
 class Logic;
@@ -43,15 +45,11 @@ private:
     App*   m_app   = nullptr;
     Logic* m_logic = nullptr;
 
-    SDL_Window* m_window = nullptr;
+    SDL_Window*   m_window    = nullptr;
     SDL_GLContext m_glContext = nullptr;
 
-    uint64 m_fpsLastTime = 0;
-    uint32 m_fpsCounter = 0;
-
-    bool InitWindowAndGLContext_();
-    bool InitGLFunctions_();
-    void InitLogGraphicsInfo_();
+    TimeStamp m_fpsLastTime = 0;
+    uint32    m_fpsCounter  = 0;
 
     std::map<std::string, Shader>  m_shaders;
     std::map<std::string, Texture> m_textures;
@@ -68,11 +66,10 @@ private:
     bool ShaderSetVec2f(std::string shader, std::string name, float32 x, float32 y) const;
     bool ShaderSetVec3f(std::string shader, std::string name, float32 x, float32 y, float32 z) const;
     bool ShaderSetVec4f(std::string shader, std::string name, float32 x, float32 y, float32 z, float32 w) const;
-    bool ShaderSetVec2(std::string shader, std::string name, glm::vec2 v) const;
-    bool ShaderSetVec3(std::string shader, std::string name, glm::vec3 v) const;
-    bool ShaderSetVec4(std::string shader, std::string name, glm::vec4 v) const;
-    bool ShaderSetMat4(std::string shader, std::string name, glm::mat4 m) const;
-    bool LoadShader_(std::string name, bool vertex, Shader& shader);
+    bool ShaderSetVec2 (std::string shader, std::string name, glm::vec2 v) const;
+    bool ShaderSetVec3 (std::string shader, std::string name, glm::vec3 v) const;
+    bool ShaderSetVec4 (std::string shader, std::string name, glm::vec4 v) const;
+    bool ShaderSetMat4 (std::string shader, std::string name, glm::mat4 m) const;
 
     bool CreateTexture(std::string name,
                        bool hasAlpha,
@@ -85,6 +82,11 @@ private:
     bool UseTexture   (std::string name);
 
     void OnWindowResized(IEventDataPtr e);
+
+    bool InitWindowAndGLContext_();
+    bool InitGLFunctions_();
+    void InitLogGraphicsInfo_();
+    bool LoadShader_(std::string name, bool vertex, Shader& shader);
 };
 
 #endif // VIEW_OPENGL_HPP

@@ -11,11 +11,14 @@
 #define EVENTS_HPP
 
 #include "global.hpp"
+#include "app.hpp"
+
+#include <SDL.h>
+
 #include <functional> // bind/function/placeholders
-#include <memory> // shared_ptr
 #include <list>
 #include <map>
-#include <SDL.h>
+#include <memory> // shared_ptr
 
 typedef uint32 EventType;
 
@@ -43,7 +46,7 @@ class BaseEventData : public IEventData
 public:
     BaseEventData()
     {
-        m_time = SDL_GetPerformanceCounter();
+        m_time = App::Time();
     }
 
     TimeStamp Timestamp() const override { return m_time; }
@@ -208,11 +211,10 @@ public:
         }
     }
 
-    void Update(DeltaTime dt, bool limit = false, DeltaTime max = 0.0f)
+    void Update(DeltaTime dt, bool limitTime = false, DeltaTime maxMilliseconds = 0.0f)
     {
-        uint64 dtStart = SDL_GetPerformanceCounter();
-        uint64 dtNow;
-        DeltaTime dtAccumulator = 0.0f;
+        TimeStamp startTime = App::Time();
+        DeltaTime elapsedMilliseconds = 0.0f;
 
         Queue& q = m_queues[m_activeQueue];
         m_activeQueue++;
@@ -239,11 +241,10 @@ public:
                 }
             }
 
-            if (limit && !q.empty())
+            if (limitTime && !q.empty())
             {
-                dtNow = SDL_GetPerformanceCounter();
-                dtAccumulator += (DeltaTime)(dtNow - dtStart) * 1000.0f / (DeltaTime)SDL_GetPerformanceFrequency();
-                if (dtAccumulator >= max)
+                elapsedMilliseconds += App::MillisecondsElapsed(startTime);
+                if (elapsedMilliseconds >= maxMilliseconds)
                 {
                     LogWarning("Aborting event processing; ran out of time.");
                     Queue& nextQ = m_queues[m_activeQueue];

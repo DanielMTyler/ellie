@@ -8,10 +8,12 @@
 #include "view_opengl.hpp"
 #include "app.hpp"
 #include "logic.hpp"
+
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
+
 #include <memory> // make_shared
 
 global_variable uint32 g_vbo = 0;
@@ -21,7 +23,7 @@ global_variable uint32 g_ebo = 0;
 bool ViewOpenGL::Init()
 {
     m_app   = &App::Get();
-    m_logic = &m_app->Logic();
+    m_logic = m_app->Logic();
 
     if (SDL_GL_LoadLibrary(nullptr))
     {
@@ -38,8 +40,6 @@ bool ViewOpenGL::Init()
 
     InitLogGraphicsInfo_();
 
-    m_fpsLastTime = SDL_GetPerformanceCounter();
-
     stbi_set_flip_vertically_on_load(true);
 
     if (SDL_SetRelativeMouseMode(SDL_TRUE))
@@ -51,7 +51,7 @@ bool ViewOpenGL::Init()
     glViewport(0, 0, m_app->m_options.graphics.windowWidth, m_app->m_options.graphics.windowHeight);
     glEnable(GL_DEPTH_TEST);
 
-    if (!m_app->Commands().AddListener(EVENT_BIND_MEMBER_FUNCTION(ViewOpenGL::OnWindowResized), EventData_WindowResized::TYPE))
+    if (!m_app->Commands()->AddListener(EVENT_BIND_MEMBER_FUNCTION(ViewOpenGL::OnWindowResized), EventData_WindowResized::TYPE))
         return false;
 
     if (!CreateShader("default", "default", "default"))
@@ -161,6 +161,8 @@ bool ViewOpenGL::Init()
     if (!ShaderSetInt("default", "texture2", 1))
         return false;
 
+    m_fpsLastTime = App::Time();
+
     return true;
 }
 
@@ -224,7 +226,7 @@ bool ViewOpenGL::ProcessEvents(DeltaTime /*dt*/)
     {
         if (e.type == SDL_QUIT || (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE))
         {
-            m_app->Commands().QueueEvent(std::make_shared<EventData_Quit>());
+            m_app->Commands()->QueueEvent(std::make_shared<EventData_Quit>());
             return true;
         }
         else if (e.type == SDL_WINDOWEVENT && e.window.event == SDL_WINDOWEVENT_RESIZED)
@@ -232,7 +234,7 @@ bool ViewOpenGL::ProcessEvents(DeltaTime /*dt*/)
             // @note SDL_WINDOWEVENT_RESIZED only fires if the window size
             //       changed due to an external event, i.e., not an SDL call;
             //       Also, initial window creation doesn't cause this either.
-            m_app->Commands().QueueEvent(std::make_shared<EventData_WindowResized>(e.window.data1, e.window.data2));
+            m_app->Commands()->QueueEvent(std::make_shared<EventData_WindowResized>(e.window.data1, e.window.data2));
         }
         else if (e.type == SDL_KEYDOWN)
         {
@@ -251,7 +253,7 @@ bool ViewOpenGL::ProcessEvents(DeltaTime /*dt*/)
         }
         else if (e.type == SDL_MOUSEMOTION)
         {
-            m_app->Events().QueueEvent(std::make_shared<EventData_RotateCamera>(e.motion.xrel, e.motion.yrel));
+            m_app->Events()->QueueEvent(std::make_shared<EventData_RotateCamera>(e.motion.xrel, e.motion.yrel));
         }
         else if (e.type == SDL_MOUSEWHEEL)
         {
@@ -259,7 +261,7 @@ bool ViewOpenGL::ProcessEvents(DeltaTime /*dt*/)
             bool in = (e.wheel.y > 0 ? true : false);
             if (e.wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
                 in = -in;
-            m_app->Events().QueueEvent(std::make_shared<EventData_ZoomCamera>(in));
+            m_app->Events()->QueueEvent(std::make_shared<EventData_ZoomCamera>(in));
         }
     }
 
@@ -278,18 +280,18 @@ bool ViewOpenGL::ProcessEvents(DeltaTime /*dt*/)
         moveCameraRight = true;
 
     if (moveCameraForward || moveCameraBackward || moveCameraLeft || moveCameraRight)
-        m_app->Events().QueueEvent(std::make_shared<EventData_MoveCamera>(moveCameraForward, moveCameraBackward, moveCameraLeft, moveCameraRight));
+        m_app->Events()->QueueEvent(std::make_shared<EventData_MoveCamera>(moveCameraForward, moveCameraBackward, moveCameraLeft, moveCameraRight));
 
     return true;
 }
 
 bool ViewOpenGL::Render(DeltaTime dt)
 {
-    if (((DeltaTime)(SDL_GetPerformanceCounter() - m_fpsLastTime) / (DeltaTime)SDL_GetPerformanceFrequency()) >= 1.0f)
+    if (App::SecondsElapsed(m_fpsLastTime) >= 1.0f)
     {
         LogDebug("FPS: %u, DT: %f.", m_fpsCounter, dt);
         m_fpsCounter = 0;
-        m_fpsLastTime = SDL_GetPerformanceCounter();
+        m_fpsLastTime = App::Time();
     }
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -352,212 +354,6 @@ bool ViewOpenGL::Render(DeltaTime dt)
     m_fpsCounter++;
 
     return true;
-}
-
-bool ViewOpenGL::InitWindowAndGLContext_()
-{
-    if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, MINIMUM_OPENGL_MAJOR))
-    {
-        LogFatal("Failed to request OpenGL major version: %s.", SDL_GetError());
-        return false;
-    }
-    if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, MINIMUM_OPENGL_MINOR))
-    {
-        LogFatal("Failed to request OpenGL minor version: %s.", SDL_GetError());
-        return false;
-    }
-    if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE))
-    {
-        LogFatal("Failed to request OpenGL core profile: %s.", SDL_GetError());
-        return false;
-    }
-    LogInfo("OpenGL requested: v%i.%i Core Profile.", MINIMUM_OPENGL_MAJOR, MINIMUM_OPENGL_MINOR);
-
-    if (SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1))
-    {
-        LogFatal("Failed to request OpenGL doublebuffering: %s.", SDL_GetError());
-        return false;
-    }
-    LogInfo("Double Buffering requested.");
-
-    if (m_app->m_options.graphics.multisampling)
-    {
-        if (SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1))
-        {
-            LogFatal("Failed to request OpenGL multisampling: %s.", SDL_GetError());
-            return false;
-        }
-        if (SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, m_app->m_options.graphics.multisamplingNumSamples))
-        {
-            LogFatal("Failed to request OpenGL multisampling num samples: %s.", SDL_GetError());
-            return false;
-        }
-        LogInfo("Multisampling requested: On with %i samples.", m_app->m_options.graphics.multisamplingNumSamples);
-    }
-    else
-    {
-        LogInfo("Multisampling requested: No.");
-    }
-
-    m_window = SDL_CreateWindow(APPLICATION_NAME,
-                                SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                                m_app->m_options.graphics.windowWidth, m_app->m_options.graphics.windowHeight,
-                                SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
-    if (!m_window)
-    {
-        LogFatal("Failed to create window: %s.", SDL_GetError());
-        return false;
-    }
-    LogInfo("Created window.");
-
-    m_glContext = SDL_GL_CreateContext(m_window);
-    if (!m_glContext)
-    {
-        LogFatal("Failed to create OpenGL Context: %s.", SDL_GetError());
-        return false;
-    }
-    LogInfo("Created OpenGL Context.");
-    if (SDL_GL_MakeCurrent(m_window, m_glContext))
-    {
-        LogFatal("Failed to make OpenGL Context current: %s.", SDL_GetError());
-        return false;
-    }
-    LogInfo("Made OpenGL Context current.");
-
-    int glMajor;
-    if (SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &glMajor))
-    {
-        LogFatal("Failed to retrieve actual OpenGL major version: %s.", SDL_GetError());
-        return false;
-    }
-    int glMinor;
-    if (SDL_GL_GetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, &glMinor))
-    {
-        LogFatal("Failed to retrieve actual OpenGL minor version: %s.", SDL_GetError());
-        return false;
-    }
-    int glProfile;
-    if (SDL_GL_GetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, &glProfile))
-    {
-        LogFatal("Failed to retrieve actual OpenGL profile: %s.", SDL_GetError());
-        return false;
-    }
-    std::string glProfileStr = "Unknown";
-    if (glProfile == SDL_GL_CONTEXT_PROFILE_CORE)
-        glProfileStr = "Core";
-    else if (glProfile == SDL_GL_CONTEXT_PROFILE_COMPATIBILITY)
-        glProfileStr = "Compatibility";
-    else if (glProfile == SDL_GL_CONTEXT_PROFILE_ES)
-        glProfileStr = "ES";
-    LogInfo("OpenGL: v%i.%i %s Profile.", glMajor, glMinor, glProfileStr.c_str());
-
-    int doublebuffering;
-    if (SDL_GL_GetAttribute(SDL_GL_DOUBLEBUFFER, &doublebuffering))
-    {
-        LogFatal("Failed to retrieve actual OpenGL doublebuffering: %s.", SDL_GetError());
-        return false;
-    }
-    LogInfo("Double Buffering: %s.", OnOffBoolToStr(doublebuffering));
-
-    int multisampling;
-    if (SDL_GL_GetAttribute(SDL_GL_MULTISAMPLEBUFFERS, &multisampling))
-    {
-        LogFatal("Failed to retrieve actual OpenGL multisampling: %s.", SDL_GetError());
-        return false;
-    }
-    int multisampling_numSamples;
-    if (SDL_GL_GetAttribute(SDL_GL_MULTISAMPLESAMPLES, &multisampling_numSamples))
-    {
-        LogFatal("Failed to retrieve actual OpenGL multisampling num samples: %s.", SDL_GetError());
-        return false;
-    }
-    LogInfo("Multisampling: %s with %i samples.", OnOffBoolToStr(multisampling), multisampling_numSamples);
-
-    if (m_app->m_options.graphics.vsync)
-    {
-        if (m_app->m_options.graphics.vsyncAdaptive)
-        {
-            if (SDL_GL_SetSwapInterval(-1))
-            {
-                LogWarning("Failed to set Adaptive VSync: %s.", SDL_GetError());
-                if (SDL_GL_SetSwapInterval(1))
-                    LogWarning("Failed to set Standard VSync: %s.", SDL_GetError());
-                else
-                    LogInfo("Set VSync: On.");
-            }
-            else
-            {
-                LogInfo("Set VSync: Adaptive.");
-            }
-        }
-        else
-        {
-            if (SDL_GL_SetSwapInterval(1))
-                LogWarning("Failed to set Standard VSync: %s.", SDL_GetError());
-            else
-                LogInfo("Set VSync: On.");
-        }
-    }
-    else
-    {
-        if (SDL_GL_SetSwapInterval(0))
-            LogWarning("Failed to set VSync off: %s.", SDL_GetError());
-        LogInfo("Set VSync: Off.");
-    }
-
-    int vsync = SDL_GL_GetSwapInterval();
-    if (vsync == 0)
-        LogInfo("VSync: Off.");
-    else if (vsync == 1)
-        LogInfo("VSync: On.");
-    else
-        LogInfo("VSync: Adaptive.");
-
-    return true;
-}
-
-bool ViewOpenGL::InitGLFunctions_()
-{
-    // @warning This requires an OpenGL Context.
-    if (!gladLoadGLLoader(SDL_GL_GetProcAddress))
-    {
-        LogFatal("Failed to load OpenGL functions.");
-        return false;
-    }
-
-    if (GLVersion.major < (int)MINIMUM_OPENGL_MAJOR ||
-        (GLVersion.major == (int)MINIMUM_OPENGL_MAJOR && GLVersion.minor < (int)MINIMUM_OPENGL_MINOR))
-    {
-        LogFatal("Loaded OpenGL v%i.%i functions, but need v%i.%i+.", GLVersion.major, GLVersion.minor,
-                 MINIMUM_OPENGL_MAJOR, MINIMUM_OPENGL_MINOR);
-        return false;
-    }
-    else
-    {
-        LogInfo("Loaded OpenGL v%i.%i functions.", GLVersion.major, GLVersion.minor);
-        return true;
-    }
-}
-
-void ViewOpenGL::InitLogGraphicsInfo_()
-{
-    int v;
-    glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &v);
-    LogInfo("OpenGL max vertex attributes supported: %i.", v);
-    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &v);
-    LogInfo("OpenGL max 1D/2D texture size: %ix%i.", v, v);
-    glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &v);
-    LogInfo("OpenGL max 3D texture size: %ix%ix%i.", v, v, v);
-    glGetIntegerv(GL_MAX_CUBE_MAP_TEXTURE_SIZE, &v);
-    LogInfo("OpenGL max cube map texture size: %ix%ix%i.", v, v, v);
-    glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &v);
-    LogInfo("OpenGL max fragment texture image units: %i.", v);
-    glGetIntegerv(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS, &v);
-    LogInfo("OpenGL max vertex texture image units: %i.", v);
-    glGetIntegerv(GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS, &v);
-    LogInfo("OpenGL max geometry texture image units: %i.", v);
-    glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &v);
-    LogInfo("OpenGL max combined texture image units: %i.", v);
 }
 
 bool ViewOpenGL::CreateShader(std::string name, std::string vertex, std::string fragment)
@@ -879,49 +675,6 @@ bool ViewOpenGL::ShaderSetMat4(std::string shader, std::string name, glm::mat4 m
     return true;
 }
 
-bool ViewOpenGL::LoadShader_(std::string name, bool vertex, Shader& shader)
-{
-    if (name.empty())
-    {
-        LogFatal("Tried to load %s shader with no name.", (vertex ? "vertex" : "fragment"));
-        return false;
-    }
-
-    LogInfo("Loading %s shader: %s.", (vertex ? "vertex" : "fragment"), name.c_str());
-
-    std::string file = m_app->m_options.core.shaderPath + name + (vertex ? ".vert" : ".frag");
-    std::string shaderStr;
-    if (!m_app->LoadFile(file, shaderStr))
-    {
-        LogFatal("Failed to load shader file.");
-        return false;
-    }
-
-    if (vertex)
-        shader = glCreateShader(GL_VERTEX_SHADER);
-    else
-        shader = glCreateShader(GL_FRAGMENT_SHADER);
-
-    const char* shaderCStr = shaderStr.c_str();
-    glShaderSource(shader, 1, &shaderCStr, nullptr);
-    glCompileShader(shader);
-
-    int success;
-    const uint32 infoLogSize = KIBIBYTES(1);
-    char infoLog[infoLogSize];
-    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(shader, infoLogSize, nullptr, infoLog);
-        LogFatal("Failed to compile shader: %s.", infoLog);
-        glDeleteShader(shader);
-        shader = 0;
-        return false;
-    }
-
-    return true;
-}
-
 bool ViewOpenGL::CreateTexture(std::string name,
                                bool hasAlpha,
                                uint32 wrapS,
@@ -1020,4 +773,253 @@ void ViewOpenGL::OnWindowResized(IEventDataPtr e)
     m_app->m_options.graphics.windowHeight = h;
     glViewport(0, 0, w, h);
     LogInfo("Window resized to %ux%u; viewport set.", w, h);
+}
+
+bool ViewOpenGL::InitWindowAndGLContext_()
+{
+    if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, MINIMUM_OPENGL_MAJOR))
+    {
+        LogFatal("Failed to request OpenGL major version: %s.", SDL_GetError());
+        return false;
+    }
+    if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, MINIMUM_OPENGL_MINOR))
+    {
+        LogFatal("Failed to request OpenGL minor version: %s.", SDL_GetError());
+        return false;
+    }
+    if (SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE))
+    {
+        LogFatal("Failed to request OpenGL core profile: %s.", SDL_GetError());
+        return false;
+    }
+    LogInfo("OpenGL requested: v%i.%i Core Profile.", MINIMUM_OPENGL_MAJOR, MINIMUM_OPENGL_MINOR);
+
+    if (SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1))
+    {
+        LogFatal("Failed to request OpenGL doublebuffering: %s.", SDL_GetError());
+        return false;
+    }
+    LogInfo("Double Buffering requested.");
+
+    if (m_app->m_options.graphics.multisampling)
+    {
+        if (SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1))
+        {
+            LogFatal("Failed to request OpenGL multisampling: %s.", SDL_GetError());
+            return false;
+        }
+        if (SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, m_app->m_options.graphics.multisamplingNumSamples))
+        {
+            LogFatal("Failed to request OpenGL multisampling num samples: %s.", SDL_GetError());
+            return false;
+        }
+        LogInfo("Multisampling requested: On with %i samples.", m_app->m_options.graphics.multisamplingNumSamples);
+    }
+    else
+    {
+        LogInfo("Multisampling requested: No.");
+    }
+
+    m_window = SDL_CreateWindow(APPLICATION_NAME,
+                                SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                                m_app->m_options.graphics.windowWidth, m_app->m_options.graphics.windowHeight,
+                                SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+    if (!m_window)
+    {
+        LogFatal("Failed to create window: %s.", SDL_GetError());
+        return false;
+    }
+    LogInfo("Created window.");
+
+    m_glContext = SDL_GL_CreateContext(m_window);
+    if (!m_glContext)
+    {
+        LogFatal("Failed to create OpenGL Context: %s.", SDL_GetError());
+        return false;
+    }
+    LogInfo("Created OpenGL Context.");
+    if (SDL_GL_MakeCurrent(m_window, m_glContext))
+    {
+        LogFatal("Failed to make OpenGL Context current: %s.", SDL_GetError());
+        return false;
+    }
+    LogInfo("Made OpenGL Context current.");
+
+    int glMajor;
+    if (SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &glMajor))
+    {
+        LogFatal("Failed to retrieve actual OpenGL major version: %s.", SDL_GetError());
+        return false;
+    }
+    int glMinor;
+    if (SDL_GL_GetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, &glMinor))
+    {
+        LogFatal("Failed to retrieve actual OpenGL minor version: %s.", SDL_GetError());
+        return false;
+    }
+    int glProfile;
+    if (SDL_GL_GetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, &glProfile))
+    {
+        LogFatal("Failed to retrieve actual OpenGL profile: %s.", SDL_GetError());
+        return false;
+    }
+    std::string glProfileStr = "Unknown";
+    if (glProfile == SDL_GL_CONTEXT_PROFILE_CORE)
+        glProfileStr = "Core";
+    else if (glProfile == SDL_GL_CONTEXT_PROFILE_COMPATIBILITY)
+        glProfileStr = "Compatibility";
+    else if (glProfile == SDL_GL_CONTEXT_PROFILE_ES)
+        glProfileStr = "ES";
+    LogInfo("OpenGL: v%i.%i %s Profile.", glMajor, glMinor, glProfileStr.c_str());
+
+    int doublebuffering;
+    if (SDL_GL_GetAttribute(SDL_GL_DOUBLEBUFFER, &doublebuffering))
+    {
+        LogFatal("Failed to retrieve actual OpenGL doublebuffering: %s.", SDL_GetError());
+        return false;
+    }
+    LogInfo("Double Buffering: %s.", OnOffBoolToStr(doublebuffering));
+
+    int multisampling;
+    if (SDL_GL_GetAttribute(SDL_GL_MULTISAMPLEBUFFERS, &multisampling))
+    {
+        LogFatal("Failed to retrieve actual OpenGL multisampling: %s.", SDL_GetError());
+        return false;
+    }
+    int multisampling_numSamples;
+    if (SDL_GL_GetAttribute(SDL_GL_MULTISAMPLESAMPLES, &multisampling_numSamples))
+    {
+        LogFatal("Failed to retrieve actual OpenGL multisampling num samples: %s.", SDL_GetError());
+        return false;
+    }
+    LogInfo("Multisampling: %s with %i samples.", OnOffBoolToStr(multisampling), multisampling_numSamples);
+
+    if (m_app->m_options.graphics.vsync)
+    {
+        if (m_app->m_options.graphics.vsyncAdaptive)
+        {
+            if (SDL_GL_SetSwapInterval(-1))
+            {
+                LogWarning("Failed to set Adaptive VSync: %s.", SDL_GetError());
+                if (SDL_GL_SetSwapInterval(1))
+                    LogWarning("Failed to set Standard VSync: %s.", SDL_GetError());
+                else
+                    LogInfo("Set VSync: On.");
+            }
+            else
+            {
+                LogInfo("Set VSync: Adaptive.");
+            }
+        }
+        else
+        {
+            if (SDL_GL_SetSwapInterval(1))
+                LogWarning("Failed to set Standard VSync: %s.", SDL_GetError());
+            else
+                LogInfo("Set VSync: On.");
+        }
+    }
+    else
+    {
+        if (SDL_GL_SetSwapInterval(0))
+            LogWarning("Failed to set VSync off: %s.", SDL_GetError());
+        LogInfo("Set VSync: Off.");
+    }
+
+    int vsync = SDL_GL_GetSwapInterval();
+    if (vsync == 0)
+        LogInfo("VSync: Off.");
+    else if (vsync == 1)
+        LogInfo("VSync: On.");
+    else
+        LogInfo("VSync: Adaptive.");
+
+    return true;
+}
+
+bool ViewOpenGL::InitGLFunctions_()
+{
+    // @warning This requires an OpenGL Context.
+    if (!gladLoadGLLoader(SDL_GL_GetProcAddress))
+    {
+        LogFatal("Failed to load OpenGL functions.");
+        return false;
+    }
+
+    if (GLVersion.major < (int)MINIMUM_OPENGL_MAJOR ||
+        (GLVersion.major == (int)MINIMUM_OPENGL_MAJOR && GLVersion.minor < (int)MINIMUM_OPENGL_MINOR))
+    {
+        LogFatal("Loaded OpenGL v%i.%i functions, but need v%i.%i+.", GLVersion.major, GLVersion.minor,
+                 MINIMUM_OPENGL_MAJOR, MINIMUM_OPENGL_MINOR);
+        return false;
+    }
+    else
+    {
+        LogInfo("Loaded OpenGL v%i.%i functions.", GLVersion.major, GLVersion.minor);
+        return true;
+    }
+}
+
+void ViewOpenGL::InitLogGraphicsInfo_()
+{
+    int v;
+    glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &v);
+    LogInfo("OpenGL max vertex attributes supported: %i.", v);
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE, &v);
+    LogInfo("OpenGL max 1D/2D texture size: %ix%i.", v, v);
+    glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, &v);
+    LogInfo("OpenGL max 3D texture size: %ix%ix%i.", v, v, v);
+    glGetIntegerv(GL_MAX_CUBE_MAP_TEXTURE_SIZE, &v);
+    LogInfo("OpenGL max cube map texture size: %ix%ix%i.", v, v, v);
+    glGetIntegerv(GL_MAX_TEXTURE_IMAGE_UNITS, &v);
+    LogInfo("OpenGL max fragment texture image units: %i.", v);
+    glGetIntegerv(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS, &v);
+    LogInfo("OpenGL max vertex texture image units: %i.", v);
+    glGetIntegerv(GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS, &v);
+    LogInfo("OpenGL max geometry texture image units: %i.", v);
+    glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &v);
+    LogInfo("OpenGL max combined texture image units: %i.", v);
+}
+
+bool ViewOpenGL::LoadShader_(std::string name, bool vertex, Shader& shader)
+{
+    if (name.empty())
+    {
+        LogFatal("Tried to load %s shader with no name.", (vertex ? "vertex" : "fragment"));
+        return false;
+    }
+
+    LogInfo("Loading %s shader: %s.", (vertex ? "vertex" : "fragment"), name.c_str());
+
+    std::string file = m_app->m_options.core.shaderPath + name + (vertex ? ".vert" : ".frag");
+    std::string shaderStr;
+    if (!m_app->LoadFile(file, shaderStr))
+    {
+        LogFatal("Failed to load shader file.");
+        return false;
+    }
+
+    if (vertex)
+        shader = glCreateShader(GL_VERTEX_SHADER);
+    else
+        shader = glCreateShader(GL_FRAGMENT_SHADER);
+
+    const char* shaderCStr = shaderStr.c_str();
+    glShaderSource(shader, 1, &shaderCStr, nullptr);
+    glCompileShader(shader);
+
+    int success;
+    const uint32 infoLogSize = KIBIBYTES(1);
+    char infoLog[infoLogSize];
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+    if (!success)
+    {
+        glGetShaderInfoLog(shader, infoLogSize, nullptr, infoLog);
+        LogFatal("Failed to compile shader: %s.", infoLog);
+        glDeleteShader(shader);
+        shader = 0;
+        return false;
+    }
+
+    return true;
 }
