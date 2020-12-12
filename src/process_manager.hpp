@@ -5,10 +5,10 @@
     ==================================
 */
 
-#ifndef PROCESSES_HPP
-#define PROCESSES_HPP
+#ifndef PROCESS_MANAGER_HPP
+#define PROCESS_MANAGER_HPP
 
-// Cooperative Multitasking from Game Coding Complete, Fourth Edition
+// Cooperative Multitasking from Game Coding Complete, Fourth Edition.
 
 #include "global.hpp"
 
@@ -196,4 +196,4 @@ private:
     uint32 m_lastFailCount;
 };
 
-#endif // PROCESSES_HPP
+#endif // PROCESS_MANAGER_HPP
