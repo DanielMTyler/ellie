@@ -190,6 +190,7 @@ public:
 
 private:
     typedef std::list<Process::StrongPtr> ProcessList;
+
     ProcessList m_processList;
     uint32 m_lastSuccessCount;
     uint32 m_lastFailCount;
