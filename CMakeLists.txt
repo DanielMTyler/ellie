@@ -3,7 +3,7 @@
 #  This file is part of Ellie.
 #==================================
 
-cmake_minimum_required(VERSION 3.18.0)
+cmake_minimum_required(VERSION 3.18)
 # Must include C or .c files will be silently ignored.
 project(ellie C CXX)
 
@@ -26,7 +26,7 @@ else()
     message(FATAL_ERROR "Compiler not supported.")
 endif()
 
-find_package(SDL2 2.0.12 REQUIRED)
+find_package(SDL2 2.0 REQUIRED)
 target_link_libraries(ellie-bin SDL2::SDL2 SDL2::SDL2main)
 
 # @note thirdparty is indicated as SYSTEM to ignore warnings/errors.
