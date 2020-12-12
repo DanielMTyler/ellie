@@ -33,9 +33,9 @@ private:
 
     void OnQuit(IEventDataPtr e);
 
-    void OnMoveCamera(IEventDataPtr e);
+    void OnMoveCamera  (IEventDataPtr e);
     void OnRotateCamera(IEventDataPtr e);
-    void OnZoomCamera(IEventDataPtr e);
+    void OnZoomCamera  (IEventDataPtr e);
 };
 
 #endif // LOGIC_HPP

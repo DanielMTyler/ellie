@@ -20,11 +20,11 @@ bool Logic::Init()
 
     if (!m_app->Commands()->AddListener(EVENT_BIND_MEMBER_FUNCTION(Logic::OnQuit), EventData_Quit::TYPE))
         return false;
-    if (!m_app->Events()->AddListener(EVENT_BIND_MEMBER_FUNCTION(Logic::OnMoveCamera), EventData_MoveCamera::TYPE))
+    if (!m_app->Events()->AddListener(EVENT_BIND_MEMBER_FUNCTION(Logic::OnMoveCamera),   EventData_MoveCamera::TYPE))
         return false;
     if (!m_app->Events()->AddListener(EVENT_BIND_MEMBER_FUNCTION(Logic::OnRotateCamera), EventData_RotateCamera::TYPE))
         return false;
-    if (!m_app->Events()->AddListener(EVENT_BIND_MEMBER_FUNCTION(Logic::OnZoomCamera), EventData_ZoomCamera::TYPE))
+    if (!m_app->Events()->AddListener(EVENT_BIND_MEMBER_FUNCTION(Logic::OnZoomCamera),   EventData_ZoomCamera::TYPE))
         return false;
 
     return true;
