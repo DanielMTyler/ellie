@@ -166,6 +166,8 @@ bool ViewOpenGL::Init()
 
 void ViewOpenGL::Cleanup()
 {
+    m_processes.AbortAll(true);
+
     if (g_ebo)
     {
         glDeleteBuffers(1, &g_ebo);
@@ -291,6 +293,8 @@ bool ViewOpenGL::Render(DeltaTime dt)
         m_fpsCounter = 0;
         m_fpsLastTime = App::Time();
     }
+
+    m_processes.Update(dt);
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

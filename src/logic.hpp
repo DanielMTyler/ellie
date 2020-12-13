@@ -10,6 +10,7 @@
 
 #include "global.hpp"
 #include "event_bus.hpp"
+#include "process_manager.hpp"
 
 class App;
 
@@ -27,6 +28,7 @@ public:
 private:
     App* m_app  = nullptr;
     bool m_quit = false;
+    ProcessManager m_processes;
 
     EventBus::SubscriberIDStrongPtr m_subscriberMoveCamera;
     EventBus::SubscriberIDStrongPtr m_subscriberRotateCamera;

@@ -28,14 +28,16 @@ bool Logic::Init()
 
 void Logic::Cleanup()
 {
-    // These would be cleaned up in the destructor, but why not?
     m_subscriberZoomCamera.reset();
     m_subscriberRotateCamera.reset();
     m_subscriberMoveCamera.reset();
+
+    m_processes.AbortAll(true);
 }
 
-bool Logic::Update(DeltaTime /*dt*/)
+bool Logic::Update(DeltaTime dt)
 {
+    m_processes.Update(dt);
     return !m_quit;
 }
 

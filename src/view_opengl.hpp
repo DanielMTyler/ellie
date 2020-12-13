@@ -11,6 +11,7 @@
 // @todo Split into HumanView and OpenGLRenderer; cleanup.
 
 #include "global.hpp"
+#include "process_manager.hpp"
 #include "view_interface.hpp"
 
 #include <glad/glad.h>
@@ -52,6 +53,8 @@ private:
 
     std::map<std::string, Shader>  m_shaders;
     std::map<std::string, Texture> m_textures;
+
+    ProcessManager m_processes;
 
     // @note Sometimes multiple vertex or multiple fragment shaders can be used in
     //       a single program, but OpenGL ES and some others don't support it, so
