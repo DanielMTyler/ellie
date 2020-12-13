@@ -6,7 +6,7 @@
 */
 
 #include "app.hpp"
-#include "events_old.hpp"
+#include "event_bus.hpp"
 #include "logic.hpp"
 #include "view_interface.hpp"
 #include "view_opengl.hpp"
@@ -115,17 +115,10 @@ bool App::Init()
     m_options.core.shaderPath  = m_options.core.dataPath + "shaders" + PATH_SEPARATOR;
     m_options.core.texturePath = m_options.core.dataPath + "textures" + PATH_SEPARATOR;
 
-    m_commands = new (std::nothrow) EventManager;
-    if (!m_commands)
-    {
-        LogFatal("Failed to allocate memory for command event manager.");
-        return false;
-    }
-
-    m_events = new (std::nothrow) EventManager;
+    m_events = new (std::nothrow) EventBus;
     if (!m_events)
     {
-        LogFatal("Failed to allocate memory for non-command event manager.");
+        LogFatal("Failed to allocate memory for event bus.");
         return false;
     }
 
@@ -179,12 +172,6 @@ void App::Cleanup()
         m_events = nullptr;
     }
 
-    if (m_commands)
-    {
-        delete m_commands;
-        m_commands = nullptr;
-    }
-
     SDL_Quit();
     ForceSingleInstanceCleanup_();
 }
@@ -202,10 +189,9 @@ int App::Loop()
 
         if (!m_view->ProcessEvents(dt))
             break;
-        m_commands->Update(dt);
         // @todo Dynamically adjust timelimit and or drop events if needed to
         //       maintain framerate and avoid the backlog growing forever.
-        m_events->Update(dt, true, 1000.0f/30.0f);
+        m_events->Update(true, 1000.0f/30.0f/2.0f);
 
         if (!m_logic->Update(dt))
             break;

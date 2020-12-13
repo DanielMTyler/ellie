@@ -7,7 +7,7 @@
 
 #include "view_opengl.hpp"
 #include "app.hpp"
-#include "events_old.hpp"
+#include "events.hpp"
 #include "logic.hpp"
 
 #include <glm/gtc/matrix_transform.hpp>
@@ -213,7 +213,7 @@ void ViewOpenGL::Cleanup()
     }
 }
 
-bool ViewOpenGL::ProcessEvents(DeltaTime /*dt*/)
+bool ViewOpenGL::ProcessEvents(DeltaTime dt)
 {
     // @todo Deal with being minimized, toggling fullscreen, etc.
 
@@ -222,8 +222,7 @@ bool ViewOpenGL::ProcessEvents(DeltaTime /*dt*/)
     {
         if (e.type == SDL_QUIT || (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE))
         {
-            m_app->Commands()->QueueEvent(std::make_shared<EventQuit>());
-            return true;
+            return false;
         }
         else if (e.type == SDL_WINDOWEVENT && e.window.event == SDL_WINDOWEVENT_RESIZED)
         {
@@ -252,7 +251,7 @@ bool ViewOpenGL::ProcessEvents(DeltaTime /*dt*/)
         }
         else if (e.type == SDL_MOUSEMOTION)
         {
-            m_app->Events()->QueueEvent(std::make_shared<EventRotateCamera>(e.motion.xrel, e.motion.yrel));
+            m_app->Events()->Publish(std::make_shared<EventRotateCamera>(e.motion.xrel, e.motion.yrel));
         }
         else if (e.type == SDL_MOUSEWHEEL)
         {
@@ -260,7 +259,7 @@ bool ViewOpenGL::ProcessEvents(DeltaTime /*dt*/)
             bool in = (e.wheel.y > 0 ? true : false);
             if (e.wheel.direction == SDL_MOUSEWHEEL_FLIPPED)
                 in = -in;
-            m_app->Events()->QueueEvent(std::make_shared<EventZoomCamera>(in));
+            m_app->Events()->Publish(std::make_shared<EventZoomCamera>(in));
         }
     }
 
@@ -279,7 +278,7 @@ bool ViewOpenGL::ProcessEvents(DeltaTime /*dt*/)
         moveCameraRight = true;
 
     if (moveCameraForward || moveCameraBackward || moveCameraLeft || moveCameraRight)
-        m_app->Events()->QueueEvent(std::make_shared<EventMoveCamera>(moveCameraForward, moveCameraBackward, moveCameraLeft, moveCameraRight));
+        m_app->Events()->Publish(std::make_shared<EventMoveCamera>(dt, moveCameraForward, moveCameraBackward, moveCameraLeft, moveCameraRight));
 
     return true;
 }

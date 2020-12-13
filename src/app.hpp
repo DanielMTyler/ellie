@@ -14,15 +14,16 @@
 
 #include <string>
 
+class EventBus;
 class IView;
-class EventManager;
 class Logic;
 
 class App {
 public:
     // @todo Resource Manager.
-    // @todo Memory Manager.
+    // @todo Memory Manager; will have to track down all allocations (new, make_shared, etc).
     // @todo CVar/Console System.
+    // @todo Lots of STL usage; switch to something exception-free...or deal with them.
 
     // @todo Move to options.hpp?
     struct Options {
@@ -77,9 +78,8 @@ public:
 
     static App& Get();
 
-    EventManager* Commands() { return m_commands; }
-    EventManager* Events()   { return m_events; }
-    class Logic*  Logic()    { return m_logic; }
+    EventBus*     Events() { return m_events; }
+    class Logic*  Logic()  { return m_logic; }
 
     // Current value from the high-res counter.
     static TimeStamp Time() { return SDL_GetPerformanceCounter(); }
@@ -98,10 +98,9 @@ public:
     int  Loop(); // Returns main() return code.
 
 private:
-    EventManager* m_commands = nullptr; // Critical; WILL be processed ASAP.
-    EventManager* m_events   = nullptr; // Non-critical; can be dropped.
-    class Logic*  m_logic    = nullptr;
-    IView*        m_view     = nullptr;
+    EventBus*    m_events = nullptr;
+    class Logic* m_logic  = nullptr;
+    IView*       m_view   = nullptr;
 
     // Creation by App::Get() only.
     App() {};

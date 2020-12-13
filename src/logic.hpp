@@ -9,7 +9,7 @@
 #define LOGIC_HPP
 
 #include "global.hpp"
-#include "events_old.hpp"
+#include "event_bus.hpp"
 
 class App;
 
@@ -28,14 +28,16 @@ private:
     App* m_app  = nullptr;
     bool m_quit = false;
 
+    EventBus::SubscriberIDStrongPtr m_subscriberMoveCamera;
+    EventBus::SubscriberIDStrongPtr m_subscriberRotateCamera;
+    EventBus::SubscriberIDStrongPtr m_subscriberZoomCamera;
+
     // @todo Replace with an ECS camera entity when possible.
     void UpdateCameraVectors();
 
-    void OnQuit(EventPtr e);
-
-    void OnMoveCamera  (EventPtr e);
-    void OnRotateCamera(EventPtr e);
-    void OnZoomCamera  (EventPtr e);
+    void OnMoveCamera  (EventStrongPtr e);
+    void OnRotateCamera(EventStrongPtr e);
+    void OnZoomCamera  (EventStrongPtr e);
 };
 
 #endif // LOGIC_HPP

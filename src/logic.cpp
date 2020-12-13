@@ -7,6 +7,7 @@
 
 #include "logic.hpp"
 #include "app.hpp"
+#include "events.hpp"
 
 #include <glm/glm.hpp>
 
@@ -18,24 +19,19 @@ bool Logic::Init()
 
     UpdateCameraVectors();
 
-    if (!m_app->Commands()->AddListener(EVENT_BIND_MEMBER_FUNCTION(Logic::OnQuit), EventQuit::TYPE))
-        return false;
-    if (!m_app->Events()->AddListener(EVENT_BIND_MEMBER_FUNCTION(Logic::OnMoveCamera),   EventMoveCamera::TYPE))
-        return false;
-    if (!m_app->Events()->AddListener(EVENT_BIND_MEMBER_FUNCTION(Logic::OnRotateCamera), EventRotateCamera::TYPE))
-        return false;
-    if (!m_app->Events()->AddListener(EVENT_BIND_MEMBER_FUNCTION(Logic::OnZoomCamera),   EventZoomCamera::TYPE))
-        return false;
+    m_subscriberMoveCamera   = m_app->Events()->Subscribe(EVENTBUS_SUB_THIS_MEMBER(Logic::OnMoveCamera,   EventMoveCamera));
+    m_subscriberRotateCamera = m_app->Events()->Subscribe(EVENTBUS_SUB_THIS_MEMBER(Logic::OnRotateCamera, EventRotateCamera));
+    m_subscriberZoomCamera   = m_app->Events()->Subscribe(EVENTBUS_SUB_THIS_MEMBER(Logic::OnZoomCamera,   EventZoomCamera));
 
     return true;
 }
 
 void Logic::Cleanup()
 {
-    // @todo Commands.RemoveListener(Logic::OnQuit).
-    // @todo Events.RemoveListener(Logic::OnMoveCamera).
-    // @todo Events.RemoveListener(Logic::OnRotateCamera).
-    // @todo Events.RemoveListener(Logic::OnZoomCamera).
+    // These would be cleaned up in the destructor, but why not?
+    m_subscriberZoomCamera.reset();
+    m_subscriberRotateCamera.reset();
+    m_subscriberMoveCamera.reset();
 }
 
 bool Logic::Update(DeltaTime /*dt*/)
@@ -54,29 +50,24 @@ void Logic::UpdateCameraVectors()
     m_app->m_options.camera.up    = glm::normalize(glm::cross(m_app->m_options.camera.right, m_app->m_options.camera.front));
 }
 
-void Logic::OnQuit(EventPtr /*e*/)
-{
-    m_quit = true;
-}
-
-void Logic::OnMoveCamera(EventPtr e)
+void Logic::OnMoveCamera(EventStrongPtr e)
 {
     EventMoveCamera* d = dynamic_cast<EventMoveCamera*>(e.get());
-    if (d->f)
-        m_app->m_options.camera.position += m_app->m_options.camera.front * m_app->m_options.camera.speed * d->dt();
-    else if (d->b)
-        m_app->m_options.camera.position -= m_app->m_options.camera.front * m_app->m_options.camera.speed * d->dt();
-    if (d->l)
-        m_app->m_options.camera.position -= m_app->m_options.camera.right * m_app->m_options.camera.speed * d->dt();
-    else if (d->r)
-        m_app->m_options.camera.position += m_app->m_options.camera.right * m_app->m_options.camera.speed * d->dt();
+    if (d->forward)
+        m_app->m_options.camera.position += m_app->m_options.camera.front * m_app->m_options.camera.speed * d->dt;
+    else if (d->backward)
+        m_app->m_options.camera.position -= m_app->m_options.camera.front * m_app->m_options.camera.speed * d->dt;
+    if (d->left)
+        m_app->m_options.camera.position -= m_app->m_options.camera.right * m_app->m_options.camera.speed * d->dt;
+    else if (d->right)
+        m_app->m_options.camera.position += m_app->m_options.camera.right * m_app->m_options.camera.speed * d->dt;
 
     // @todo This keeps the camera grounded FPS style, but it also makes
     //       forward/backward movement slow when at an extreme pitch. Why?
     //m_cameraPosition.y = 0.0f;
 }
 
-void Logic::OnRotateCamera(EventPtr e)
+void Logic::OnRotateCamera(EventStrongPtr e)
 {
     EventRotateCamera* d = dynamic_cast<EventRotateCamera*>(e.get());
     m_app->m_options.camera.yaw   += (m_app->m_options.camera.yawInverted   ? -d->xrel : d->xrel) * m_app->m_options.camera.yawSensitivity;
@@ -95,7 +86,7 @@ void Logic::OnRotateCamera(EventPtr e)
     UpdateCameraVectors();
 }
 
-void Logic::OnZoomCamera(EventPtr e)
+void Logic::OnZoomCamera(EventStrongPtr e)
 {
     EventZoomCamera* d = dynamic_cast<EventZoomCamera*>(e.get());
     if (d->in)

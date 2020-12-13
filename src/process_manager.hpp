@@ -114,8 +114,7 @@ public:
         while (it != m_processList.end())
         {
             Process::StrongPtr p = (*it);
-            auto thisIt = it;
-            it++;
+            auto thisIt = it++;
 
             if (p->State() == Process::State::Uninitialized)
                 p->OnInit();
