@@ -33,7 +33,7 @@ public:
     bool Render(DeltaTime dt) override;
 
 private:
-    // @todo View-specific Resource Manager (shaders, textures, audio, etc)?
+    // @todo Internal render resolution separate from actual window resolution; support dynamic adjustment to maintain FPS.
 
     typedef uint32 Shader;
     typedef uint32 Texture;
