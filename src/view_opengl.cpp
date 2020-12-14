@@ -17,9 +17,10 @@
 
 #include <memory> // make_shared
 
-global_variable uint32 g_vbo = 0;
-global_variable uint32 g_vao = 0;
-global_variable uint32 g_ebo = 0;
+global_variable uint32 g_cubeVBO  = 0;
+global_variable uint32 g_cubeVAO  = 0;
+global_variable uint32 g_lightVAO = 0;
+global_variable uint32 g_cubeEBO  = 0;
 
 bool ViewOpenGL::Init()
 {
@@ -52,63 +53,56 @@ bool ViewOpenGL::Init()
     glViewport(0, 0, m_app->m_options.graphics.windowWidth, m_app->m_options.graphics.windowHeight);
     glEnable(GL_DEPTH_TEST);
 
-    if (!CreateShader("default", "default", "default"))
-        return false;
-    if (!CreateTexture("wall.jpg", false))
-        return false;
-    if (!CreateTexture("awesomeface.png", true))
-        return false;
-
-    float32 vertices[] = {
+    float32 cubeVertices[] = {
         // back
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // 0
-         0.5f, -0.5f, -0.5f,  1.0f, 0.0f, // 1
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // 2
-         //0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // 2
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // 3
-        //-0.5f, -0.5f, -0.5f,  0.0f, 0.0f, // 0
+        -0.5f, -0.5f, -0.5f,   // 0
+         0.5f, -0.5f, -0.5f,   // 1
+         0.5f,  0.5f, -0.5f,   // 2
+         //0.5f,  0.5f, -0.5f, // 2
+        -0.5f,  0.5f, -0.5f,   // 3
+        //-0.5f, -0.5f, -0.5f, // 0
 
         // front
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // 4
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // 5
-         0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // 6
-         //0.5f,  0.5f,  0.5f,  1.0f, 1.0f, // 6
-        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f, // 7
-        //-0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // 4
+        -0.5f, -0.5f,  0.5f,   // 4
+         0.5f, -0.5f,  0.5f,   // 5
+         0.5f,  0.5f,  0.5f,   // 6
+         //0.5f,  0.5f,  0.5f, // 6
+        -0.5f,  0.5f,  0.5f,   // 7
+        //-0.5f, -0.5f,  0.5f, // 4
 
         // left
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // 8
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // 9
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // 10
-        //-0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // 10
-        //-0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // 4
-        //-0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // 8
+        -0.5f,  0.5f,  0.5f,   // 8
+        -0.5f,  0.5f, -0.5f,   // 9
+        -0.5f, -0.5f, -0.5f,   // 10
+        //-0.5f, -0.5f, -0.5f, // 10
+        //-0.5f, -0.5f,  0.5f, // 4
+        //-0.5f,  0.5f,  0.5f, // 8
 
         // right
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // 11
-         //0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // 2
-         0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // 12
-         //0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // 12
-         0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // 13
-         //0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // 11
+         0.5f,  0.5f,  0.5f,   // 11
+         //0.5f,  0.5f, -0.5f, // 2
+         0.5f, -0.5f, -0.5f,   // 12
+         //0.5f, -0.5f, -0.5f, // 12
+         0.5f, -0.5f,  0.5f,   // 13
+         //0.5f,  0.5f,  0.5f, // 11
 
         // bottom
-        //-0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // 10
-         0.5f, -0.5f, -0.5f,  1.0f, 1.0f, // 14
-         //0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // 5
-         //0.5f, -0.5f,  0.5f,  1.0f, 0.0f, // 5
-        //-0.5f, -0.5f,  0.5f,  0.0f, 0.0f, // 4
-        //-0.5f, -0.5f, -0.5f,  0.0f, 1.0f, // 10
+        //-0.5f, -0.5f, -0.5f, // 10
+         0.5f, -0.5f, -0.5f,   // 14
+         //0.5f, -0.5f,  0.5f, // 5
+         //0.5f, -0.5f,  0.5f, // 5
+        //-0.5f, -0.5f,  0.5f, // 4
+        //-0.5f, -0.5f, -0.5f, // 10
 
         // top
-        //-0.5f,  0.5f, -0.5f,  0.0f, 1.0f, // 3
-         //0.5f,  0.5f, -0.5f,  1.0f, 1.0f, // 2
-         //0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // 11
-         //0.5f,  0.5f,  0.5f,  1.0f, 0.0f, // 11
-        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f // 15
-        //-0.5f,  0.5f, -0.5f,  0.0f, 1.0f  // 3
+        //-0.5f,  0.5f, -0.5f, // 3
+         //0.5f,  0.5f, -0.5f, // 2
+         //0.5f,  0.5f,  0.5f, // 11
+         //0.5f,  0.5f,  0.5f, // 11
+        -0.5f,  0.5f,  0.5f    // 15
+        //-0.5f,  0.5f, -0.5f, // 3
     };
-    uint32 indices[] = {
+    uint32 cubeIndices[] = {
         // back
         0, 1, 2,
         2, 3, 0,
@@ -134,29 +128,28 @@ bool ViewOpenGL::Init()
         11, 15, 3
     };
 
-    glGenVertexArrays(1, &g_vao);
-    glBindVertexArray(g_vao);
+    glGenVertexArrays(1, &g_cubeVAO);
+    glGenVertexArrays(1, &g_lightVAO);
+    glGenBuffers(1, &g_cubeVBO);
+    glGenBuffers(1, &g_cubeEBO);
 
-    glGenBuffers(1, &g_vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, g_vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glGenBuffers(1, &g_ebo);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-
+    glBindVertexArray(g_cubeVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, g_cubeVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(cubeVertices), cubeVertices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_cubeEBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cubeIndices), cubeIndices, GL_STATIC_DRAW);
     // Position
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float32), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float32), (void*)0);
     glEnableVertexAttribArray(0);
-    // Texture Coordinate
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float32), (void*)(3 * sizeof(float32)));
-    glEnableVertexAttribArray(1);
 
-    if (!UseShader("default"))
-        return false;
-    if (!ShaderSetInt("default", "texture1", 0))
-        return false;
-    if (!ShaderSetInt("default", "texture2", 1))
+    glBindVertexArray(g_lightVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, g_cubeVBO);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_cubeEBO);
+    // Position
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float32), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    if (!CreateShader("default", "default", "default"))
         return false;
 
     m_fpsLastTime = App::Time();
@@ -168,22 +161,28 @@ void ViewOpenGL::Cleanup()
 {
     m_processes.AbortAll(true);
 
-    if (g_ebo)
+    if (g_cubeEBO)
     {
-        glDeleteBuffers(1, &g_ebo);
-        g_ebo = 0;
+        glDeleteBuffers(1, &g_cubeEBO);
+        g_cubeEBO = 0;
     }
 
-    if (g_vbo)
+    if (g_cubeVBO)
     {
-        glDeleteBuffers(1, &g_vbo);
-        g_vbo = 0;
+        glDeleteBuffers(1, &g_cubeVBO);
+        g_cubeVBO = 0;
     }
 
-    if (g_vao)
+    if (g_lightVAO)
     {
-        glDeleteVertexArrays(1, &g_vao);
-        g_vao = 0;
+        glDeleteVertexArrays(1, &g_lightVAO);
+        g_lightVAO = 0;
+    }
+
+    if (g_cubeVAO)
+    {
+        glDeleteVertexArrays(1, &g_cubeVAO);
+        g_cubeVAO = 0;
     }
 
     if (!m_textures.empty())
@@ -299,57 +298,42 @@ bool ViewOpenGL::Render(DeltaTime dt)
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    if (!UseShader("default"))
-        return false;
-    glActiveTexture(GL_TEXTURE0);
-    if (!UseTexture("wall.jpg"))
-        return false;
-    glActiveTexture(GL_TEXTURE1);
-    if (!UseTexture("awesomeface.png"))
-        return false;
-
     static glm::mat4 identity = glm::mat4(1.0f);
-
-    glBindVertexArray(g_vao);
-
     glm::mat4 view = identity;
     view = glm::lookAt(m_app->m_options.camera.position, m_app->m_options.camera.position + m_app->m_options.camera.front, m_app->m_options.camera.up);
     glm::mat4 projection = glm::perspective(glm::radians(m_app->m_options.camera.fov), (float32)m_app->m_options.graphics.windowWidth/(float32)m_app->m_options.graphics.windowHeight, m_app->m_options.graphics.planeNear, m_app->m_options.graphics.planeFar);
+    glm::mat4 model = identity;
 
+    if (!UseShader("default"))
+        return false;
     if (!ShaderSetMat4("default", "view", view))
         return false;
     if (!ShaderSetMat4("default", "projection", projection))
         return false;
+    if (!ShaderSetMat4("default", "model", model))
+        return false;
+    if (!ShaderSetVec3f("default", "objectColor", 1.0f, 0.5f, 0.31f))
+        return false;
+    if (!ShaderSetVec3f("default", "lightColor", 1.0f, 1.0f, 1.0f))
+        return false;
+    if (!ShaderSetBool("default", "isLightSource", false))
+        return false;
 
-    glm::vec3 cubePositions[] = {
-        glm::vec3( 0.0f,  0.0f,  0.0f),
-        glm::vec3( 2.0f,  5.0f, -15.0f),
-        glm::vec3(-1.5f, -2.2f, -2.5f),
-        glm::vec3(-3.8f, -2.0f, -12.3f),
-        glm::vec3( 2.4f, -0.4f, -3.5f),
-        glm::vec3(-1.7f,  3.0f, -7.5f),
-        glm::vec3( 1.3f, -2.0f, -2.5f),
-        glm::vec3( 1.5f,  2.0f, -2.5f),
-        glm::vec3( 1.5f,  0.2f, -1.5f),
-        glm::vec3(-1.3f,  1.0f, -1.5f)
-    };
-    static float32 rotation = 0.0f;
-    rotation += 0.02f * dt;
-    for (uint32 i = 0; i < 10; i++)
-    {
-        glm::mat4 model = identity;
-        model = glm::translate(model, cubePositions[i]);
-        float32 angle = 20.0f * i;
-        model = glm::rotate(model, glm::radians(angle + rotation), glm::vec3(1.0f, 0.3f, 0.5f));
+    glBindVertexArray(g_cubeVAO);
+    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
 
-        if (!ShaderSetMat4("default", "model", model))
-            return false;
+    static glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
+    model = identity;
+    model = glm::translate(model, lightPos);
+    model = glm::scale(model, glm::vec3(0.2f));
+    if (!ShaderSetMat4("default", "model", model))
+        return false;
+    if (!ShaderSetBool("default", "isLightSource", true))
+        return false;
+    glBindVertexArray(g_lightVAO);
+    glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
 
-        glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
-    }
-
-    glBindVertexArray(0);
-
+    //glBindVertexArray(0);
     SDL_GL_SwapWindow(m_window);
     SDL_Delay(1);
 
