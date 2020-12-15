@@ -1,5 +1,9 @@
 #version 330 core
-layout (location = 0) in vec3 p;
+out vec3 fragWorldPosition;
+out vec3 normal;
+
+layout (location = 0) in vec3 position;
+layout (location = 1) in vec3 normal_;
 
 uniform mat4 model;
 uniform mat4 view;
@@ -7,5 +11,7 @@ uniform mat4 projection;
 
 void main()
 {
-    gl_Position = projection * view * model * vec4(p, 1.0f);
+    gl_Position = projection * view * model * vec4(position, 1.0f);
+    fragWorldPosition = vec3(model * vec4(position, 1.0f));
+    normal = mat3(transpose(inverse(model))) * normal_;
 }

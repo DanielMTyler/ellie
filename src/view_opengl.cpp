@@ -21,6 +21,7 @@ global_variable uint32 g_cubeVBO  = 0;
 global_variable uint32 g_cubeVAO  = 0;
 global_variable uint32 g_lightVAO = 0;
 global_variable uint32 g_cubeEBO  = 0;
+global_variable glm::vec3 g_lightPos(1.2f, 1.0f, 2.0f);
 
 bool ViewOpenGL::Init()
 {
@@ -55,52 +56,52 @@ bool ViewOpenGL::Init()
 
     float32 cubeVertices[] = {
         // back
-        -0.5f, -0.5f, -0.5f,   // 0
-         0.5f, -0.5f, -0.5f,   // 1
-         0.5f,  0.5f, -0.5f,   // 2
-         //0.5f,  0.5f, -0.5f, // 2
-        -0.5f,  0.5f, -0.5f,   // 3
-        //-0.5f, -0.5f, -0.5f, // 0
+        -0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f,   // 0
+         0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f,   // 1
+         0.5f,  0.5f, -0.5f, 0.0f, 0.0f, -1.0f,   // 2
+         //0.5f,  0.5f, -0.5f, 0.0f, 0.0f, -1.0f, // 2
+        -0.5f,  0.5f, -0.5f, 0.0f, 0.0f, -1.0f,   // 3
+        //-0.5f, -0.5f, -0.5f, 0.0f, 0.0f, -1.0f, // 0
 
         // front
-        -0.5f, -0.5f,  0.5f,   // 4
-         0.5f, -0.5f,  0.5f,   // 5
-         0.5f,  0.5f,  0.5f,   // 6
-         //0.5f,  0.5f,  0.5f, // 6
-        -0.5f,  0.5f,  0.5f,   // 7
-        //-0.5f, -0.5f,  0.5f, // 4
+        -0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f,   // 4
+         0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f,   // 5
+         0.5f,  0.5f,  0.5f, 0.0f, 0.0f, 1.0f,   // 6
+         //0.5f,  0.5f,  0.5f, 0.0f, 0.0f, 1.0f, // 6
+        -0.5f,  0.5f,  0.5f, 0.0f, 0.0f, 1.0f,   // 7
+        //-0.5f, -0.5f,  0.5f, 0.0f, 0.0f, 1.0f, // 4
 
         // left
-        -0.5f,  0.5f,  0.5f,   // 8
-        -0.5f,  0.5f, -0.5f,   // 9
-        -0.5f, -0.5f, -0.5f,   // 10
-        //-0.5f, -0.5f, -0.5f, // 10
-        //-0.5f, -0.5f,  0.5f, // 4
-        //-0.5f,  0.5f,  0.5f, // 8
+        -0.5f,  0.5f,  0.5f, -1.0f, 0.0f, 0.0f,   // 8
+        -0.5f,  0.5f, -0.5f, -1.0f, 0.0f, 0.0f,   // 9
+        -0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f,   // 10
+        //-0.5f, -0.5f, -0.5f, -1.0f, 0.0f, 0.0f, // 10
+        //-0.5f, -0.5f,  0.5f, -1.0f, 0.0f, 0.0f, // 4
+        //-0.5f,  0.5f,  0.5f, -1.0f, 0.0f, 0.0f, // 8
 
         // right
-         0.5f,  0.5f,  0.5f,   // 11
-         //0.5f,  0.5f, -0.5f, // 2
-         0.5f, -0.5f, -0.5f,   // 12
-         //0.5f, -0.5f, -0.5f, // 12
-         0.5f, -0.5f,  0.5f,   // 13
-         //0.5f,  0.5f,  0.5f, // 11
+         0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 0.0f,   // 11
+         //0.5f,  0.5f, -0.5f, 1.0f, 0.0f, 0.0f, // 2
+         0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f,   // 12
+         //0.5f, -0.5f, -0.5f, 1.0f, 0.0f, 0.0f, // 12
+         0.5f, -0.5f,  0.5f, 1.0f, 0.0f, 0.0f,   // 13
+         //0.5f,  0.5f,  0.5f, 1.0f, 0.0f, 0.0f, // 11
 
         // bottom
-        //-0.5f, -0.5f, -0.5f, // 10
-         0.5f, -0.5f, -0.5f,   // 14
-         //0.5f, -0.5f,  0.5f, // 5
-         //0.5f, -0.5f,  0.5f, // 5
-        //-0.5f, -0.5f,  0.5f, // 4
-        //-0.5f, -0.5f, -0.5f, // 10
+        //-0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, // 10
+         0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f,   // 14
+         //0.5f, -0.5f,  0.5f, 0.0f, -1.0f, 0.0f, // 5
+         //0.5f, -0.5f,  0.5f, 0.0f, -1.0f, 0.0f, // 5
+        //-0.5f, -0.5f,  0.5f, 0.0f, -1.0f, 0.0f, // 4
+        //-0.5f, -0.5f, -0.5f, 0.0f, -1.0f, 0.0f, // 10
 
         // top
-        //-0.5f,  0.5f, -0.5f, // 3
-         //0.5f,  0.5f, -0.5f, // 2
-         //0.5f,  0.5f,  0.5f, // 11
-         //0.5f,  0.5f,  0.5f, // 11
-        -0.5f,  0.5f,  0.5f    // 15
-        //-0.5f,  0.5f, -0.5f, // 3
+        //-0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, // 3
+         //0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, // 2
+         //0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, // 11
+         //0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f, // 11
+        -0.5f,  0.5f,  0.5f, 0.0f, 1.0f, 0.0f    // 15
+        //-0.5f,  0.5f, -0.5f, 0.0f, 1.0f, 0.0f, // 3
     };
     uint32 cubeIndices[] = {
         // back
@@ -139,15 +140,21 @@ bool ViewOpenGL::Init()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_cubeEBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cubeIndices), cubeIndices, GL_STATIC_DRAW);
     // Position
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float32), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float32), (void*)0);
     glEnableVertexAttribArray(0);
+    // Normal
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float32), (void*)(3 * sizeof(float32)));
+    glEnableVertexAttribArray(1);
 
     glBindVertexArray(g_lightVAO);
     glBindBuffer(GL_ARRAY_BUFFER, g_cubeVBO);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, g_cubeEBO);
     // Position
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float32), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float32), (void*)0);
     glEnableVertexAttribArray(0);
+    // Normal
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float32), (void*)(3 * sizeof(float32)));
+    glEnableVertexAttribArray(1);
 
     if (!CreateShader("default", "default", "default"))
         return false;
@@ -281,6 +288,19 @@ bool ViewOpenGL::ProcessEvents(DeltaTime dt)
     if (moveCameraForward || moveCameraBackward || moveCameraLeft || moveCameraRight)
         m_app->Events()->Publish(std::make_shared<EventMoveCamera>(dt, moveCameraForward, moveCameraBackward, moveCameraLeft, moveCameraRight));
 
+    if (kbState[SDL_SCANCODE_I])
+        g_lightPos += glm::vec3(0.0f, 0.0f, -1.0f) * m_app->m_options.camera.speed * dt;
+    else if (kbState[SDL_SCANCODE_K])
+        g_lightPos -= glm::vec3(0.0f, 0.0f, -1.0f) * m_app->m_options.camera.speed * dt;
+    if (kbState[SDL_SCANCODE_J])
+        g_lightPos -= glm::vec3(1.0f, 0.0f, 0.0f) * m_app->m_options.camera.speed * dt;
+    else if (kbState[SDL_SCANCODE_L])
+        g_lightPos += glm::vec3(1.0f, 0.0f, 0.0f) * m_app->m_options.camera.speed * dt;
+    if (kbState[SDL_SCANCODE_U])
+        g_lightPos -= glm::vec3(0.0f, 1.0f, 0.0f) * m_app->m_options.camera.speed * dt;
+    else if (kbState[SDL_SCANCODE_O])
+        g_lightPos += glm::vec3(0.0f, 1.0f, 0.0f) * m_app->m_options.camera.speed * dt;
+
     return true;
 }
 
@@ -318,13 +338,16 @@ bool ViewOpenGL::Render(DeltaTime dt)
         return false;
     if (!ShaderSetBool("default", "isLightSource", false))
         return false;
+    if (!ShaderSetVec3("default", "lightPos", g_lightPos))
+        return false;
+    if (!ShaderSetVec3("default", "viewPos", m_app->m_options.camera.position))
+        return false;
 
     glBindVertexArray(g_cubeVAO);
     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, nullptr);
 
-    static glm::vec3 lightPos(1.2f, 1.0f, 2.0f);
     model = identity;
-    model = glm::translate(model, lightPos);
+    model = glm::translate(model, g_lightPos);
     model = glm::scale(model, glm::vec3(0.2f));
     if (!ShaderSetMat4("default", "model", model))
         return false;
