@@ -977,6 +977,9 @@ void ViewOpenGL::InitLogGraphicsInfo_()
     LogInfo("OpenGL max geometry texture image units: %i.", v);
     glGetIntegerv(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS, &v);
     LogInfo("OpenGL max combined texture image units: %i.", v);
+
+    // @todo Log more, like VRAM usage.
+    // @todo Certain things (like VRAM usage) should queryable for real-time display.
 }
 
 bool ViewOpenGL::LoadShader_(std::string name, bool vertex, Shader& shader)
