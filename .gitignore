@@ -17,3 +17,6 @@
 
 # Qt Creator CMakeLists Project:
 CMakeLists.txt.user
+
+# KDevelop Project:
+*.kdev4
