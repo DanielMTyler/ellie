@@ -1,3 +1,10 @@
+/*
+    ==================================
+    Copyright (C) 2021 Daniel Tyler.
+      This file is part of Ellie.
+    ==================================
+*/
+
 #include "global.hpp"
 #include "app.hpp"
 

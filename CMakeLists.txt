@@ -1,7 +1,9 @@
-#==================================
-#Copyright (C) 2020 Daniel M Tyler.
-#  This file is part of Ellie.
-#==================================
+#
+# ==================================
+# Copyright (C) 2021 Daniel Tyler.
+#   This file is part of Ellie.
+# ==================================
+#
 
 cmake_minimum_required(VERSION 3.18)
 # Must include C or .c files will be silently ignored.

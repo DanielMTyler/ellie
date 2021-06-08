@@ -1,5 +1,5 @@
 ==================================
-Copyright (C) 2020 Daniel M Tyler.
+Copyright (C) 2021 Daniel Tyler.
   This file is part of Ellie.
 ==================================
 
@@ -12,10 +12,10 @@ Directory Structure:
     thirdparty:         Third-party stuff.
 
 Dependencies:
-    CMake v3.18:        Project build tool.
-    GLAD (Web Service): OpenGL Loader/Generator (see GLAD Options below).
-    GLM v0.9.9.8:       OpenGL Mathematics.
-    SDL2 v2.0:          Platform interface.
+    CMake v3.20
+    GLAD (Web Service)
+    GLM v0.9.9.8
+    SDL2 v2.0
     STB
 
 GLAD Options:
