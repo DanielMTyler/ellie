@@ -15,3 +15,6 @@ Items are added here as they pop into my head and are in fairly random order.
 * Performance tracking (Memory Usage/Free/Total).
 * Telemetry tracking.
 * Task system (Game Coding Complete; basically pseudo-threads, but can be chained so that task completion activates another task).
+* Resource Manager.
+* Memory Manager.
+* Lots of STL usage; switch to something exception-free...or deal with them.

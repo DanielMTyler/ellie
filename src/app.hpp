@@ -20,11 +20,6 @@ class Logic;
 
 class App {
 public:
-    // @todo Resource Manager.
-    // @todo Memory Manager; will have to track down all allocations (new, make_shared, etc).
-    // @todo CVar/Console System.
-    // @todo Lots of STL usage; switch to something exception-free...or deal with them.
-
     // @todo Move to options.hpp?
     struct Options {
         struct Camera {
